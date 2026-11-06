@@ -6,3 +6,5 @@ node_modules/
 Thumbs.db
 *.bak
 .claude/settings.json
+last_req.json
+*.dump.json
