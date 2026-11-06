@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls } from './prompt.js';
-import { runCompletion, resolveModel } from './cli.js';
+import { runCompletion, workerConfig } from './cli.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
@@ -55,7 +55,8 @@ function sseWriter(res) {
 async function handleMessages(req, res, body) {
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
-  const model = resolveModel(body.model);
+  const cfg = workerConfig(body);
+  const model = cfg.model;
   const prompt = buildPrompt(body);
   const inTokens = estimate(prompt);
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
@@ -63,7 +64,7 @@ async function handleMessages(req, res, body) {
   req.on('close', () => ac.abort());
 
   if (!stream) {
-    const out = await runCompletion({ prompt, model, maxTokens: body.max_tokens, signal: ac.signal });
+    const out = await runCompletion({ prompt, cfg, signal: ac.signal });
     if (out.error) return send(res, 502, { type: 'error', error: { type: 'api_error', message: out.error } });
     const tc = wantsTools ? extractToolCalls(out.text) : null;
     const content = [];
@@ -145,7 +146,7 @@ async function handleMessages(req, res, body) {
   let out;
   try {
     out = await runCompletion({
-      prompt, model, maxTokens: body.max_tokens, signal: ac.signal,
+      prompt, cfg, signal: ac.signal,
       onEvent: (ev) => {
         if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') feed(ev.delta.text || '');
       },

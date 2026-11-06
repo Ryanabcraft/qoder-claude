@@ -1,18 +1,18 @@
-# SETUP — do zero ao repositório no GitHub
+# SETUP — from zero to a GitHub repository
 
-Procedimento completo: instalar as ferramentas, autenticar, versionar o projeto,
-criar o repositório remoto e publicar. Todos os comandos foram executados nesta
-máquina (Windows 11, Git 2.54, gh 2.95, winget 1.29).
+Complete procedure: install the tools, authenticate, version the project, create the remote
+repository and publish. Every command here was executed on this machine
+(Windows 11, Git 2.54, gh 2.95, winget 1.29).
 
-## 1. Ferramentas necessárias
+## 1. Required tools
 
-| ferramenta | função | pacote winget | verificação |
+| tool | purpose | winget package | check |
 |---|---|---|---|
-| Git | versionamento local e push | `Git.Git` | `git --version` |
-| GitHub CLI (`gh`) | autenticação e criação do repo | `GitHub.cli` | `gh --version` |
-| Node.js 20+ | runtime do `qoder-bridge` | `OpenJS.NodeJS.LTS` | `node --version` |
+| Git | local versioning and push | `Git.Git` | `git --version` |
+| GitHub CLI (`gh`) | authentication and repo creation | `GitHub.cli` | `gh --version` |
+| Node.js 20+ | `qoder-bridge` runtime | `OpenJS.NodeJS.LTS` | `node --version` |
 
-### Instalação
+### Install
 
 ```powershell
 winget install --id Git.Git -e --source winget
@@ -20,7 +20,7 @@ winget install --id GitHub.cli -e --source winget
 winget install --id OpenJS.NodeJS.LTS -e --source winget
 ```
 
-Alternativas:
+Alternatives:
 
 ```powershell
 # Chocolatey
@@ -30,8 +30,8 @@ choco install git gh nodejs-lts -y
 scoop install git gh nodejs-lts
 ```
 
-Feche e reabra o terminal depois de instalar — o `PATH` só é recarregado em um
-processo novo. Confira:
+Close and reopen the terminal after installing — `PATH` is only reloaded in a new process.
+Verify:
 
 ```powershell
 git --version
@@ -39,7 +39,7 @@ gh --version
 node --version
 ```
 
-Nesta máquina:
+On this machine:
 
 ```
 git version 2.54.0.windows.1
@@ -47,181 +47,182 @@ gh version 2.95.0 (2026-06-17)
 node v24.18.0
 ```
 
-## 2. Autenticar no GitHub
+## 2. Authenticate to GitHub
 
 ```powershell
 gh auth login
 ```
 
-Escolha nesta ordem:
+Pick, in this order:
 
 1. `GitHub.com`
 2. `HTTPS`
-3. `Login with a web browser` (ou cola um Personal Access Token)
+3. `Login with a web browser` (or paste a Personal Access Token)
 
-Verifique conta ativa e escopos:
+Verify the active account and scopes:
 
 ```powershell
 gh auth status
 ```
 
-Saída esperada (mínimo para criar repositório):
+Expected output (minimum to create a repository):
 
 ```
-✓ Logged in to github.com account <usuario> (keyring)
+✓ Logged in to github.com account <user> (keyring)
 - Active account: true
 - Git operations protocol: https
 - Token scopes: 'repo', 'workflow', ...
 ```
 
-`repo` é obrigatório. Se faltar:
+`repo` is mandatory. If missing:
 
 ```powershell
 gh auth refresh -h github.com -s repo,workflow
 ```
 
-## 3. Identidade do commit
+## 3. Commit identity
 
-Sem isso o commit falha ou sai sem autor:
+Without this the commit fails or lands without an author:
 
 ```powershell
-git config --global user.name "Seu Nome"
-git config --global user.email "voce@exemplo.com"
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
 git config --global init.defaultBranch main
 ```
 
-Conferir:
+Check:
 
 ```powershell
 git config --global user.name
 git config --global user.email
 ```
 
-## 4. Versionar o projeto
+## 4. Version the project
 
-Dentro da pasta do projeto:
+Inside the project folder:
 
 ```powershell
 cd D:\SISTEMAS\Projetos\Qoder-Claude\qoder-bridge
 git init -b main
 ```
 
-O `.gitignore` já existe e cobre `node_modules/`, `*.log`, `.env*` e backups.
-Antes do primeiro commit, confira o que entraria:
+The `.gitignore` already covers `node_modules/`, `*.log`, `.env*`, `*.bak` and
+`.claude/settings.json`. Before the first commit, check what would be staged:
 
 ```powershell
 git status --short
 ```
 
-Se `node_modules` ou algum `.env` aparecer, o `.gitignore` está errado — corrija
-antes de commitar. Commit inicial:
+If `node_modules` or any `.env` shows up, the `.gitignore` is wrong — fix it before
+committing. Initial commit:
 
 ```powershell
 git add .
 git commit -m "feat: anthropic-compatible bridge backed by the Qoder CLI"
 ```
 
-Confira o resultado:
+Check the result:
 
 ```powershell
 git log --oneline -1
 git ls-files | Measure-Object -Line
 ```
 
-## 5. Criar o repositório remoto
+## 5. Create the remote repository
 
-Um comando faz tudo — cria no GitHub, configura `origin` e já faz push:
+One command does everything — creates on GitHub, sets `origin` and pushes:
 
 ```powershell
 gh repo create qoder-bridge --private --source . --remote origin --push `
   --description "Anthropic-compatible local bridge backed by the Qoder CLI"
 ```
 
-Variações:
+Variations:
 
-| objetivo | flag |
+| goal | flag |
 |---|---|
-| repositório público | `--public` |
-| repositório privado | `--private` |
-| já existe e quer só conectar | `--remote origin --source .` |
-| sem push inicial | omitir `--push` |
-| organização | `gh repo create org/qoder-bridge ...` |
+| public repository | `--public` |
+| private repository | `--private` |
+| connect an existing repo | `--remote origin --source .` |
+| without the initial push | omit `--push` |
+| organization | `gh repo create org/qoder-bridge ...` |
 
-Sem o `gh`, o caminho puramente `git` é:
+Without `gh`, the pure `git` path is:
 
 ```powershell
-git remote add origin https://github.com/<usuario>/qoder-bridge.git
+git remote add origin https://github.com/<user>/qoder-bridge.git
 git push -u origin main
 ```
 
-O repositório precisa existir antes, criado pela interface web. O `gh` evita esse
-passo e já resolve o `origin`.
+The repository must exist first, created through the web UI. `gh` skips that step and
+resolves `origin` for you.
 
-## 6. Verificar
+## 6. Verify
 
 ```powershell
-gh repo view --web            # abre no navegador
+gh repo view --web            # opens in the browser
 gh repo view --json name,visibility,defaultBranchRef,url
 git remote -v
 git log --oneline --decorate -3
 ```
 
-Saída esperada do `gh repo view --json`:
+Expected `gh repo view --json` output:
 
 ```json
-{"defaultBranchRef":{"name":"main"},"name":"qoder-bridge","url":"https://github.com/<usuario>/qoder-bridge","visibility":"PRIVATE"}
+{"defaultBranchRef":{"name":"main"},"name":"qoder-bridge","url":"https://github.com/<user>/qoder-bridge","visibility":"PRIVATE"}
 ```
 
-## 7. Ciclo normal depois disso
+## 7. Normal cycle afterwards
 
 ```powershell
 git status
 git add src/server.js
-git commit -m "fix: <o que mudou>"
+git commit -m "fix: <what changed>"
 git push
 ```
 
 ## 8. Troubleshooting
 
-| sintoma | causa | correção |
+| symptom | cause | fix |
 |---|---|---|
-| `fatal: not a git repository` | rodou fora da pasta do projeto | `cd` na raiz do projeto |
-| `gh: command not found` | terminal antigo após instalar | reabrir o terminal |
-| `HTTP 404` no `gh repo create` | token sem escopo `repo` | `gh auth refresh -s repo` |
-| `remote origin already exists` | repositório já inicializado | `git remote set-url origin <url>` |
-| `failed to push some refs` | remoto já tem commits | `git pull --rebase origin main` |
-| `Author identity unknown` | falta `user.name`/`user.email` | passo 3 |
-| commit com `.env` dentro | arquivo já rastreado | `git rm --cached .env` e commit |
-| `LF will be replaced by CRLF` | autocrlf do Windows | aviso inofensivo; silencie com `git config --global core.autocrlf input` |
+| `fatal: not a git repository` | ran outside the project folder | `cd` into the project root |
+| `gh: command not found` | terminal opened before install | reopen the terminal |
+| `HTTP 404` on `gh repo create` | token without `repo` scope | `gh auth refresh -s repo` |
+| `remote origin already exists` | repo already initialized | `git remote set-url origin <url>` |
+| `failed to push some refs` | remote already has commits | `git pull --rebase origin main` |
+| `Author identity unknown` | missing `user.name`/`user.email` | step 3 |
+| commit contains `.env` | file already tracked | `git rm --cached .env` and commit |
+| `LF will be replaced by CRLF` | Windows autocrlf | harmless; silence with `git config --global core.autocrlf input` |
 
-## 9. Referência rápida
+## 9. Quick reference
 
 ```powershell
-# estado
+# state
 gh auth status
 git status
 
-# criar
+# create
 git init -b main
 git add .
-git commit -m "mensagem"
-gh repo create <nome> --private --source . --remote origin --push
+git commit -m "message"
+gh repo create <name> --private --source . --remote origin --push
 
-# conferir
+# verify
 gh repo view --json name,visibility,url
 git remote -v
 ```
 
-## 10. Resultado desta execução
+## 10. Result of this run
 
 ```
-repositório : https://github.com/Ryanabcraft/qoder-bridge
-visibilidade: PRIVATE
+repository  : https://github.com/Ryanabcraft/qoder-bridge
+visibility  : PRIVATE
 branch      : main (tracking origin/main)
-commit      : 8dcae1c feat: anthropic-compatible bridge backed by the Qoder CLI
-arquivos    : README.md, SETUP.md, package.json, src/*, scripts/*, *.cmd, .gitignore
-ferramentas : git 2.54.0.windows.1 · gh 2.95.0 · node v24.18.0 · winget 1.29.380
+commits     : 8dcae1c feat: anthropic-compatible bridge backed by the Qoder CLI
+              d8845de docs: record repository creation
+              5e7074a feat: installer with statusline and automatic Claude Code setup
+tools       : git 2.54.0.windows.1 · gh 2.95.0 · node v24.18.0 · winget 1.29.380
 ```
 
-O `.claude/settings.json` ficou fora do repositório de propósito: ele guarda porta e
-token locais de cada máquina e está listado no `.gitignore`.
+`.claude/settings.json` is intentionally kept out of the repository: it carries a local port
+and token per machine and is listed in `.gitignore`.

@@ -1,32 +1,33 @@
 # qoder-bridge
 
-Servidor local que fala **Anthropic Messages API** e usa o **Qoder CLI** como backend.
-O Claude Code aponta para ele e passa a rodar nos modelos do plano Qoder.
+A local **Anthropic Messages API** server backed by the [Qoder CLI](https://qoder.com).
+Point Claude Code at it and every request runs on your Qoder plan's models, with native
+tool calls, streaming and a statusline that shows which model answered.
 
 ```
-Claude Code  --/v1/messages-->  qoder-bridge  --stdin/stream-json-->  qodercli  --> api1.qoder.sh
+Claude Code --/v1/messages--> qoder-bridge --stream-json--> qodercli --> api1.qoder.sh
 ```
 
-## Por que assim
+## Features
 
-O endpoint de inferência do Qoder (`POST /algo/api/v2/service/pro/sse/agent_chat_generation`) tem o
-corpo cifrado por um WASM nativo e assinado por request (`Authorization: COSY.<payload>.<sig>`,
-`Cosy-Key`, `Cosy-Date`). Replicar esse HTTP exige o binário do Qoder.
+- Anthropic-compatible `/v1/messages` with real SSE streaming and `tool_use` blocks
+- Warm CLI worker pool: ~2 s per request once the pool is up
+- Model, thinking budget and context window selectable per request
+- `Qoder · <model>` statusline written into Claude Code settings
+- One-command installer for Windows: dependencies, login, config, server, health check
+- No credential handling: the bridge never reads, stores or replays Qoder tokens
 
-O CLI oficial, por outro lado, expõe `--output-format stream-json --include-partial-messages`,
-que emite eventos **no mesmo formato Anthropic** (`message_start`, `content_block_delta`,
-`content_block_stop`). O bridge só precisa: montar o prompt, ler esses eventos e traduzir
-tool calls. Nenhum token é tocado, nenhum header assinado.
+## Installation
 
-## Instalação em um comando
+### Windows (one command)
 
-Cole no **CMD**:
+Paste into **CMD**:
 
 ```cmd
 gh repo clone Ryanabcraft/qoder-bridge "%LOCALAPPDATA%\qoder-bridge" -- --depth 1 2>nul || git -C "%LOCALAPPDATA%\qoder-bridge" pull --ff-only -q & powershell -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\qoder-bridge\install.ps1"
 ```
 
-Ou no **PowerShell**:
+Or in **PowerShell**:
 
 ```powershell
 $d = Join-Path $env:LOCALAPPDATA 'qoder-bridge'
@@ -34,44 +35,30 @@ if (Test-Path (Join-Path $d '.git')) { git -C $d pull --ff-only -q } else { gh r
 & (Join-Path $d 'install.ps1')
 ```
 
-O instalador:
+The installer:
 
-1. instala o Node LTS se faltar (winget)
-2. instala o `@qoder-ai/qodercli` se faltar
-3. abre o login do Qoder se não houver sessão
-4. copia o bridge para `%LOCALAPPDATA%\qoder-bridge`
-5. grava `.claude/settings.json` no projeto atual com URL, token e **statusline**
-6. sobe o servidor em background e espera o `/health`
-7. lista os modelos para provar que a rota responde
+1. installs Node.js LTS if missing (winget)
+2. installs `@qoder-ai/qodercli` if missing
+3. opens the Qoder login flow if there is no session
+4. copies the bridge to `%LOCALAPPDATA%\qoder-bridge`
+5. writes the **global** `~/.claude/settings.json` (backup kept as `.bak`) with URL, token and statusline
+6. starts the server in the background and waits for `/health`
+7. lists the models to prove the route answers
 
-Flags: `-AllProjects` (configura o usuário inteiro), `-NoStart`, `-SkipDeps`, `-InstallDir <path>`.
+Flags: `-ProjectOnly` (configure only the current directory), `-NoStart`, `-SkipDeps`,
+`-InstallDir <path>`.
 
-O statusline aparece como `Qoder · Auto` no rodapé do Claude Code.
+### Manual
 
-## Requisitos
-
-- Node 20+
-- `@qoder-ai/qodercli` instalado e logado:
-
-```powershell
+```bash
+git clone https://github.com/Ryanabcraft/qoder-bridge.git
+cd qoder-bridge
 npm install -g @qoder-ai/qodercli
 qodercli login
-qodercli --list-models
+node src/server.js
 ```
 
-## Rodar
-
-```powershell
-.\start.cmd
-# ou
-node src\server.js
-```
-
-Escuta em `http://127.0.0.1:8787`.
-
-## Ligar o Claude Code
-
-Dentro do projeto, crie `.claude/settings.json` (ou rode `.\enable-here.cmd`):
+Then add to `~/.claude/settings.json`:
 
 ```json
 {
@@ -81,69 +68,90 @@ Dentro do projeto, crie `.claude/settings.json` (ou rode `.\enable-here.cmd`):
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-5",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"C:\\\\path\\\\to\\\\qoder-bridge\\\\scripts\\\\statusline.js\""
   }
 }
 ```
 
-O `ANTHROPIC_BASE_URL` global em `~/.claude/settings.json` continua valendo para os outros
-projetos; o settings de projeto tem precedência.
+## Usage
 
-## Modelos
-
-O padrão é `Auto`. Para fixar outro, defina `QODER_MODEL` no ambiente do servidor com um nome de
-`GET /v1/models`:
-
+```bash
+claude                                   # uses Auto
+claude --model Qwen3.8-Max               # any model from GET /v1/models
+MAX_THINKING_TOKENS=8000 claude          # thinking budget forwarded to the CLI
+QODER_CONTEXT_WINDOW=200000 node src/server.js   # server-side context window
 ```
-Auto, Ultimate, Fast, Efficient, Sonus, Cantus, Qwen3.8-Max, Qwen3.8-Flash,
+
+Inside a session, `/model Qwen3.8-Max` switches at the next request.
+
+### Models
+
+`Auto, Ultimate, Fast, Efficient, Sonus, Cantus, Qwen3.8-Max, Qwen3.8-Flash,
 Kimi-K3.1-Pro, Kimi-K2.8-Preview, GLM-5.3, GLM-5.3-Flash, DeepSeek-V4-Pro,
-DeepSeek-Flash, MiniMax-M3.1-Flash
-```
+DeepSeek-Flash, MiniMax-M3.1-Flash`
 
-`QODER_MODEL_MAP=1` ativa o mapeamento por família (`opus`→Ultimate, `sonnet`→Auto, `haiku`→Fast).
+Set `QODER_MODEL_MAP=1` to map Claude families: `opus` → Ultimate, `sonnet` → Auto,
+`haiku` → Fast.
 
-## Variáveis
+## Configuration
 
-| variável | default | função |
+| variable | default | purpose |
 |---|---|---|
-| `BRIDGE_PORT` | `8787` | porta |
-| `BRIDGE_HOST` | `127.0.0.1` | bind (loopback por padrão) |
-| `BRIDGE_API_KEY` | vazio | se definido, exige `x-api-key` ou `Bearer` |
-| `BRIDGE_POOL_SIZE` | `3` | workers quentes |
-| `BRIDGE_POOL` | ligado | `0` desliga o pool (spawn por request) |
-| `BRIDGE_REQUEST_TIMEOUT_MS` | `300000` | corte por requisição |
-| `QODER_MODEL` | `Auto` | modelo fixo |
-| `QODER_MAX_OUTPUT_TOKENS` | `8192` | teto de saída |
-| `QODER_CLI_BIN` | auto | caminho do `qodercli.js` |
-| `BRIDGE_LOG` | ligado | `0` silencia |
-| `BRIDGE_DUMP` | vazio | caminho de arquivo para o último request |
+| `BRIDGE_PORT` | `8787` | listen port |
+| `BRIDGE_HOST` | `127.0.0.1` | bind address |
+| `BRIDGE_API_KEY` | empty | require `x-api-key` or `Bearer` |
+| `BRIDGE_POOL_SIZE` | `3` | warm workers |
+| `BRIDGE_POOL` | on | `0` disables the pool |
+| `BRIDGE_REQUEST_TIMEOUT_MS` | `300000` | per-request cutoff |
+| `QODER_MODEL` | `Auto` | fixed model |
+| `QODER_THINKING` | from request | `enabled`, `adaptive`, `disabled` |
+| `QODER_THINKING_BUDGET` | from request | thinking tokens |
+| `QODER_CONTEXT_WINDOW` | from request | context window |
+| `QODER_MAX_OUTPUT_TOKENS` | `8192` | output cap |
+| `QODER_CLI_BIN` | auto-detected | path to `qodercli.js` |
+| `BRIDGE_LOG` | on | `0` silences access log |
+| `BRIDGE_DUMP` | empty | file path for the last request |
 
 ## Endpoints
 
-| método | rota | função |
+| method | route | purpose |
 |---|---|---|
-| GET | `/health` | status |
-| GET | `/v1/models` | modelos |
-| POST | `/v1/messages` | Anthropic Messages (stream e não-stream) |
-| POST | `/v1/messages/count_tokens` | estimativa |
+| GET | `/health` | liveness |
+| GET | `/v1/models` | model list |
+| POST | `/v1/messages` | Anthropic Messages |
+| POST | `/v1/messages/count_tokens` | token estimate |
 
-## Como as tool calls funcionam
+## How it works
 
-O Claude Code manda `tools[]` no request. O bridge injeta a lista no prompt com um formato único:
+The Qoder inference endpoint encrypts and signs each request body (`Authorization: COSY.*`,
+`Cosy-Key`, `Cosy-Date`) inside a native WASM module, so replaying it is not practical.
+
+The official CLI already emits Anthropic-shaped events with
+`--output-format stream-json --include-partial-messages`. The bridge builds the prompt,
+reads those events and forwards them. Tool calls are negotiated in text:
 
 ```
 <tool_calls>[{"name":"Write","input":{"file_path":"a.txt","content":"x"}}]</tool_calls>
 ```
 
-O modelo responde só com esse bloco, o bridge converte em `tool_use` real e o Claude Code executa.
-O streaming de texto é preservado: o bridge segura apenas o prefixo que pode virar bloco de tool call.
+The bridge converts the block into a real `tool_use` block and Claude Code executes it.
 
-`mcp_call` (a ferramenta de MCP do próprio Qoder) é normalizada para a tool real que ela nomeia.
+## Limitations
 
-## Limites conhecidos
+- One inference call per tool round-trip; latency is ~2 s warm and ~10 s on a cold worker.
+- The first three requests after start pay the cold start.
+- Full history is serialized into the prompt on every request, so long conversations are
+  expensive and slower.
+- Qoder's own built-in tools stay disabled (`--tools ""`); the Claude Code side executes.
+- Provider-side policy refusals pass through unchanged.
 
-- Cada turno custa uma chamada de inferência por round-trip de tool. A latência por chamada fica
-  em ~2s com worker quente e ~10s quando o pool precisa repor.
-- O pool aquece um worker por vez; os três primeiros requests após o start pagam o cold start.
-- Contexto: o prompt leva o histórico inteiro em texto, então conversas longas custam caro.
-- Ferramentas do Qoder ficam desligadas (`--tools ""`); quem executa é o Claude Code.
-- O Qoder pode recusar pedidos por política do próprio provedor. Isso passa direto.
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)

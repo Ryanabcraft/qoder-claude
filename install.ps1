@@ -3,12 +3,12 @@
 param(
   [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'qoder-bridge'),
   [string]$ProjectDir = (Get-Location).Path,
-  [switch]$AllProjects,
+  [switch]$ProjectOnly,
   [switch]$SkipDeps,
   [switch]$NoStart
 )
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $SourceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Port = if ($env:BRIDGE_PORT) { $env:BRIDGE_PORT } else { '8787' }
 
@@ -40,16 +40,15 @@ if (-not (Have 'qodercli')) {
   npm install -g @qoder-ai/qodercli | Out-Null
   if (-not (Have 'qodercli')) { Die 'qodercli nao entrou no PATH. Reabra o terminal e rode de novo.' }
 }
-Ok "qodercli $(& qodercli --version 2>$null | Select-Object -First 1)"
+Ok ('qodercli ' + ((& cmd /c 'qodercli --version 2>nul' | Select-Object -First 1) -join '').Trim())
 
 Step 'Verificando login do Qoder'
-$status = ''
-try { $status = (& qodercli status 2>$null | Out-String) } catch {}
+$status = (& cmd /c 'qodercli status 2>nul' | Out-String)
 if ($status -match 'Username:') {
   Ok (($status -split "`n" | Where-Object { $_ -match 'Username:' }) -join '').Trim()
 } else {
   Warn 'sem sessao ativa; abrindo login no navegador'
-  & qodercli login
+  & cmd /c 'qodercli login'
   if ($LASTEXITCODE -ne 0) { Die 'login do Qoder falhou.' }
 }
 
@@ -67,8 +66,7 @@ if ($SourceDir -ne $InstallDir) {
 
 Step 'Configurando o Claude Code'
 $targets = @()
-if ($AllProjects) { $targets += $env:USERPROFILE }
-if (-not $AllProjects) { $targets += $ProjectDir }
+if ($ProjectOnly) { $targets += $ProjectDir } else { $targets += $env:USERPROFILE }
 foreach ($t in $targets) {
   $env:QODER_CLAUDE_TARGET = $t
   & node (Join-Path $InstallDir 'scripts\enable-here.js')
