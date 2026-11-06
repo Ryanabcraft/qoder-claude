@@ -1,7 +1,17 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cleanWorkspace } from './prompt.js';
+import { cleanWorkspace, buildPrompt } from './prompt.js';
 import { activeAccount } from './accounts.js';
+import {
+  dropSession,
+  getSession,
+  messageHash,
+  prefixMatches,
+  putSession,
+  sessionKeyFor,
+  shutdownSessions,
+  touchSession,
+} from './sessions.js';
 import { resolveCli } from './cliPath.js';
 import { detectModels } from './models.js';
 
@@ -47,6 +57,7 @@ function baseArgs(cfg) {
     '--mcp-config', EMPTY_MCP,
     '--setting-sources', '',
     '--headless-fast-hooks',
+    '--max-model-request-retries', String(process.env.BRIDGE_MODEL_RETRIES ?? 0),
     '--cwd', cleanWorkspace(),
     '--model', cfg.model,
     '--system-prompt',
@@ -110,6 +121,16 @@ function killTree(proc) {
   try { proc.kill(); } catch {}
 }
 
+function errorText(m, extra = '') {
+  const parts = [
+    m && typeof m.result === 'string' ? m.result : '',
+    m && typeof m.error_message === 'string' ? m.error_message : '',
+    m && Array.isArray(m.errors) ? m.errors.map((e) => (typeof e === 'string' ? e : JSON.stringify(e))).join(' ') : '',
+    extra,
+  ].filter((s) => s && s.trim());
+  return parts.join(' | ').trim() || 'qoder error';
+}
+
 function spawnWorker(cfg) {
   if (process.env.BRIDGE_LOG !== '0') console.log(`  worker ${cfg.key}`);
   const proc = spawn(CLI.cmd, [...CLI.prefix, ...baseArgs(cfg)], {
@@ -137,7 +158,7 @@ function spawnWorker(cfg) {
       try { m = JSON.parse(line); } catch { continue; }
       if (!warmed && m.type === 'result') {
         warmed = true;
-        if (m.is_error) readyReject(new Error(String(m.result || '').trim() || stderrTail() || 'warm-up failed'));
+        if (m.is_error) readyReject(new Error(errorText(m, stderrTail()) || 'warm-up failed'));
         else readyResolve();
         continue;
       }
@@ -200,6 +221,7 @@ class WorkerPool {
   acquire(cfg) {
     const idx = this.ready.findIndex((w) => w.key === cfg.key);
     if (idx !== -1) return Promise.resolve(this.ready.splice(idx, 1)[0]);
+    this.lastCfg = cfg;
     this.starting++;
     const w = spawnWorker(cfg);
     return w.ready.then(
@@ -236,7 +258,7 @@ function runOnWorker(worker, { prompt, signal, onEvent }) {
         text: finalText,
         stopReason: finalMessage?.stop_reason || resultMsg?.stop_reason || 'end_turn',
         usage: resultMsg?.usage || {},
-        error: resultMsg?.is_error ? (resultMsg.result || 'qoder error') : null,
+        error: resultMsg?.is_error ? errorText(resultMsg) : null,
       });
     };
     const onAbort = () => worker.kill();
@@ -277,7 +299,7 @@ function runDirect(cfg, { prompt, signal, onEvent }) {
       if (settled) return;
       settled = true;
       const finalText = (finalMessage?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('') || text;
-      resolve({ text: finalText, usage: resultMsg?.usage || {}, error: resultMsg?.is_error ? resultMsg.result : null });
+      resolve({ text: finalText, usage: resultMsg?.usage || {}, error: resultMsg?.is_error ? errorText(resultMsg) : null });
     };
     signal?.addEventListener('abort', () => { try { proc.kill(); } catch {} }, { once: true });
     proc.stdin.on('error', () => {});
@@ -303,21 +325,54 @@ function runDirect(cfg, { prompt, signal, onEvent }) {
   });
 }
 
-export async function runCompletion({ prompt, cfg, signal, onEvent }) {
+export async function runCompletion({ body, cfg, signal, onEvent }) {
   if (!USE_POOL) {
-    const out = await runDirect(cfg, { prompt, signal, onEvent });
-    return out;
+    const { prompt } = buildPrompt(body, 0);
+    return runDirect(cfg, { prompt, signal, onEvent });
   }
-  const worker = await getPool().acquire(cfg);
+
+  const key = sessionKeyFor(body);
+  const hashes = (body.messages || []).map(messageHash);
+  const candidate = getSession(key);
+
+  let worker = null;
+  let from = 0;
+
+  if (process.env.BRIDGE_LOG !== '0') {
+    if (!candidate) console.log('  session: none');
+    else if (candidate.cfgKey !== cfg.key) console.log('  session: cfg changed');
+    else if (!prefixMatches(candidate.hashes, hashes)) console.log('  session: prefix mismatch ' + candidate.hashes.length + '->' + hashes.length);
+  }
+
+  if (candidate && candidate.cfgKey === cfg.key && prefixMatches(candidate.hashes, hashes)) {
+    worker = candidate.worker;
+    from = candidate.hashes.length;
+  } else {
+    if (candidate) dropSession(key);
+    worker = await getPool().acquire(cfg);
+  }
+
+  const { prompt } = buildPrompt(body, from);
+  let out;
   try {
-    const out = await runOnWorker(worker, { prompt, signal, onEvent });
-    return out;
-  } finally {
-    getPool().release(worker);
+    out = await runOnWorker(worker, { prompt, signal, onEvent });
+  } catch (e) {
+    dropSession(key);
+    throw e;
   }
+
+  if (out.error || (!out.text && !out.usage?.output_tokens)) {
+    dropSession(key);
+    return { ...out, sessionHit: false, from, sessionKey: key };
+  }
+
+  putSession(key, worker, cfg.key, hashes);
+  touchSession(key);
+  return { ...out, sessionHit: from > 0, from, sessionKey: key };
 }
 
 export function shutdownPool() {
+  shutdownSessions();
   if (pool) {
     pool.stopped = true;
     for (const w of pool.ready) w.kill();

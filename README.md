@@ -271,6 +271,33 @@ Deletes the profile and its credential directory. `default` cannot be removed.
 | Wrong account answering | `qclaude account current`, then restart the session |
 | Login opened but nothing changed | the login must finish before the account becomes active |
 
+## Sessions
+
+One Claude Code conversation keeps one `qodercli` process. The bridge remembers the messages it
+already sent and forwards only the new ones on the next turn:
+
+| event | behaviour |
+|---|---|
+| same `session_id`, same account/model/system | worker reused (`session=hit`), only the delta is sent |
+| `/clear` or a new conversation | new worker (`session=miss`) |
+| model, account or system prompt changed | new worker |
+| idle for 15 minutes | worker recycled |
+| more than 4 live sessions | oldest worker recycled |
+
+Tunables: `BRIDGE_SESSION_TTL_MS` (default `900000`) and `BRIDGE_SESSION_MAX` (default `4`).
+
+If the agent rewrites its history without changing the `session_id`, the prefix check fails and
+the bridge falls back to a fresh worker with the full history — never a delta over unknown state.
+
+## Errors and retries
+
+- Qoder refusal (daily quota, `403`, `not logged in`) → **400 `invalid_request_error`** with the
+  real message. Claude Code does not retry a 400, so the "retry in 4m 10s" banner disappears.
+- Rate limit (`429`) → 429 `rate_limit_error`.
+- Timeouts and connection resets → 503 `overloaded_error`.
+- The CLI runs with `--max-model-request-retries 0`; override with `BRIDGE_MODEL_RETRIES`.
+- Stream responses also carry a `: ping` keepalive every 12 s.
+
 ## Configuration
 
 | variable | default | purpose |
@@ -278,7 +305,10 @@ Deletes the profile and its credential directory. `default` cannot be removed.
 | `BRIDGE_PORT` | `8787` | listen port |
 | `BRIDGE_HOST` | `127.0.0.1` | bind address |
 | `BRIDGE_API_KEY` | empty | require `x-api-key` or `Bearer` |
-| `BRIDGE_POOL_SIZE` | `3` | warm workers |
+| `BRIDGE_POOL_SIZE` | `2` | warm workers |
+| `BRIDGE_SESSION_TTL_MS` | `900000` | idle session lifetime |
+| `BRIDGE_SESSION_MAX` | `4` | concurrent sessions kept warm |
+| `BRIDGE_MODEL_RETRIES` | `0` | retries inside the CLI |
 | `BRIDGE_POOL` | on | `0` disables the pool |
 | `BRIDGE_REQUEST_TIMEOUT_MS` | `300000` | per-request cutoff |
 | `QODER_MODEL` | `Auto` | fixed model |
@@ -318,7 +348,7 @@ The bridge converts the block into a real `tool_use` block and Claude Code execu
 
 ## Limitations
 
-- One inference call per tool round-trip; latency is ~2 s warm and ~10 s on a cold worker.
+- One inference call per tool round-trip. Inside a session the worker is reused (~2 s); only the first turn of a conversation pays the cold start (~10 s).
 - The first three requests after start pay the cold start.
 - Full history is serialized into the prompt on every request, so long conversations are
   expensive and slower.

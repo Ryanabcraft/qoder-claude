@@ -67,13 +67,14 @@ export function normalizeSystem(system) {
     .trim();
 }
 
-export function buildPrompt(body) {
+export function buildPrompt(body, from = 0) {
   const system = normalizeSystem(body.system);
   const parts = [];
-  if (Array.isArray(body.tools) && body.tools.length) parts.push(toolsToText(body.tools), '');
+  if (from === 0 && Array.isArray(body.tools) && body.tools.length) parts.push(toolsToText(body.tools), '');
 
   parts.push('[CONVERSATION]');
-  const msgs = Array.isArray(body.messages) ? body.messages : [];
+  const all = Array.isArray(body.messages) ? body.messages : [];
+  const msgs = from > 0 ? all.slice(from) : all;
   for (const m of msgs) {
     const role = (m.role || 'user').toUpperCase();
     parts.push(`${role}: ${blocksToText(m.content)}`);

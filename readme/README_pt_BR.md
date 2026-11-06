@@ -266,6 +266,34 @@ Apaga o perfil e o diretório de credenciais. A `default` não pode ser removida
 | Conta errada respondendo | `qclaude account current` e reinicie a sessão |
 | Login abriu mas nada mudou | o login precisa terminar para a conta ficar ativa |
 
+## Sessões
+
+Uma conversa do Claude Code mantém um processo `qodercli`. A bridge lembra as mensagens que já
+enviou e, no turno seguinte, repassa só as novas:
+
+| evento | comportamento |
+|---|---|
+| mesmo `session_id`, mesma conta/modelo/system | worker reaproveitado (`session=hit`), só o delta vai |
+| `/clear` ou conversa nova | worker novo (`session=miss`) |
+| modelo, conta ou system prompt mudou | worker novo |
+| 15 minutos ocioso | worker reciclado |
+| mais de 4 sessões vivas | a mais antiga é reciclada |
+
+Ajustes: `BRIDGE_SESSION_TTL_MS` (padrão `900000`) e `BRIDGE_SESSION_MAX` (padrão `4`).
+
+Se o agente reescrever o histórico sem trocar o `session_id`, a checagem de prefixo falha e a
+bridge cai para um worker novo com o histórico inteiro — nunca envia delta sobre estado
+desconhecido.
+
+## Erros e retentativas
+
+- Recusa do Qoder (cota diária, `403`, `not logged in`) → **400 `invalid_request_error`** com a
+  mensagem real. O Claude Code não retenta um 400, então o banner "retry in 4m 10s" desaparece.
+- Limite de taxa (`429`) → 429 `rate_limit_error`.
+- Timeout e reset de conexão → 503 `overloaded_error`.
+- O CLI roda com `--max-model-request-retries 0`; ajuste com `BRIDGE_MODEL_RETRIES`.
+- Respostas em stream também levam um `: ping` de keepalive a cada 12 s.
+
 ## Configuração
 
 | variável | padrão | função |
@@ -273,7 +301,10 @@ Apaga o perfil e o diretório de credenciais. A `default` não pode ser removida
 | `BRIDGE_PORT` | `8787` | porta |
 | `BRIDGE_HOST` | `127.0.0.1` | bind |
 | `BRIDGE_API_KEY` | vazio | exige `x-api-key` ou `Bearer` |
-| `BRIDGE_POOL_SIZE` | `3` | workers quentes |
+| `BRIDGE_POOL_SIZE` | `2` | workers quentes |
+| `BRIDGE_SESSION_TTL_MS` | `900000` | vida de uma sessão ociosa |
+| `BRIDGE_SESSION_MAX` | `4` | sessões simultâneas mantidas |
+| `BRIDGE_MODEL_RETRIES` | `0` | retentativas dentro do CLI |
 | `BRIDGE_POOL` | ligado | `0` desliga o pool |
 | `BRIDGE_REQUEST_TIMEOUT_MS` | `300000` | corte por request |
 | `QODER_MODEL` | `Auto` | modelo fixo |
@@ -305,7 +336,7 @@ O bridge converte o bloco em `tool_use` real e o Claude Code executa.
 
 ## Limites
 
-- Uma inferência por round-trip de ferramenta; ~2 s com worker quente e ~10 s no cold start.
+- Uma inferência por round-trip de ferramenta. Dentro da sessão o worker é reaproveitado (~2 s); só o primeiro turno de uma conversa paga o cold start (~10 s).
 - Os três primeiros requests após o start pagam o cold start.
 - O histórico inteiro vai serializado no prompt a cada request: conversa longa custa caro e fica lenta.
 - As ferramentas nativas do Qoder ficam desligadas (`--tools ""`); quem executa é o Claude Code.

@@ -57,21 +57,48 @@ function sseWriter(res) {
   return write;
 }
 
+function errorStatus(message) {
+  if (/billing|daily count|quota|403|not logged in|unauthori[sz]ed/i.test(message)) return 400;
+  if (/rate.?limit|429/i.test(message)) return 429;
+  if (/timeout|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND/i.test(message)) return 503;
+  return 502;
+}
+
+function errorType(status) {
+  if (status === 400) return 'invalid_request_error';
+  if (status === 429) return 'rate_limit_error';
+  if (status === 503) return 'overloaded_error';
+  return 'api_error';
+}
+
+function errorBody(message, status) {
+  return { type: 'error', error: { type: errorType(status), message } };
+}
+
 async function handleMessages(req, res, body) {
+  const t0 = Date.now();
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
   const built = buildPrompt(body);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
-  const prompt = built.prompt;
-  const inTokens = estimate(prompt + built.system);
+  const inTokens = estimate(built.prompt + built.system);
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const ac = new AbortController();
   req.on('close', () => ac.abort());
 
   if (!stream) {
-    const out = await runCompletion({ prompt, cfg, signal: ac.signal });
-    if (out.error) return send(res, 502, { type: 'error', error: { type: 'api_error', message: out.error } });
+    let out;
+    try {
+      out = await runCompletion({ body, cfg, signal: ac.signal });
+    } catch (e) {
+      const status = errorStatus(e.message || '');
+      return send(res, status, errorBody(e.message || 'request failed', status));
+    }
+    if (out.error) {
+      const status = errorStatus(out.error);
+      return send(res, status, errorBody(out.error, status));
+    }
     const tc = wantsTools ? extractToolCalls(out.text) : null;
     const content = [];
     if (tc) {
@@ -82,6 +109,7 @@ async function handleMessages(req, res, body) {
     } else {
       content.push({ type: 'text', text: out.text });
     }
+    log(`  done session=${out.sessionHit ? 'hit' : 'miss'} key=${out.sessionKey || '-'} from=${out.from ?? 0} total=${Date.now() - t0}ms`);
     return send(res, 200, {
       id: msgId,
       type: 'message',
@@ -94,28 +122,39 @@ async function handleMessages(req, res, body) {
     });
   }
 
-  res.writeHead(200, {
-    'content-type': 'text/event-stream; charset=utf-8',
-    'cache-control': 'no-cache, no-transform',
-    connection: 'keep-alive',
-    'x-accel-buffering': 'no',
-  });
-  const write = sseWriter(res);
+  let headersSent = false;
+  let keepalive = null;
+  let write = null;
 
-  write('message_start', {
-    type: 'message_start',
-    message: {
-      id: msgId, type: 'message', role: 'assistant', model,
-      content: [], stop_reason: null, stop_sequence: null,
-      usage: { input_tokens: inTokens, output_tokens: 0 },
-    },
-  });
+  const startStream = () => {
+    if (headersSent) return;
+    headersSent = true;
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+    });
+    write = sseWriter(res);
+    write('message_start', {
+      type: 'message_start',
+      message: {
+        id: msgId, type: 'message', role: 'assistant', model,
+        content: [], stop_reason: null, stop_sequence: null,
+        usage: { input_tokens: inTokens, output_tokens: 0 },
+      },
+    });
+    keepalive = setInterval(() => {
+      try { res.write(': ping\n\n'); } catch {}
+    }, 12000);
+    keepalive.unref?.();
+  };
 
   let nextIndex = 0;
   let textIndex = -1;
   let emitted = '';
-  let gateState = wantsTools ? 'head' : 'text';
-  let head = '';
+  let gateState = wantsTools ? 'text' : 'text';
+  let pending = '';
   const MARK = '<tool_calls>';
 
   const startText = () => {
@@ -137,31 +176,50 @@ async function handleMessages(req, res, body) {
 
   const feed = (t) => {
     if (!t) return;
-    if (gateState === 'text') return emitText(t);
-    if (gateState === 'tool') return void (head += t);
-    head += t;
-    const s = head.trimStart();
-    if (MARK.startsWith(s) && s.length < MARK.length) return;
-    if (s.startsWith(MARK)) { gateState = 'tool'; return; }
-    gateState = 'text';
-    const out = head;
-    head = '';
-    emitText(out);
+    if (!wantsTools) return emitText(t);
+    if (gateState === 'tool') { pending += t; return; }
+    pending += t;
+    const at = pending.indexOf(MARK);
+    if (at !== -1) {
+      emitText(pending.slice(0, at));
+      pending = pending.slice(at);
+      gateState = 'tool';
+      return;
+    }
+    let hold = 0;
+    for (let k = Math.min(MARK.length - 1, pending.length); k > 0; k--) {
+      if (MARK.startsWith(pending.slice(-k))) { hold = k; break; }
+    }
+    const safe = pending.slice(0, pending.length - hold);
+    pending = pending.slice(pending.length - hold);
+    emitText(safe);
   };
 
   let out;
   try {
     out = await runCompletion({
-      prompt, cfg, signal: ac.signal,
+      body, cfg, signal: ac.signal,
       onEvent: (ev) => {
-        if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') feed(ev.delta.text || '');
+        if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') { startStream(); feed(ev.delta.text || ''); }
       },
     });
   } catch (e) {
+    clearInterval(keepalive);
+    if (!headersSent) {
+      const status = errorStatus(e.message || '');
+      return send(res, status, errorBody(e.message || 'request failed', status));
+    }
     out = { text: '', error: e.message || String(e), usage: {} };
   }
+  clearInterval(keepalive);
+
+  log(`  done session=${out.sessionHit ? 'hit' : 'miss'} total=${Date.now() - t0}ms`);
 
   if (out.error && !out.text && !emitted) {
+    if (!headersSent) {
+      const status = errorStatus(out.error);
+      return send(res, status, errorBody(out.error, status));
+    }
     stopText();
     write('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `qoder-bridge: ${out.error}` } });
     write('content_block_stop', { type: 'content_block_stop', index: 0 });
@@ -169,6 +227,8 @@ async function handleMessages(req, res, body) {
     write('message_stop', { type: 'message_stop' });
     return res.end();
   }
+
+  if (!headersSent) startStream();
 
   const full = out.text || '';
   let tc = wantsTools ? extractToolCalls(full) : null;
