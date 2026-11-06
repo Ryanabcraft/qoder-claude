@@ -216,7 +216,7 @@ git remote -v
 
 ```
 repository  : https://github.com/Ryanabcraft/qoder-bridge
-visibility  : PRIVATE
+visibility  : PUBLIC
 branch      : main (tracking origin/main)
 commits     : 8dcae1c feat: anthropic-compatible bridge backed by the Qoder CLI
               d8845de docs: record repository creation

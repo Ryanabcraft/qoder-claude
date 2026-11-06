@@ -53,4 +53,5 @@ current.statusLine = {
 fs.writeFileSync(file, JSON.stringify(current, null, 2) + '\n');
 console.log(`ok -> ${file}`);
 if (fs.existsSync(file + '.bak')) console.log(`backup -> ${file}.bak`);
-console.log(`inicia o bridge com: "${path.join(home, 'start.cmd')}"`);
+const starter = process.platform === 'win32' ? 'start.cmd' : 'start.sh';
+console.log(`inicia o bridge com: "${path.join(home, starter)}"`);
