@@ -111,6 +111,8 @@ function spawnWorker(cfg) {
   let buf = '';
   let warmed = false;
   let readyResolve, readyReject;
+  let errBuf = '';
+  const stderrTail = () => errBuf.trim().split('\n').slice(-3).join(' ').slice(0, 400);
 
   proc.stdout.setEncoding('utf8');
   proc.stdout.on('data', (d) => {
@@ -124,7 +126,7 @@ function spawnWorker(cfg) {
       try { m = JSON.parse(line); } catch { continue; }
       if (!warmed && m.type === 'result') {
         warmed = true;
-        if (m.is_error) readyReject(new Error(m.result || 'warm-up failed'));
+        if (m.is_error) readyReject(new Error(String(m.result || '').trim() || stderrTail() || 'warm-up failed'));
         else readyResolve();
         continue;
       }
@@ -133,7 +135,7 @@ function spawnWorker(cfg) {
     }
   });
   proc.stderr.setEncoding('utf8');
-  proc.stderr.on('data', () => {});
+  proc.stderr.on('data', (d) => { errBuf = (errBuf + d).slice(-4000); });
   proc.stdin.on('error', () => {});
 
   const worker = {
