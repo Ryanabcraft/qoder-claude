@@ -19,34 +19,37 @@ Claude Code --/v1/messages--> qoder-bridge --stream-json--> qodercli --> api1.qo
 
 ## Installation
 
-### Windows (one command)
-
-Paste into **CMD**:
+### Windows — CMD
 
 ```cmd
-gh repo clone Ryanabcraft/qoder-bridge "%LOCALAPPDATA%\qoder-bridge" -- --depth 1 2>nul || git -C "%LOCALAPPDATA%\qoder-bridge" pull --ff-only -q & powershell -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\qoder-bridge\install.ps1"
+curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
-Or in **PowerShell**:
+### Windows — PowerShell
 
 ```powershell
-$d = Join-Path $env:LOCALAPPDATA 'qoder-bridge'
-if (Test-Path (Join-Path $d '.git')) { git -C $d pull --ff-only -q } else { gh repo clone Ryanabcraft/qoder-bridge $d -- --depth 1 }
-& (Join-Path $d 'install.ps1')
+irm https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.ps1 | iex
+```
+
+### Linux / macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.sh | bash
 ```
 
 The installer:
 
-1. installs Node.js LTS if missing (winget)
+1. checks Node.js 20+ (installs LTS via winget on Windows; tells you what to install elsewhere)
 2. installs `@qoder-ai/qodercli` if missing
 3. opens the Qoder login flow if there is no session
-4. copies the bridge to `%LOCALAPPDATA%\qoder-bridge`
-5. writes the **global** `~/.claude/settings.json` (backup kept as `.bak`) with URL, token and statusline
+4. installs the bridge to `%LOCALAPPDATA%\qoder-bridge` or `~/.local/share/qoder-bridge`
+5. writes the **global** `~/.claude/settings.json` (backup kept as `.bak`) with URL, token,
+   `modelPicker` and statusline
 6. starts the server in the background and waits for `/health`
 7. lists the models to prove the route answers
 
-Flags: `-ProjectOnly` (configure only the current directory), `-NoStart`, `-SkipDeps`,
-`-InstallDir <path>`.
+Flags: `-ProjectOnly` / `--project-only` (configure only the current directory),
+`-NoStart` / `--no-start`, `-SkipDeps`, `-InstallDir <path>` / `--dir <path>`.
 
 ### Manual
 

@@ -8,3 +8,4 @@ Thumbs.db
 .claude/settings.json
 last_req.json
 *.dump.json
+bridge.pid

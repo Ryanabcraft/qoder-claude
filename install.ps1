@@ -9,7 +9,8 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
-$SourceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoSlug = 'Ryanabcraft/qoder-bridge'
+$Branch = 'main'
 $Port = if ($env:BRIDGE_PORT) { $env:BRIDGE_PORT } else { '8787' }
 
 function Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
@@ -18,6 +19,23 @@ function Warn($msg) { Write-Host "    !!  $msg" -ForegroundColor Yellow }
 function Die($msg) { Write-Host "`n    x   $msg" -ForegroundColor Red; exit 1 }
 
 function Have($cmd) { $null -ne (Get-Command $cmd -ErrorAction SilentlyContinue) }
+
+$SourceDir = $PSScriptRoot
+if (-not $SourceDir -or -not (Test-Path (Join-Path $SourceDir 'src\server.js'))) {
+  Step 'Baixando o bridge'
+  $zip = Join-Path $env:TEMP 'qoder-bridge.zip'
+  $stage = Join-Path $env:TEMP ('qb-' + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $stage -Force | Out-Null
+  try {
+    Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/$RepoSlug/archive/refs/heads/$Branch.zip" -OutFile $zip
+  } catch {
+    Die 'download falhou. Verifique a conexao ou clone manualmente.'
+  }
+  Expand-Archive -LiteralPath $zip -DestinationPath $stage -Force
+  $SourceDir = Get-ChildItem -Path $stage -Directory | Select-Object -First 1 | ForEach-Object { $_.FullName }
+  if (-not $SourceDir) { Die 'pacote invalido.' }
+  Ok "codigo em $SourceDir"
+}
 
 function Install-Winget($id, $cmdName) {
   if (-not (Have 'winget')) { Die "$cmdName ausente e winget nao encontrado. Instale manualmente." }

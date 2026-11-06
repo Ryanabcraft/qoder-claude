@@ -17,34 +17,37 @@ Este é o espelho do [README principal](../README.md), em inglês.
 
 ## Instalação
 
-### Windows (um comando)
-
-Cole no **CMD**:
+### Windows — CMD
 
 ```cmd
-gh repo clone Ryanabcraft/qoder-bridge "%LOCALAPPDATA%\qoder-bridge" -- --depth 1 2>nul || git -C "%LOCALAPPDATA%\qoder-bridge" pull --ff-only -q & powershell -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\qoder-bridge\install.ps1"
+curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
-Ou no **PowerShell**:
+### Windows — PowerShell
 
 ```powershell
-$d = Join-Path $env:LOCALAPPDATA 'qoder-bridge'
-if (Test-Path (Join-Path $d '.git')) { git -C $d pull --ff-only -q } else { gh repo clone Ryanabcraft/qoder-bridge $d -- --depth 1 }
-& (Join-Path $d 'install.ps1')
+irm https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.ps1 | iex
+```
+
+### Linux / macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.sh | bash
 ```
 
 O instalador:
 
-1. instala o Node.js LTS se faltar (winget)
+1. confere o Node.js 20+ (instala o LTS via winget no Windows; no resto, diz o que instalar)
 2. instala o `@qoder-ai/qodercli` se faltar
 3. abre o login do Qoder se não houver sessão
-4. copia o bridge para `%LOCALAPPDATA%\qoder-bridge`
-5. grava o `~/.claude/settings.json` **global** (backup em `.bak`) com URL, token e statusline
+4. instala o bridge em `%LOCALAPPDATA%\qoder-bridge` ou `~/.local/share/qoder-bridge`
+5. grava o `~/.claude/settings.json` **global** (backup em `.bak`) com URL, token,
+   `modelPicker` e statusline
 6. sobe o servidor em background e espera o `/health`
 7. lista os modelos para provar que a rota responde
 
-Flags: `-ProjectOnly` (configura só o diretório atual), `-NoStart`, `-SkipDeps`,
-`-InstallDir <path>`.
+Flags: `-ProjectOnly` / `--project-only` (configura só o diretório atual),
+`-NoStart` / `--no-start`, `-SkipDeps`, `-InstallDir <path>` / `--dir <path>`.
 
 ### Manual
 
