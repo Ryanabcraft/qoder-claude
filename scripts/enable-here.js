@@ -18,6 +18,8 @@ if (fs.existsSync(file)) {
   try { current = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
 }
 
+const CAPS = 'effort,xhigh_effort,thinking,adaptive_thinking,interleaved_thinking';
+
 current.env = {
   ...(current.env || {}),
   ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
@@ -25,6 +27,9 @@ current.env = {
   ANTHROPIC_DEFAULT_OPUS_MODEL: 'Ultimate',
   ANTHROPIC_DEFAULT_SONNET_MODEL: 'Auto',
   ANTHROPIC_DEFAULT_HAIKU_MODEL: 'Fast',
+  ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES: CAPS,
+  ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES: CAPS,
+  ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES: CAPS,
 };
 delete current.env.ANTHROPIC_DEFAULT_FABLE_MODEL;
 

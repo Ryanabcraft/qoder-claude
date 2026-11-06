@@ -62,6 +62,7 @@ function baseArgs(cfg) {
   if (budget > 0) args.push('--max-output-tokens', String(budget));
   if (cfg.thinking) args.push('--thinking', cfg.thinking);
   if (cfg.thinkingBudget) args.push('--thinking-budget', String(cfg.thinkingBudget));
+  if (cfg.effort) args.push('--reasoning-effort', String(cfg.effort));
   if (cfg.contextWindow) args.push('--context-window', String(cfg.contextWindow));
   return args;
 }
@@ -72,17 +73,18 @@ export function workerConfig(body = {}) {
   let thinking;
   let thinkingBudget;
   if (t && typeof t === 'object') {
-    if (t.type === 'enabled') thinking = 'enabled';
-    else if (t.type === 'adaptive') thinking = 'adaptive';
-    else if (t.type === 'disabled') thinking = 'disabled';
+    if (['auto', 'adaptive', 'enabled', 'disabled'].includes(t.type)) thinking = t.type;
     if (Number(t.budget_tokens) > 0) thinkingBudget = Number(t.budget_tokens);
   }
   const envThinking = process.env.QODER_THINKING;
   if (!thinking && envThinking) thinking = envThinking;
   if (!thinkingBudget && Number(process.env.QODER_THINKING_BUDGET) > 0) thinkingBudget = Number(process.env.QODER_THINKING_BUDGET);
+  let effort = body.output_config && body.output_config.effort;
+  if (!effort) effort = process.env.QODER_REASONING_EFFORT;
+  if (effort) effort = String(effort).toLowerCase();
   const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 0) || undefined;
-  const key = [model, thinking || '', thinkingBudget || '', contextWindow || ''].join('|');
-  return { model, thinking, thinkingBudget, contextWindow, key };
+  const key = [model, thinking || '', thinkingBudget || '', effort || '', contextWindow || ''].join('|');
+  return { model, thinking, thinkingBudget, effort, contextWindow, key };
 }
 
 function killTree(proc) {
@@ -94,6 +96,7 @@ function killTree(proc) {
 }
 
 function spawnWorker(cfg) {
+  if (process.env.BRIDGE_LOG !== '0') console.log(`  worker ${cfg.key}`);
   const proc = spawn(CLI.cmd, [...CLI.prefix, ...baseArgs(cfg)], {
     cwd: cleanWorkspace(),
     env: CHILD_ENV,

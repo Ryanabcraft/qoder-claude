@@ -108,6 +108,25 @@ DeepSeek-Flash, MiniMax-M3.1-Flash`
 Set `QODER_MODEL_MAP=1` to map Claude families: `opus` → Ultimate, `sonnet` → Auto,
 `haiku` → Fast.
 
+### Reasoning effort and thinking
+
+The bridge forwards the controls Claude Code already sends, verbatim:
+
+| Claude Code sends | bridge passes to `qodercli` |
+|---|---|
+| `output_config.effort` | `--reasoning-effort <low\|medium\|high\|xhigh\|max>` |
+| `thinking.type` | `--thinking <auto\|adaptive\|enabled\|disabled>` |
+| `thinking.budget_tokens` | `--thinking-budget <n>` |
+
+The installer sets `*_SUPPORTED_CAPABILITIES` so the effort slider appears in `/model`:
+
+```json
+"ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES": "effort,xhigh_effort,thinking,adaptive_thinking,interleaved_thinking"
+```
+
+`/effort status`, the left/right slider and `CLAUDE_CODE_EFFORT_LEVEL` all work as they do
+against Anthropic, because the value reaches the model untouched.
+
 ### Model picker
 
 The installer writes a `modelPicker` block into `~/.claude/settings.json`, so `/model`
