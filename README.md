@@ -103,8 +103,18 @@ When `qclaude` starts the server itself, closing Claude also stops it. A server 
 
 ## Running it
 
-Windows: `start.cmd` opens a visible console with the port, the log path and every request
-as it happens. Closing that window — or Ctrl+C — stops the server. Nothing runs hidden.
+By default `qclaude` opens the server in **its own terminal window** — a new `cmd` on Windows,
+Terminal on macOS, and the first available emulator on Linux (`$TERMINAL`,
+`x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `alacritty`, `kitty`,
+`xterm`). The current window stays with Claude Code.
+
+```bash
+qclaude --window      # only the server window
+qclaude --no-window   # server attached to this terminal
+```
+
+Windows also keeps `start.cmd`, which opens a visible console with the port, the log path and
+every request as it happens. Closing that window — or Ctrl+C — stops the server.
 
 Linux/macOS: `./start.sh` runs the same way in the foreground; `./stop.sh` stops it from
 another terminal.

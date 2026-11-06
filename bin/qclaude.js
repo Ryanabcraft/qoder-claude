@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -27,12 +27,21 @@ async function isUp() {
   } catch {
     return false;
   }
-}async function startServer() {
+}async function startServer({ window = true } = {}) {
   if (await isUp()) return null;
   if (!fs.existsSync(serverEntry)) {
     console.error(`qclaude: server not found at ${serverEntry}`);
     process.exit(1);
   }
+
+  if (window && openServerWindow()) {
+    for (let i = 0; i < 120; i++) {
+      if (await isUp()) return null;
+      await wait(500);
+    }
+    console.error('qclaude: the server window did not come up; starting it here instead.');
+  }
+
   const out = fs.openSync(LOG, 'a');
   const child = spawn(process.execPath, [serverEntry], {
     cwd: ROOT,
@@ -47,6 +56,59 @@ async function isUp() {
   console.error(`qclaude: the server did not respond. see ${LOG}`);
   try { child.kill(); } catch {}
   process.exit(1);
+}
+
+function hasCommand(bin) {
+  try {
+    return spawnSync('sh', ['-c', `command -v ${JSON.stringify(bin)}`], { stdio: 'ignore' }).status === 0;
+  } catch {
+    return false;
+  }
+}
+
+function openServerWindow() {
+  const script = path.join(ROOT, process.platform === 'win32' ? 'start.cmd' : 'start.sh');
+  if (!fs.existsSync(script)) return false;
+
+  try {
+    if (process.platform === 'win32') {
+      spawn(`start "qoder-bridge" cmd /k "${script}"`, {
+        cwd: ROOT,
+        shell: true,
+        detached: true,
+        stdio: 'ignore',
+      }).unref();
+      return true;
+    }
+
+    if (process.platform === 'darwin') {
+      const cmd = `cd ${JSON.stringify(ROOT)} && ./${path.basename(script)}`;
+      spawn('osascript', ['-e', `tell application "Terminal" to do script ${JSON.stringify(cmd)}`, '-e', 'tell application "Terminal" to activate'], {
+        detached: true,
+        stdio: 'ignore',
+      }).unref();
+      return true;
+    }
+
+    const cmd = `cd ${JSON.stringify(ROOT)} && ./${path.basename(script)}`;
+    const candidates = [
+      [process.env.TERMINAL, ['-e', 'bash', '-lc', cmd]],
+      ['x-terminal-emulator', ['-e', 'bash', '-lc', cmd]],
+      ['gnome-terminal', ['--', 'bash', '-lc', cmd]],
+      ['konsole', ['-e', 'bash', '-lc', cmd]],
+      ['xfce4-terminal', ['-x', 'bash', '-lc', cmd]],
+      ['alacritty', ['-e', 'bash', '-lc', cmd]],
+      ['kitty', ['bash', '-lc', cmd]],
+      ['xterm', ['-e', 'bash', '-lc', cmd]],
+    ].filter(([bin]) => bin && hasCommand(bin));
+
+    if (!candidates.length) return false;
+    const [bin, argv] = candidates[0];
+    spawn(bin, argv, { detached: true, stdio: 'ignore' }).unref();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function runClaude(claudeArgs) {
@@ -70,7 +132,10 @@ async function stopServer() {
     return 0;
   }
   if (process.platform === 'win32') {
-    spawn('cmd', ['/c', `for /f "tokens=5" %p in ('netstat -ano ^| findstr ":${PORT} .*LISTENING"') do taskkill /f /pid %p >nul 2>&1`], { stdio: 'ignore', shell: true });
+    spawn(`for /f "tokens=5" %p in ('netstat -ano ^| findstr ":${PORT} .*LISTENING"') do taskkill /f /pid %p >nul 2>&1`, {
+      stdio: 'ignore',
+      shell: true,
+    });
   } else {
     spawn('sh', ['-c', `pkill -f "node .*qoder-bridge/src/server.js" || true`], { stdio: 'ignore' });
   }
@@ -174,6 +239,8 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude --account <name>   opens with a specific account
   qclaude --status           server, models and account
   qclaude --serve            server only, foreground
+  qclaude --window           opens the server in its own terminal window
+  qclaude --no-window        keeps the server attached to this terminal
   qclaude --stop             stops the server
 
   qclaude account            lists the accounts
@@ -222,10 +289,30 @@ if (args[0] === '--stop') {
   process.exit(await stopServer());
 }
 
+if (args[0] === '--window') {
+  if (await isUp()) {
+    console.log(`qclaude: already running at 127.0.0.1:${PORT}`);
+    process.exit(0);
+  }
+  if (!openServerWindow()) {
+    console.error('qclaude: no supported terminal found to open a window.');
+    process.exit(1);
+  }
+  for (let i = 0; i < 120; i++) {
+    if (await isUp()) {
+      console.log(`qclaude: server window opened at 127.0.0.1:${PORT}`);
+      process.exit(0);
+    }
+    await wait(500);
+  }
+  console.error('qclaude: the server window did not respond.');
+  process.exit(1);
+}
+
 if (args[0] === '--serve') {
-  const child = await startServer();
+  const child = await startServer({ window: false });
   if (!child) {
-    console.log(`qclaude: ja esta running at 127.0.0.1:${PORT}`);
+    console.log(`qclaude: already running at 127.0.0.1:${PORT}`);
     process.exit(0);
   }
   console.log(`qclaude: running at 127.0.0.1:${PORT}. Ctrl+C to stop.`);
@@ -234,9 +321,11 @@ if (args[0] === '--serve') {
   process.on('SIGTERM', stop);
   child.on('exit', (code) => process.exit(code ?? 0));
 } else {
-  const child = await startServer();
-  if (args.length === 0) console.log(`qclaude: opening claude in ${process.cwd()}`);
-  const code = await runClaude(args);
+  const noWindow = args.includes('--no-window');
+  const claudeArgs = args.filter((a) => a !== '--no-window');
+  const child = await startServer({ window: !noWindow });
+  if (claudeArgs.length === 0) console.log(`qclaude: opening claude in ${process.cwd()}`);
+  const code = await runClaude(claudeArgs);
   if (child) {
     try { child.kill(); } catch {}
   }

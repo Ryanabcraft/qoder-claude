@@ -101,8 +101,18 @@ pelo `start.cmd` fica intocado.
 
 ## Rodando
 
-Windows: o `start.cmd` abre uma janela visível com a porta, o caminho do log e cada request
-conforme acontece. Fechar essa janela — ou Ctrl+C — encerra o servidor. Nada roda escondido.
+Por padrão o `qclaude` abre o servidor em **uma janela de terminal própria** — um `cmd` novo no
+Windows, o Terminal no macOS e o primeiro emulador disponível no Linux (`$TERMINAL`,
+`x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `alacritty`, `kitty`,
+`xterm`). A janela atual fica com o Claude Code.
+
+```bash
+qclaude --window      # só a janela do servidor
+qclaude --no-window   # servidor preso a este terminal
+```
+
+No Windows o `start.cmd` continua existindo e abre um console visível com a porta, o caminho do
+log e cada request conforme acontece. Fechar essa janela — ou Ctrl+C — encerra o servidor.
 
 Linux/macOS: `./start.sh` roda do mesmo jeito, em primeiro plano; `./stop.sh` para de outro
 terminal.
