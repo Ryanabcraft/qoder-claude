@@ -75,7 +75,11 @@ if ($SourceDir -ne $InstallDir) {
   if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null }
   foreach ($item in @('src', 'scripts', 'bin', 'package.json', 'README.md', 'SETUP.md', 'LICENSE', 'CONTRIBUTING.md', 'start.cmd', 'stop.cmd', 'update.cmd', 'enable-here.cmd', 'start.sh', 'stop.sh', 'update.sh', 'install.cmd', '.gitignore')) {
     $from = Join-Path $SourceDir $item
-    if (Test-Path $from) { Copy-Item $from (Join-Path $InstallDir $item) -Recurse -Force }
+    if (Test-Path $from) {
+      $dest = Join-Path $InstallDir $item
+      if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+      Copy-Item $from $dest -Recurse -Force
+    }
   }
   Ok 'arquivos copiados'
 } else {
