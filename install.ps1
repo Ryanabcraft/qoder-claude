@@ -73,7 +73,7 @@ if ($status -match 'Username:') {
 Step "Copiando o bridge para $InstallDir"
 if ($SourceDir -ne $InstallDir) {
   if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null }
-  foreach ($item in @('src', 'scripts', 'package.json', 'README.md', 'SETUP.md', 'start.cmd', 'stop.cmd', 'enable-here.cmd', '.gitignore')) {
+  foreach ($item in @('src', 'scripts', 'bin', 'package.json', 'README.md', 'SETUP.md', 'LICENSE', 'CONTRIBUTING.md', 'start.cmd', 'stop.cmd', 'update.cmd', 'enable-here.cmd', 'start.sh', 'stop.sh', 'update.sh', 'install.cmd', '.gitignore')) {
     $from = Join-Path $SourceDir $item
     if (Test-Path $from) { Copy-Item $from (Join-Path $InstallDir $item) -Recurse -Force }
   }
@@ -81,6 +81,22 @@ if ($SourceDir -ne $InstallDir) {
 } else {
   Ok 'executando no local definitivo'
 }
+
+Step 'Instalando o comando qclaude'
+$binDir = Join-Path $InstallDir 'bin'
+New-Item -ItemType Directory -Path $binDir -Force | Out-Null
+$shim = "@echo off`r`nnode `"$binDir\qclaude.js`" %*`r`n"
+Set-Content -Path (Join-Path $binDir 'qclaude.cmd') -Value $shim -Encoding ascii
+$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+if (-not $userPath) { $userPath = '' }
+if ($userPath -split ';' -notcontains $binDir) {
+  $newPath = if ($userPath.TrimEnd(';')) { $userPath.TrimEnd(';') + ';' + $binDir } else { $binDir }
+  [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+  Ok "PATH do usuario atualizado com $binDir"
+} else {
+  Ok "qclaude ja estava no PATH"
+}
+if (-not (($env:Path -split ';') -contains $binDir)) { $env:Path = $env:Path + ';' + $binDir }
 
 Step 'Configurando o Claude Code'
 $targets = @()
@@ -131,12 +147,14 @@ try {
 } catch { Warn 'nao foi possivel listar modelos' }
 
 Write-Host ''
-Write-Host '  pronto.' -ForegroundColor Green
+Write-Host '  Qoder-Claude installed.' -ForegroundColor Green
+Write-Host '  Open with: qclaude' -ForegroundColor Cyan
+Write-Host ''
 Write-Host "  bridge    : $InstallDir"
 Write-Host "  porta     : $Port"
-Write-Host "  iniciar   : `"$InstallDir\start.cmd`""
+Write-Host "  servidor  : `"$InstallDir\start.cmd`"  (janela com logs)"
 Write-Host "  parar     : `"$InstallDir\stop.cmd`""
-Write-Host "  statusline: Qoder > <model> dentro do claude"
+Write-Host '  statusline: Qoder > <model> dentro do claude'
 Write-Host ''
-Write-Host '  abra um terminal novo, entre no projeto e rode: claude' -ForegroundColor Cyan
+Write-Host '  abra um terminal novo e rode: qclaude' -ForegroundColor Cyan
 Write-Host ''

@@ -71,7 +71,18 @@ fi
 step "Instalando em $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cp -R "$SRC"/. "$INSTALL_DIR"/
+chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 ok "arquivos copiados"
+
+step "Instalando o comando qclaude"
+mkdir -p "$HOME/.local/bin"
+printf '#!/usr/bin/env bash\nexec node "%s/bin/qclaude.js" "$@"\n' "$INSTALL_DIR" > "$HOME/.local/bin/qclaude"
+chmod +x "$HOME/.local/bin/qclaude"
+ok "$HOME/.local/bin/qclaude"
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ok "~/.local/bin ja esta no PATH" ;;
+  *) warn "adicione ao PATH: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+esac
 
 step "Configurando o Claude Code"
 if [ "$PROJECT_ONLY" -eq 1 ]; then
@@ -102,10 +113,11 @@ fi
 step "Validando"
 curl -fsS "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && ok "rota /v1/models responde"
 
-printf '\n  \033[32mpronto.\033[0m\n'
+printf '\n  \033[32mQoder-Claude installed.\033[0m\n'
+printf '  \033[36mOpen with: qclaude\033[0m\n\n'
 printf '  bridge    : %s\n' "$INSTALL_DIR"
 printf '  porta     : %s\n' "$PORT"
-printf '  iniciar   : %s/start.sh\n' "$INSTALL_DIR"
+printf '  servidor  : %s/start.sh  (primeiro plano)\n' "$INSTALL_DIR"
 printf '  parar     : %s/stop.sh\n' "$INSTALL_DIR"
 printf '  atualizar : %s/update.sh\n' "$INSTALL_DIR"
-printf '\n  abra um terminal novo e rode: claude\n\n'
+printf '\n  abra um terminal novo e rode: qclaude\n\n'
