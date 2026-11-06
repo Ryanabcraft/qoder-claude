@@ -116,6 +116,7 @@ if (args[0] === '--serve') {
   child.on('exit', (code) => process.exit(code ?? 0));
 } else {
   const child = await startServer();
+  if (args.length === 0) console.log(`qclaude: abrindo o claude em ${process.cwd()}`);
   const code = await runClaude(args);
   if (child) {
     try { child.kill(); } catch {}
