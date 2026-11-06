@@ -108,6 +108,24 @@ DeepSeek-Flash, MiniMax-M3.1-Flash`
 Set `QODER_MODEL_MAP=1` to map Claude families: `opus` → Ultimate, `sonnet` → Auto,
 `haiku` → Fast.
 
+### Model picker
+
+The installer writes a `modelPicker` block into `~/.claude/settings.json`, so `/model`
+lists the Qoder lineup directly instead of Opus/Sonnet/Haiku:
+
+```json
+"modelPicker": {
+  "replaceBuiltInOptions": true,
+  "options": [
+    { "model": "Auto", "label": "Qoder · Auto", "description": "Auto via Qoder CLI" },
+    { "model": "Qwen3.8-Max", "label": "Qoder · Qwen3.8-Max", "description": "Qwen3.8-Max via Qoder CLI" }
+  ]
+}
+```
+
+`modelPicker` requires Claude Code v2.1.243+ and only takes effect in user settings,
+`--settings`, or managed settings — project settings ignore it.
+
 ## Configuration
 
 | variable | default | purpose |

@@ -2,15 +2,12 @@ import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { cleanWorkspace } from './prompt.js';
+import { QODER_MODELS } from './models.js';
 
 const EMPTY_MCP = JSON.stringify({ mcpServers: {} });
 const DEFAULT_MODEL = process.env.QODER_MODEL || 'Auto';
 const POOL_SIZE = Math.max(1, Number(process.env.BRIDGE_POOL_SIZE || 2));
-const QODER_NAMES = new Set([
-  'Auto', 'Ultimate', 'Fast', 'Efficient', 'Sonus', 'Cantus',
-  'Qwen3.8-Max', 'Qwen3.8-Flash', 'Kimi-K3.1-Pro', 'Kimi-K2.8-Preview',
-  'GLM-5.3', 'GLM-5.3-Flash', 'DeepSeek-V4-Pro', 'DeepSeek-Flash', 'MiniMax-M3.1-Flash',
-]);
+const QODER_NAMES = new Set(QODER_MODELS);
 const USE_POOL = process.env.BRIDGE_POOL !== '0';
 
 const CHILD_ENV = { ...process.env };

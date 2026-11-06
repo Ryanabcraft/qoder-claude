@@ -2,16 +2,11 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls } from './prompt.js';
 import { runCompletion, workerConfig } from './cli.js';
+import { QODER_MODELS } from './models.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
 const KEY = process.env.BRIDGE_API_KEY || '';
-
-const QODER_MODELS = [
-  'Auto', 'Ultimate', 'Fast', 'Efficient', 'Sonus', 'Cantus',
-  'Qwen3.8-Max', 'Qwen3.8-Flash', 'Kimi-K3.1-Pro', 'Kimi-K2.8-Preview',
-  'GLM-5.3', 'GLM-5.3-Flash', 'DeepSeek-V4-Pro', 'DeepSeek-Flash', 'MiniMax-M3.1-Flash',
-];
 
 const estimate = (s) => Math.max(1, Math.ceil(String(s).length / 4));
 

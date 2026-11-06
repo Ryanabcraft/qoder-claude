@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { QODER_MODELS } from '../src/models.js';
 
 const home = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = process.env.QODER_CLAUDE_TARGET || process.cwd();
@@ -21,9 +22,21 @@ current.env = {
   ...(current.env || {}),
   ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
   ANTHROPIC_AUTH_TOKEN: process.env.BRIDGE_API_KEY || 'dummy',
-  ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-4-5',
-  ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-4-5',
-  ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5',
+  ANTHROPIC_DEFAULT_OPUS_MODEL: 'Ultimate',
+  ANTHROPIC_DEFAULT_SONNET_MODEL: 'Auto',
+  ANTHROPIC_DEFAULT_HAIKU_MODEL: 'Fast',
+};
+delete current.env.ANTHROPIC_DEFAULT_FABLE_MODEL;
+
+current.model = process.env.QODER_DEFAULT_MODEL || 'Auto';
+
+current.modelPicker = {
+  replaceBuiltInOptions: true,
+  options: QODER_MODELS.map((m) => ({
+    model: m,
+    label: `Qoder · ${m}`,
+    description: `${m} via Qoder CLI`,
+  })),
 };
 
 current.statusLine = {
