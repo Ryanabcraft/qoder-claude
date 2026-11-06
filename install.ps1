@@ -121,7 +121,7 @@ Write-Host "  bridge    : $InstallDir"
 Write-Host "  porta     : $Port"
 Write-Host "  iniciar   : `"$InstallDir\start.cmd`""
 Write-Host "  parar     : `"$InstallDir\stop.cmd`""
-Write-Host "  statusline: Qoder · <modelo> dentro do claude"
+Write-Host "  statusline: Qoder > <model> dentro do claude"
 Write-Host ''
 Write-Host '  abra um terminal novo, entre no projeto e rode: claude' -ForegroundColor Cyan
 Write-Host ''
