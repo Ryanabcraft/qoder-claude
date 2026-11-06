@@ -104,14 +104,10 @@ if ($NoStart) {
   if ($listening) {
     Ok "ja estava no ar em 127.0.0.1:$Port"
   } else {
-    $out = Join-Path $InstallDir 'bridge.log'
-    $err = Join-Path $InstallDir 'bridge.err.log'
-    $proc = Start-Process -FilePath 'node' -ArgumentList @((Join-Path $InstallDir 'src\server.js')) `
-      -WorkingDirectory $InstallDir -WindowStyle Hidden -PassThru `
-      -RedirectStandardOutput $out -RedirectStandardError $err
-    $proc.Id | Out-File -FilePath (Join-Path $InstallDir 'bridge.pid') -Encoding ascii
+    $startCmd = Join-Path $InstallDir 'start.cmd'
+    Start-Process -FilePath 'cmd.exe' -ArgumentList "/c `"`"$startCmd`"`"" -WorkingDirectory $InstallDir | Out-Null
     $ready = $false
-    for ($i = 0; $i -lt 20; $i++) {
+    for ($i = 0; $i -lt 40; $i++) {
       Start-Sleep -Milliseconds 500
       try {
         $probe = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2
@@ -119,11 +115,12 @@ if ($NoStart) {
       } catch {}
     }
     if (-not $ready) {
-      Warn 'o servidor nao respondeu; veja bridge.err.log'
-      if (Test-Path $err) { Get-Content $err -Tail 15 | ForEach-Object { Write-Host "    $_" } }
+      Warn 'o servidor nao respondeu; veja bridge.log'
+      $log = Join-Path $InstallDir 'bridge.log'
+      if (Test-Path $log) { Get-Content $log -Tail 15 | ForEach-Object { Write-Host "    $_" } }
       Die 'instalacao incompleta: servidor nao subiu'
     }
-    Ok "servidor no ar (pid $($proc.Id)) em 127.0.0.1:$Port"
+    Ok "servidor no ar em 127.0.0.1:$Port (janela qoder-bridge aberta)"
   }
 }
 

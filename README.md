@@ -79,6 +79,14 @@ Then add to `~/.claude/settings.json`:
 }
 ```
 
+## Running it
+
+Windows: `start.cmd` opens a visible console with the port, the log path and every request
+as it happens. Closing that window — or Ctrl+C — stops the server. Nothing runs hidden.
+
+Linux/macOS: `./start.sh` runs the same way in the foreground; `./stop.sh` stops it from
+another terminal.
+
 ## Usage
 
 ```bash

@@ -16,7 +16,7 @@ node scripts\enable-here.js
 
 echo [4/4] reiniciando o servidor...
 call stop.cmd >nul 2>&1
-powershell -NoProfile -Command "Start-Process -FilePath node -ArgumentList 'src\server.js' -WorkingDirectory '%CD%' -WindowStyle Hidden"
+start "qoder-bridge" cmd /c "%~dp0start.cmd"
 
 timeout /t 3 >nul
 powershell -NoProfile -Command "try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8787/health -TimeoutSec 5).StatusCode } catch { 'servidor nao respondeu' }"

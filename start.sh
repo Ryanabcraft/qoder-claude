@@ -2,26 +2,21 @@
 set -eu
 DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT="${BRIDGE_PORT:-8787}"
+export BRIDGE_PORT="$PORT"
+export BRIDGE_LOG_FILE="$DIR/bridge.log"
+
+printf '\n  ==================================================\n'
+printf '   qoder-bridge - modelos do Qoder no Claude Code\n'
+printf '  ==================================================\n'
+printf '   porta : %s\n' "$PORT"
+printf '   url   : http://127.0.0.1:%s\n' "$PORT"
+printf '   log   : %s\n\n' "$BRIDGE_LOG_FILE"
+printf '   Feche esta janela (ou Ctrl+C) para parar o servidor.\n\n'
 
 if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-  echo "ja no ar em 127.0.0.1:$PORT"
+  echo "  [i] ja existe um servidor no ar nesta porta."
+  echo "      feche esta janela. para reiniciar: ./stop.sh e ./start.sh."
   exit 0
 fi
 
-nohup node "$DIR/src/server.js" >> "$DIR/bridge.log" 2>&1 &
-PID=$!
-echo "$PID" > "$DIR/bridge.pid"
-echo "subindo (pid $PID)..."
-
-i=0
-while [ "$i" -lt 30 ]; do
-  if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-    echo "no ar em 127.0.0.1:$PORT"
-    exit 0
-  fi
-  i=$((i + 1))
-  sleep 1
-done
-
-echo "nao respondeu; veja $DIR/bridge.log"
-exit 1
+exec node "$DIR/src/server.js"

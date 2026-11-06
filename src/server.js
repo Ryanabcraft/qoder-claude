@@ -1,4 +1,5 @@
 import http from 'node:http';
+import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls } from './prompt.js';
 import { runCompletion, workerConfig } from './cli.js';
@@ -7,6 +8,15 @@ import { detectModels } from './models.js';
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
 const KEY = process.env.BRIDGE_API_KEY || '';
+const LOG_FILE = process.env.BRIDGE_LOG_FILE || '';
+const LOG_ON = process.env.BRIDGE_LOG !== '0';
+
+function log(msg) {
+  if (!LOG_ON) return;
+  console.log(msg);
+  if (!LOG_FILE) return;
+  try { fs.appendFileSync(LOG_FILE, msg + '\n'); } catch {}
+}
 
 const estimate = (s) => Math.max(1, Math.ceil(String(s).length / 4));
 
@@ -173,7 +183,7 @@ async function handleMessages(req, res, body) {
     for (const c of tc.calls) {
       const idx = nextIndex++;
       const id = `toolu_${randomUUID().replace(/-/g, '').slice(0, 20)}`;
-      if (process.env.BRIDGE_LOG !== '0') console.log('  tool_use', c.name, JSON.stringify(c.input).slice(0, 300));
+      log('  tool_use ' + c.name + ' ' + JSON.stringify(c.input).slice(0, 300));
       write('content_block_start', { type: 'content_block_start', index: idx, content_block: { type: 'tool_use', id, name: c.name, input: {} } });
       write('content_block_delta', { type: 'content_block_delta', index: idx, delta: { type: 'input_json_delta', partial_json: JSON.stringify(c.input) } });
       write('content_block_stop', { type: 'content_block_stop', index: idx });
@@ -200,7 +210,7 @@ async function handleMessages(req, res, body) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || HOST}`);
   const path = url.pathname.replace(/\/+$/, '');
-  if (process.env.BRIDGE_LOG !== '0') console.log(`${new Date().toISOString()} ${req.method} ${url.pathname}${url.search}`);
+  log(`${new Date().toISOString()} ${req.method} ${url.pathname}${url.search}`);
 
   if (req.method === 'GET' && (path === '/health' || path === '/')) {
     return send(res, 200, { ok: true, service: 'qoder-bridge', port: PORT });
@@ -239,7 +249,7 @@ const server = http.createServer(async (req, res) => {
         const last = body.messages?.[body.messages.length - 1];
         if (last && Array.isArray(last.content)) {
           for (const b of last.content) {
-            if (b?.type === 'tool_result') console.log('  tool_result', b.tool_use_id, b.is_error ? 'ERROR' : 'ok', JSON.stringify(b.content).slice(0, 200));
+            if (b?.type === 'tool_result') log('  tool_result ' + b.tool_use_id + ' ' + (b.is_error ? 'ERROR' : 'ok') + ' ' + JSON.stringify(b.content).slice(0, 200));
           }
         }
       }
@@ -260,6 +270,9 @@ const server = http.createServer(async (req, res) => {
 server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.listen(PORT, HOST, () => {
-  console.log(`qoder-bridge listening on http://${HOST}:${PORT}`);
-  console.log(`claude code: ANTHROPIC_BASE_URL=http://${HOST}:${PORT} ANTHROPIC_AUTH_TOKEN=${KEY || 'any'}`);
+  log(`qoder-bridge on http://${HOST}:${PORT}`);
+  log(`claude:  ANTHROPIC_BASE_URL=http://${HOST}:${PORT}`);
+  log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');
+  log('feche esta janela ou Ctrl+C para parar.');
+  log(`modelos: ${detectModels().slice(0, 5).join(', ')}, ...`);
 });

@@ -77,6 +77,14 @@ Depois adicione em `~/.claude/settings.json`:
 }
 ```
 
+## Rodando
+
+Windows: o `start.cmd` abre uma janela visível com a porta, o caminho do log e cada request
+conforme acontece. Fechar essa janela — ou Ctrl+C — encerra o servidor. Nada roda escondido.
+
+Linux/macOS: `./start.sh` roda do mesmo jeito, em primeiro plano; `./stop.sh` para de outro
+terminal.
+
 ## Uso
 
 ```bash
