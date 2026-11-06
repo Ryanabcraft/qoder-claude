@@ -2,25 +2,24 @@
 setlocal
 cd /d "%~dp0"
 
-echo [1/4] atualizando qodercli...
+echo [1/3] atualizando qodercli...
 call npm install -g @qoder-ai/qodercli >nul 2>&1
-if errorlevel 1 echo    falhou (siga sem atualizar o CLI)
+if errorlevel 1 echo    falhou; seguindo com a versao atual
 
-echo [2/4] atualizando o bridge...
-git pull --ff-only -q 2>nul
-if errorlevel 1 echo    sem git ou sem remote; pulando
+echo [2/3] parando o servidor antigo...
+call "%~dp0stop.cmd" >nul 2>&1
 
-echo [3/4] regravando settings e model picker...
-set "QODER_CLAUDE_TARGET=%USERPROFILE%"
-node scripts\enable-here.js
-
-echo [4/4] reiniciando o servidor...
-call stop.cmd >nul 2>&1
-start "qoder-bridge" cmd /c "%~dp0start.cmd"
-
-timeout /t 3 >nul
-powershell -NoProfile -Command "try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8787/health -TimeoutSec 5).StatusCode } catch { 'servidor nao respondeu' }"
+echo [3/3] baixando e aplicando a versao atual...
+set "PS1=%TEMP%\qoder-bridge-install.ps1"
+curl -fsSL "https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.ps1" -o "%PS1%"
+if errorlevel 1 (
+  echo    download falhou.
+  exit /b 1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
+set "RC=%ERRORLEVEL%"
+del "%PS1%" >nul 2>&1
 
 echo.
 echo pronto. reinicie o claude para recarregar o /model.
-endlocal
+exit /b %RC%

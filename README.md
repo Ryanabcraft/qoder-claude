@@ -79,6 +79,20 @@ Then add to `~/.claude/settings.json`:
 }
 ```
 
+### Open it
+
+```bash
+qclaude                # boots the bridge if needed, then opens Claude Code
+qclaude -p "..."       # any argument is forwarded to claude
+qclaude --model X      # same
+qclaude --status       # server and model list
+qclaude --serve        # only the server, foreground
+qclaude --stop         # stop the server
+```
+
+When `qclaude` starts the server itself, closing Claude also stops it. A server started by
+`start.cmd` is left alone.
+
 ## Running it
 
 Windows: `start.cmd` opens a visible console with the port, the log path and every request

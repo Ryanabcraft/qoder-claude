@@ -77,6 +77,20 @@ Depois adicione em `~/.claude/settings.json`:
 }
 ```
 
+### Abrir
+
+```bash
+qclaude                # sobe o servidor se preciso e abre o Claude Code
+qclaude -p "..."       # qualquer argumento é repassado ao claude
+qclaude --model X      # idem
+qclaude --status       # servidor e lista de modelos
+qclaude --serve        # só o servidor, em primeiro plano
+qclaude --stop         # derruba o servidor
+```
+
+Quando o `qclaude` sobe o servidor, fechar o Claude também o encerra. Um servidor iniciado
+pelo `start.cmd` fica intocado.
+
 ## Rodando
 
 Windows: o `start.cmd` abre uma janela visível com a porta, o caminho do log e cada request
