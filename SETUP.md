@@ -211,3 +211,17 @@ gh repo create <nome> --private --source . --remote origin --push
 gh repo view --json name,visibility,url
 git remote -v
 ```
+
+## 10. Resultado desta execução
+
+```
+repositório : https://github.com/Ryanabcraft/qoder-bridge
+visibilidade: PRIVATE
+branch      : main (tracking origin/main)
+commit      : 8dcae1c feat: anthropic-compatible bridge backed by the Qoder CLI
+arquivos    : README.md, SETUP.md, package.json, src/*, scripts/*, *.cmd, .gitignore
+ferramentas : git 2.54.0.windows.1 · gh 2.95.0 · node v24.18.0 · winget 1.29.380
+```
+
+O `.claude/settings.json` ficou fora do repositório de propósito: ele guarda porta e
+token locais de cada máquina e está listado no `.gitignore`.
