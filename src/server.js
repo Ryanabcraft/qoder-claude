@@ -274,6 +274,6 @@ server.listen(PORT, HOST, () => {
   log(`qoder-bridge on http://${HOST}:${PORT}`);
   log(`claude:  ANTHROPIC_BASE_URL=http://${HOST}:${PORT}`);
   log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');
-  log('feche esta janela ou Ctrl+C para parar.');
-  log(`modelos: ${detectModels().slice(0, 5).join(', ')}, ...`);
+  log('close this window or press Ctrl+C to stop.');
+  log(`models: ${detectModels().slice(0, 5).join(', ')}, ...`);
 });

@@ -29,62 +29,62 @@ die()  { printf '\n    \033[31mx\033[0m   %s\n' "$1"; exit 1; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-step "Verificando dependencias"
-have node || die "Node.js 20+ nao encontrado. Instale: https://nodejs.org ou use nvm."
-have curl || die "curl nao encontrado."
-have tar  || die "tar nao encontrado."
+step "Checking dependencies"
+have node || die "Node.js 20+ not found. Install it from https://nodejs.org or use nvm."
+have curl || die "curl not found."
+have tar  || die "tar not found."
 
 NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
-[ "$NODE_MAJOR" -ge 20 ] || die "Node 20+ necessario (atual: $(node -v))."
+[ "$NODE_MAJOR" -ge 20 ] || die "Node 20+ required (current: $(node -v))."
 ok "node $(node -v)"
 
-step "Baixando o bridge"
+step "Downloading the bridge"
 TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
 trap 'rm -rf "$TMP"' EXIT
 curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP/src.tar.gz" \
-  || die "download falhou."
+  || die "download failed."
 tar -xzf "$TMP/src.tar.gz" -C "$TMP"
 SRC="$TMP/qoder-bridge-$BRANCH"
-[ -f "$SRC/src/server.js" ] || die "pacote invalido."
-ok "codigo obtido"
+[ -f "$SRC/src/server.js" ] || die "invalid package."
+ok "source downloaded"
 
-step "Instalando o Qoder CLI"
+step "Installing the Qoder CLI"
 if have qodercli; then
   ok "qodercli $(qodercli --version 2>/dev/null | head -n 1)"
 else
   npm install -g @qoder-ai/qodercli >/dev/null 2>&1 || \
     npm install -g --prefix "$HOME/.local" @qoder-ai/qodercli >/dev/null 2>&1 || \
-    die "falha ao instalar @qoder-ai/qodercli (tente: npm i -g @qoder-ai/qodercli)"
+    die "failed to install @qoder-ai/qodercli (try: npm i -g @qoder-ai/qodercli)"
   export PATH="$HOME/.local/bin:$PATH"
-  have qodercli || die "qodercli nao entrou no PATH. Adicione \$HOME/.local/bin e rode de novo."
-  ok "qodercli instalado"
+  have qodercli || die "qodercli is not on PATH. Add \$HOME/.local/bin and run again."
+  ok "qodercli installed"
 fi
 
-step "Verificando login do Qoder"
+step "Checking Qoder login"
 if qodercli status 2>/dev/null | grep -q 'Username:'; then
   ok "$(qodercli status 2>/dev/null | grep 'Username:')"
 else
-  warn "sem sessao ativa; abrindo login"
-  qodercli login || die "login falhou."
+  warn "no active session; opening login"
+  qodercli login || die "login failed."
 fi
 
-step "Instalando em $INSTALL_DIR"
+step "Installing to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cp -R "$SRC"/. "$INSTALL_DIR"/
 chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
-ok "arquivos copiados"
+ok "files copied"
 
-step "Instalando o comando qclaude"
+step "Installing the qclaude command"
 mkdir -p "$HOME/.local/bin"
 printf '#!/usr/bin/env bash\nexec node "%s/bin/qclaude.js" "$@"\n' "$INSTALL_DIR" > "$HOME/.local/bin/qclaude"
 chmod +x "$HOME/.local/bin/qclaude"
 ok "$HOME/.local/bin/qclaude"
 case ":$PATH:" in
-  *":$HOME/.local/bin:"*) ok "~/.local/bin ja esta no PATH" ;;
+  *":$HOME/.local/bin:"*) ok "~/.local/bin is already on PATH" ;;
   *) warn "adicione ao PATH: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
 esac
 
-step "Configurando o Claude Code"
+step "Configuring Claude Code"
 if [ "$PROJECT_ONLY" -eq 1 ]; then
   QODER_CLAUDE_TARGET="$(pwd)" node "$INSTALL_DIR/scripts/enable-here.js"
 else
@@ -92,9 +92,9 @@ else
 fi
 
 if [ "$NO_START" -eq 0 ]; then
-  step "Subindo o servidor"
+  step "Starting the server"
   if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-    ok "ja estava no ar em 127.0.0.1:$PORT"
+    ok "already running at 127.0.0.1:$PORT"
   else
     nohup node "$INSTALL_DIR/src/server.js" >> "$INSTALL_DIR/bridge.log" 2>&1 &
     echo $! > "$INSTALL_DIR/bridge.pid"
@@ -105,19 +105,19 @@ if [ "$NO_START" -eq 0 ]; then
       i=$((i + 1))
       sleep 1
     done
-    [ "$ready" -eq 1 ] || die "servidor nao respondeu; veja $INSTALL_DIR/bridge.log"
-    ok "servidor no ar em 127.0.0.1:$PORT"
+    [ "$ready" -eq 1 ] || die "server did not respond; see $INSTALL_DIR/bridge.log"
+    ok "server running at 127.0.0.1:$PORT"
   fi
 fi
 
-step "Validando"
-curl -fsS "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && ok "rota /v1/models responde"
+step "Validating"
+curl -fsS "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && ok "/v1/models responds"
 
 printf '\n  \033[32mQoder-Claude installed.\033[0m\n'
 printf '  \033[36mOpen with: qclaude\033[0m\n\n'
 printf '  bridge    : %s\n' "$INSTALL_DIR"
-printf '  porta     : %s\n' "$PORT"
-printf '  servidor  : %s/start.sh  (primeiro plano)\n' "$INSTALL_DIR"
-printf '  parar     : %s/stop.sh\n' "$INSTALL_DIR"
-printf '  atualizar : %s/update.sh\n' "$INSTALL_DIR"
-printf '\n  abra um terminal novo e rode: qclaude\n\n'
+printf '  port      : %s\n' "$PORT"
+printf '  server    : %s/start.sh  (foreground)\n' "$INSTALL_DIR"
+printf '  stop      : %s/stop.sh\n' "$INSTALL_DIR"
+printf '  update    : %s/update.sh\n' "$INSTALL_DIR"
+printf '\n  open a new terminal and run: qclaude\n\n'

@@ -36,7 +36,7 @@ export function activeAccount() {
 
 export function useAccount(name) {
   const data = loadAccounts();
-  if (!data.accounts[name]) throw new Error(`conta "${name}" nao existe`);
+  if (!data.accounts[name]) throw new Error(`account "${name}" does not exist`);
   data.active = name;
   saveAccounts(data);
 }
@@ -49,7 +49,7 @@ export function addAccount(name, dir) {
 }
 
 export function removeAccount(name) {
-  if (name === 'default') throw new Error('a conta default nao pode ser removida');
+  if (name === 'default') throw new Error('the default account cannot be removed');
   const data = loadAccounts();
   delete data.accounts[name];
   if (data.active === name) data.active = 'default';

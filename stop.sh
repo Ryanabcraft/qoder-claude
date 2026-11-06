@@ -8,16 +8,16 @@ if [ -f "$PIDFILE" ]; then
   PID="$(cat "$PIDFILE")"
   if kill -0 "$PID" 2>/dev/null; then
     kill "$PID" 2>/dev/null || true
-    echo "parado (pid $PID)"
+    echo "stopped (pid $PID)"
   else
-    echo "pid $PID nao estava rodando"
+    echo "pid $PID was not running"
   fi
   rm -f "$PIDFILE"
   exit 0
 fi
 
 if command -v pkill >/dev/null 2>&1; then
-  pkill -f "node .*qoder-bridge/src/server.js" 2>/dev/null && echo "parado" || echo "nada para parar"
+  pkill -f "node .*qoder-bridge/src/server.js" 2>/dev/null && echo "stopped" || echo "nothing to stop"
 else
-  echo "sem pidfile e sem pkill; nada para parar"
+  echo "no pidfile and no pkill; nothing to stop"
 fi

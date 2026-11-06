@@ -30,7 +30,7 @@ async function isUp() {
 }async function startServer() {
   if (await isUp()) return null;
   if (!fs.existsSync(serverEntry)) {
-    console.error(`qclaude: servidor nao encontrado em ${serverEntry}`);
+    console.error(`qclaude: server not found at ${serverEntry}`);
     process.exit(1);
   }
   const out = fs.openSync(LOG, 'a');
@@ -44,7 +44,7 @@ async function isUp() {
     if (child.exitCode !== null) break;
     await wait(500);
   }
-  console.error(`qclaude: o servidor nao respondeu. veja ${LOG}`);
+  console.error(`qclaude: the server did not respond. see ${LOG}`);
   try { child.kill(); } catch {}
   process.exit(1);
 }
@@ -58,15 +58,15 @@ function runClaude(claudeArgs) {
   return attempt(false)
     .catch(() => attempt(true))
     .catch((e) => {
-      console.error(`qclaude: nao consegui abrir o claude (${e.message}).`);
-      console.error('qclaude: instale com: npm install -g @anthropic-ai/claude-code');
+      console.error(`qclaude: could not open claude (${e.message}).`);
+      console.error('qclaude: install it with: npm install -g @anthropic-ai/claude-code');
       return 127;
     });
 }
 
 async function stopServer() {
   if (!(await isUp())) {
-    console.log('qclaude: servidor nao esta rodando.');
+    console.log('qclaude: server is not running.');
     return 0;
   }
   if (process.platform === 'win32') {
@@ -75,7 +75,7 @@ async function stopServer() {
     spawn('sh', ['-c', `pkill -f "node .*qoder-bridge/src/server.js" || true`], { stdio: 'ignore' });
   }
   await wait(800);
-  console.log((await isUp()) ? 'qclaude: nao consegui parar.' : 'qclaude: servidor parado.');
+  console.log((await isUp()) ? 'qclaude: could not stop it.' : 'qclaude: server stopped.');
   return 0;
 }
 
@@ -90,36 +90,36 @@ function runSync(cmd, cmdArgs) {
 async function accountCommand(sub, name) {
   if (!sub || sub === 'list') {
     const data = loadAccounts();
-    console.log('contas:');
+    console.log('accounts:');
     for (const [key, item] of Object.entries(data.accounts)) {
       const mark = key === data.active ? '*' : ' ';
-      console.log(`  ${mark} ${key.padEnd(16)} ${item.dir || '(config global)'}`);
+      console.log(`  ${mark} ${key.padEnd(16)} ${item.dir || '(global config)'}`);
     }
-    console.log('\nuse: qclaude account add <nome>');
+    console.log('\nuse: qclaude account add <name>');
     return 0;
   }
 
   if (sub === 'add') {
     if (!name) {
-      console.error('informe o nome: qclaude account add <nome>');
+      console.error('name required: qclaude account add <name>');
       return 1;
     }
     const dir = path.join(ACCOUNTS_ROOT, name);
     fs.mkdirSync(dir, { recursive: true });
-    console.log(`entrando com a conta "${name}" (navegador)...`);
+    console.log(`signing in with account "${name}" (browser)...`);
     const code = await runSync('qodercli', ['--config-dir', dir, 'login']);
     if (code !== 0) {
-      console.error('login nao concluido.');
+      console.error('login was not completed.');
       return code;
     }
     addAccount(name, dir);
-    console.log(`conta "${name}" conectada e ativa.`);
+    console.log(`account "${name}" connected and active.`);
     return 0;
   }
 
   if (sub === 'use') {
     if (!name) {
-      console.error('informe o nome: qclaude account use <nome>');
+      console.error('name required: qclaude account use <name>');
       return 1;
     }
     try {
@@ -128,13 +128,13 @@ async function accountCommand(sub, name) {
       console.error(e.message);
       return 1;
     }
-    console.log(`conta ativa: ${name}`);
+    console.log(`active account: ${name}`);
     return 0;
   }
 
   if (sub === 'remove') {
     if (!name) {
-      console.error('informe o nome: qclaude account remove <nome>');
+      console.error('name required: qclaude account remove <name>');
       return 1;
     }
     const data = loadAccounts();
@@ -146,17 +146,17 @@ async function accountCommand(sub, name) {
       return 1;
     }
     if (dir) fs.rmSync(dir, { recursive: true, force: true });
-    console.log(`conta "${name}" removida.`);
+    console.log(`account "${name}" removed.`);
     return 0;
   }
 
   if (sub === 'current') {
     const a = activeAccount();
-    console.log(`${a.name}${a.dir ? `  ${a.dir}` : '  (config global)'}`);
+    console.log(`${a.name}${a.dir ? `  ${a.dir}` : '  (global config)'}`);
     return 0;
   }
 
-  console.error(`subcomando desconhecido: ${sub}`);
+  console.error(`unknown subcommand: ${sub}`);
   return 1;
 }
 
@@ -168,18 +168,18 @@ if (args[0] === 'account') {
 if (args[0] === '--help' || args[0] === '-h') {
   console.log(`qclaude - Qoder models inside Claude Code
 
-  qclaude                    sobe o servidor (se preciso) e abre o claude
-  qclaude -p "..."           repassa qualquer argumento para o claude
-  qclaude --model X          idem
-  qclaude --account <nome>   abre usando uma conta especifica
-  qclaude --status           servidor, modelos e conta
-  qclaude --serve            roda so o servidor, em primeiro plano
-  qclaude --stop             derruba o servidor
+  qclaude                    boots the server if needed, then opens claude
+  qclaude -p "..."           forwards any argument to claude
+  qclaude --model X          same
+  qclaude --account <name>   opens with a specific account
+  qclaude --status           server, models and account
+  qclaude --serve            server only, foreground
+  qclaude --stop             stops the server
 
-  qclaude account            lista as contas
-  qclaude account add <nome> conecta outra conta (login no navegador)
-  qclaude account use <nome> troca a conta ativa
-  qclaude account remove <nome>
+  qclaude account            lists the accounts
+  qclaude account add <name> connects another account (browser login)
+  qclaude account use <name> switches the active account
+  qclaude account remove <name>
   qclaude account current
 `);
   process.exit(0);
@@ -189,7 +189,7 @@ const accountFlag = args.indexOf('--account');
 if (accountFlag !== -1) {
   const name = args[accountFlag + 1];
   if (!name) {
-    console.error('informe o nome: qclaude --account <nome>');
+    console.error('name required: qclaude --account <name>');
     process.exit(1);
   }
   try {
@@ -204,16 +204,16 @@ if (accountFlag !== -1) {
 if (args[0] === '--status') {
   const up = await isUp();
   const acc = activeAccount();
-  console.log(`conta    : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (config global)'}`);
-  console.log(`servidor : ${up ? `no ar em 127.0.0.1:${PORT}` : 'parado'}`);
+  console.log(`account  : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (global config)'}`);
+  console.log(`server   : ${up ? `running at 127.0.0.1:${PORT}` : 'stopped'}`);
   if (up) {
     try {
       const r = await fetch(`http://127.0.0.1:${PORT}/v1/models`);
       const j = await r.json();
-      console.log(`modelos  : ${j.data.length} (${j.data.slice(0, 3).map((m) => m.id).join(', ')}, ...)`);
+      console.log(`models   : ${j.data.length} (${j.data.slice(0, 3).map((m) => m.id).join(', ')}, ...)`);
     } catch {}
   }
-  console.log(`origem   : ${ROOT}`);
+  console.log(`source   : ${ROOT}`);
   console.log(`log      : ${LOG}`);
   process.exit(up ? 0 : 1);
 }
@@ -225,17 +225,17 @@ if (args[0] === '--stop') {
 if (args[0] === '--serve') {
   const child = await startServer();
   if (!child) {
-    console.log(`qclaude: ja esta no ar em 127.0.0.1:${PORT}`);
+    console.log(`qclaude: ja esta running at 127.0.0.1:${PORT}`);
     process.exit(0);
   }
-  console.log(`qclaude: no ar em 127.0.0.1:${PORT}. Ctrl+C para parar.`);
+  console.log(`qclaude: running at 127.0.0.1:${PORT}. Ctrl+C to stop.`);
   const stop = () => { try { child.kill(); } catch {} ; process.exit(0); };
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
   child.on('exit', (code) => process.exit(code ?? 0));
 } else {
   const child = await startServer();
-  if (args.length === 0) console.log(`qclaude: abrindo o claude em ${process.cwd()}`);
+  if (args.length === 0) console.log(`qclaude: opening claude in ${process.cwd()}`);
   const code = await runClaude(args);
   if (child) {
     try { child.kill(); } catch {}
