@@ -4,12 +4,19 @@
 
 :root {
   --bg: #07110f;
+  --bg-rgb: 7 17 15;
   --panel: #0c1a17;
+  --panel-rgb: 12 26 23;
   --ink: #e9f4f0;
+  --ink-rgb: 233 244 240;
   --muted: #8fa8a0;
+  --muted-rgb: 143 168 160;
   --line: #1b2f29;
+  --line-rgb: 27 47 41;
   --accent: #ffb703;
+  --accent-rgb: 255 183 3;
   --accent-2: #3ddcbf;
+  --accent-2-rgb: 61 220 191;
 }
 
 html {

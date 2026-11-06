@@ -7,13 +7,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: 'var(--bg)',
-        foreground: 'var(--ink)',
-        border: 'var(--line)',
-        card: { DEFAULT: 'var(--panel)', foreground: 'var(--ink)' },
-        muted: { DEFAULT: 'var(--panel)', foreground: 'var(--muted)' },
-        primary: { DEFAULT: 'var(--accent)', foreground: 'var(--bg)' },
-        accent: { DEFAULT: 'var(--accent-2)', foreground: 'var(--bg)' },
+        background: 'rgb(var(--bg-rgb) / <alpha-value>)',
+        foreground: 'rgb(var(--ink-rgb) / <alpha-value>)',
+        border: 'rgb(var(--line-rgb) / <alpha-value>)',
+        card: {
+          DEFAULT: 'rgb(var(--panel-rgb) / <alpha-value>)',
+          foreground: 'rgb(var(--ink-rgb) / <alpha-value>)',
+        },
+        muted: {
+          DEFAULT: 'rgb(var(--panel-rgb) / <alpha-value>)',
+          foreground: 'rgb(var(--muted-rgb) / <alpha-value>)',
+        },
+        primary: {
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          foreground: 'rgb(var(--bg-rgb) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT: 'rgb(var(--accent-2-rgb) / <alpha-value>)',
+          foreground: 'rgb(var(--bg-rgb) / <alpha-value>)',
+        },
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
