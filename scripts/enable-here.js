@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { QODER_MODELS } from '../src/models.js';
+import { detectModels } from '../src/models.js';
 
 const home = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = process.env.QODER_CLAUDE_TARGET || process.cwd();
@@ -30,9 +30,10 @@ delete current.env.ANTHROPIC_DEFAULT_FABLE_MODEL;
 
 current.model = process.env.QODER_DEFAULT_MODEL || 'Auto';
 
+const models = detectModels();
 current.modelPicker = {
   replaceBuiltInOptions: true,
-  options: QODER_MODELS.map((m) => ({
+  options: models.map((m) => ({
     model: m,
     label: `Qoder · ${m}`,
     description: `${m} via Qoder CLI`,

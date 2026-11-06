@@ -2,7 +2,7 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls } from './prompt.js';
 import { runCompletion, workerConfig } from './cli.js';
-import { QODER_MODELS } from './models.js';
+import { detectModels } from './models.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
@@ -212,7 +212,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && (path === '/v1/models' || path === '/models')) {
     return send(res, 200, {
-      data: QODER_MODELS.map((m) => ({ type: 'model', id: m, display_name: m, created_at: new Date(0).toISOString() })),
+      data: detectModels().map((m) => ({ type: 'model', id: m, display_name: m, created_at: new Date(0).toISOString() })),
       has_more: false,
     });
   }

@@ -1,13 +1,11 @@
 import { spawn, spawnSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
 import { cleanWorkspace } from './prompt.js';
-import { QODER_MODELS } from './models.js';
+import { resolveCli } from './cliPath.js';
+import { detectModels } from './models.js';
 
 const EMPTY_MCP = JSON.stringify({ mcpServers: {} });
 const DEFAULT_MODEL = process.env.QODER_MODEL || 'Auto';
 const POOL_SIZE = Math.max(1, Number(process.env.BRIDGE_POOL_SIZE || 2));
-const QODER_NAMES = new Set(QODER_MODELS);
 const USE_POOL = process.env.BRIDGE_POOL !== '0';
 
 const CHILD_ENV = { ...process.env };
@@ -22,19 +20,6 @@ for (const k of [
   delete CHILD_ENV[k];
 }
 
-function resolveCli() {
-  const explicit = process.env.QODER_CLI_BIN;
-  if (explicit) {
-    if (explicit.endsWith('.js')) return { cmd: process.execPath, prefix: [explicit] };
-    return { cmd: explicit, prefix: [] };
-  }
-  const candidates = [
-    path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@qoder-ai', 'qodercli', 'bundle', 'qodercli.js'),
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Qoder', 'resources', 'app.asar.unpacked', 'node_modules', '@qoder-ai', 'qodercli', 'bundle', 'qodercli.js'),
-  ];
-  for (const c of candidates) if (c && fs.existsSync(c)) return { cmd: process.execPath, prefix: [c] };
-  return { cmd: 'qodercli', prefix: [] };
-}
 const CLI = resolveCli();
 
 export function resolveModel(requested) {
@@ -45,7 +30,7 @@ export function resolveModel(requested) {
     if (/haiku/i.test(name)) return process.env.QODER_MODEL_HAIKU || 'Fast';
     if (/sonnet/i.test(name)) return process.env.QODER_MODEL_SONNET || 'Auto';
   }
-  return name && QODER_NAMES.has(name) ? name : DEFAULT_MODEL;
+  return detectModels().includes(name) ? name : DEFAULT_MODEL;
 }
 
 function baseArgs(cfg) {

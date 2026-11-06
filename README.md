@@ -126,6 +126,24 @@ lists the Qoder lineup directly instead of Opus/Sonnet/Haiku:
 `modelPicker` requires Claude Code v2.1.243+ and only takes effect in user settings,
 `--settings`, or managed settings — project settings ignore it.
 
+## Updating
+
+Nothing updates itself silently. The model list is the only thing that stays current on its
+own, because the bridge asks the CLI:
+
+| piece | updates how |
+|---|---|
+| model list (`/v1/models`, `/model` picker) | read from `qodercli --list-models`, cached 10 min |
+| `qodercli` | `qodercli update` or `npm i -g @qoder-ai/qodercli` |
+| bridge code | `git pull` in the install dir, then restart |
+| Claude Code | its own updater, unrelated to this project |
+
+`update.cmd` does all of it in one shot:
+
+```cmd
+"%LOCALAPPDATA%\qoder-bridge\update.cmd"
+```
+
 ## Configuration
 
 | variable | default | purpose |
