@@ -59,11 +59,18 @@ function toolsToText(tools) {
   return lines.join('\n');
 }
 
+export function normalizeSystem(system) {
+  return systemToText(system)
+    .split('\n')
+    .filter((line) => !/^\s*x-anthropic-billing-header:/i.test(line))
+    .join('\n')
+    .trim();
+}
+
 export function buildPrompt(body) {
+  const system = normalizeSystem(body.system);
   const parts = [];
   if (Array.isArray(body.tools) && body.tools.length) parts.push(toolsToText(body.tools), '');
-  const system = systemToText(body.system);
-  if (system) parts.push('[CALLER CONTEXT - you are the model behind this agent, not the agent itself]', system, '');
 
   parts.push('[CONVERSATION]');
   const msgs = Array.isArray(body.messages) ? body.messages : [];
@@ -73,8 +80,10 @@ export function buildPrompt(body) {
   }
   parts.push('');
   parts.push('[INSTRUCTION]');
-  parts.push('Answer the last user message. If the TOOLS section is present, use it when a tool is needed: reply only with the <tool_calls> block. Otherwise answer with text.');
-  return parts.join('\n');
+  parts.push(
+    'Follow the agent instructions exactly. For any file, shell or search action, use the TOOLS section and reply only with the <tool_calls> block. Do not paste file contents into the reply when a tool should read or write it.',
+  );
+  return { system, prompt: parts.join('\n') };
 }
 
 export function toolCallMarker() {

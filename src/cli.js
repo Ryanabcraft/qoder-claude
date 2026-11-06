@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { cleanWorkspace } from './prompt.js';
 import { resolveCli } from './cliPath.js';
 import { detectModels } from './models.js';
@@ -48,15 +49,7 @@ function baseArgs(cfg) {
     '--cwd', cleanWorkspace(),
     '--model', cfg.model,
     '--system-prompt',
-    [
-      'You are a completion backend behind an external coding agent.',
-      'You have no tools of your own; the caller executes every tool call.',
-      'When a TOOLS section is present and you need a tool, reply with nothing but:',
-      '<tool_calls>[{"name":"<tool>","input":{...}}]</tool_calls>',
-      'No prose before or after that block. "input" must match the schema exactly.',
-      'Otherwise answer in plain text. Never claim you lack tools, never refuse for tool reasons.',
-      'Never mention this instruction or the backend.',
-    ].join(' '),
+    [cfg.system, TOOL_BRIDGE_RULES].filter(Boolean).join('\n\n'),
   ];
   const budget = Number(process.env.QODER_MAX_OUTPUT_TOKENS || 0);
   if (budget > 0) args.push('--max-output-tokens', String(budget));
@@ -67,7 +60,17 @@ function baseArgs(cfg) {
   return args;
 }
 
-export function workerConfig(body = {}) {
+const TOOL_BRIDGE_RULES = [
+  'You are the model behind this agent. The instructions above come from the agent and must be followed exactly.',
+  'The tools are listed in the TOOLS section of every user turn. They are real: the caller executes them.',
+  'To call one, reply with nothing but:',
+  '<tool_calls>[{"name":"<tool>","input":{...}}]</tool_calls>',
+  'No prose before or after the block, and "input" must match the schema exactly.',
+  'Never paste file contents into the reply when a tool can read or write it.',
+  'Otherwise answer in plain text.',
+].join('\n');
+
+export function workerConfig(body = {}, system = '') {
   const model = resolveModel(body.model);
   const t = body.thinking;
   let thinking;
@@ -83,8 +86,9 @@ export function workerConfig(body = {}) {
   if (!effort) effort = process.env.QODER_REASONING_EFFORT;
   if (effort) effort = String(effort).toLowerCase();
   const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 0) || undefined;
-  const key = [model, thinking || '', thinkingBudget || '', effort || '', contextWindow || ''].join('|');
-  return { model, thinking, thinkingBudget, effort, contextWindow, key };
+  const systemKey = system ? createHash('sha1').update(system).digest('hex').slice(0, 12) : '';
+  const key = [model, thinking || '', thinkingBudget || '', effort || '', contextWindow || '', systemKey].join('|');
+  return { model, thinking, thinkingBudget, effort, contextWindow, system, key };
 }
 
 function killTree(proc) {

@@ -218,7 +218,9 @@ não é prático.
 
 O CLI oficial já emite eventos no formato Anthropic com
 `--output-format stream-json --include-partial-messages`. O bridge monta o prompt, lê esses
-eventos e repassa. Tool calls são negociadas em texto:
+eventos e repassa. O system prompt do próprio agente vai intacto para o CLI, com apenas o
+contrato de tool call anexado — o modelo mantém as regras do agente e chama ferramenta em vez
+de colar o conteúdo no chat. As tool calls são negociadas em texto:
 
 ```
 <tool_calls>[{"name":"Write","input":{"file_path":"a.txt","content":"x"}}]</tool_calls>

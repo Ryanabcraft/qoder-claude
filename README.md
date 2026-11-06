@@ -228,7 +228,9 @@ The Qoder inference endpoint encrypts and signs each request body (`Authorizatio
 
 The official CLI already emits Anthropic-shaped events with
 `--output-format stream-json --include-partial-messages`. The bridge builds the prompt,
-reads those events and forwards them. Tool calls are negotiated in text:
+reads those events and forwards them. The agent's own system prompt is passed to the CLI
+intact, with only the tool-call contract appended — the model keeps the agent's rules, so it
+calls tools instead of pasting file contents into the reply. Tool calls are negotiated in text:
 
 ```
 <tool_calls>[{"name":"Write","input":{"file_path":"a.txt","content":"x"}}]</tool_calls>

@@ -60,10 +60,11 @@ function sseWriter(res) {
 async function handleMessages(req, res, body) {
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
-  const cfg = workerConfig(body);
+  const built = buildPrompt(body);
+  const cfg = workerConfig(body, built.system);
   const model = cfg.model;
-  const prompt = buildPrompt(body);
-  const inTokens = estimate(prompt);
+  const prompt = built.prompt;
+  const inTokens = estimate(prompt + built.system);
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const ac = new AbortController();
   req.on('close', () => ac.abort());
@@ -231,7 +232,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       const body = JSON.parse(raw || '{}');
-      return send(res, 200, { input_tokens: estimate(buildPrompt(body)) });
+      return send(res, 200, { input_tokens: estimate(buildPrompt(body).prompt) });
     } catch (e) {
       return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: e.message } });
     }
