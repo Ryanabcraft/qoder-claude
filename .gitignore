@@ -12,3 +12,5 @@ bridge.pid
 site/node_modules/
 site/dist/
 site/*.log
+accounts/
+accounts.json

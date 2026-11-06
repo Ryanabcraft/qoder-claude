@@ -193,6 +193,21 @@ own, because the bridge asks the CLI:
 "%LOCALAPPDATA%\qoder-bridge\update.cmd"
 ```
 
+## Accounts
+
+Each account runs in its own `--config-dir`, so sessions never mix:
+
+```bash
+qclaude account add work      # browser login for a new account
+qclaude account list          # shows which one is active
+qclaude account use work      # switch the active account
+qclaude --account work        # one session on that account
+qclaude account remove work   # deletes the profile and its store
+```
+
+`default` uses the global `~/.qoder` config. Extra accounts live in `accounts/<name>`,
+outside the repository and listed in `.gitignore`.
+
 ## Configuration
 
 | variable | default | purpose |

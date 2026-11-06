@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cleanWorkspace } from './prompt.js';
+import { activeAccount } from './accounts.js';
 import { resolveCli } from './cliPath.js';
 import { detectModels } from './models.js';
 
@@ -53,6 +54,7 @@ function baseArgs(cfg) {
   ];
   const budget = Number(process.env.QODER_MAX_OUTPUT_TOKENS || 0);
   if (budget > 0) args.push('--max-output-tokens', String(budget));
+  if (cfg.configDir) args.push('--config-dir', cfg.configDir);
   if (cfg.thinking) args.push('--thinking', cfg.thinking);
   if (cfg.thinkingBudget) args.push('--thinking-budget', String(cfg.thinkingBudget));
   if (cfg.effort) args.push('--reasoning-effort', String(cfg.effort));
@@ -86,9 +88,18 @@ export function workerConfig(body = {}, system = '') {
   if (!effort) effort = process.env.QODER_REASONING_EFFORT;
   if (effort) effort = String(effort).toLowerCase();
   const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 0) || undefined;
+  const account = activeAccount();
   const systemKey = system ? createHash('sha1').update(system).digest('hex').slice(0, 12) : '';
-  const key = [model, thinking || '', thinkingBudget || '', effort || '', contextWindow || '', systemKey].join('|');
-  return { model, thinking, thinkingBudget, effort, contextWindow, system, key };
+  const key = [
+    account.name,
+    model,
+    thinking || '',
+    thinkingBudget || '',
+    effort || '',
+    contextWindow || '',
+    systemKey,
+  ].join('|');
+  return { model, thinking, thinkingBudget, effort, contextWindow, system, account: account.name, configDir: account.dir, key };
 }
 
 function killTree(proc) {
@@ -146,8 +157,8 @@ function spawnWorker(cfg) {
       readyResolve = resolve;
       readyReject = reject;
       proc.once('error', reject);
-      proc.once('close', () => reject(new Error('worker closed before warm-up')));
-      setTimeout(() => reject(new Error('warm-up timeout')), 90000).unref?.();
+      proc.once('close', () => reject(new Error(stderrTail() || 'worker closed before warm-up')));
+      setTimeout(() => reject(new Error('warm-up timeout')), Number(process.env.BRIDGE_WARMUP_TIMEOUT_MS || 25000)).unref?.();
     }),
     on(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     send(prompt) {
@@ -189,15 +200,12 @@ class WorkerPool {
   acquire(cfg) {
     const idx = this.ready.findIndex((w) => w.key === cfg.key);
     if (idx !== -1) return Promise.resolve(this.ready.splice(idx, 1)[0]);
-    if (!this.starting) {
-      this.starting++;
-      const w = spawnWorker(cfg);
-      return w.ready.then(
-        () => { this.starting--; return w; },
-        (e) => { this.starting--; try { w.kill(); } catch {}; throw e; },
-      );
-    }
-    return new Promise((resolve) => { this.waiters.push(resolve); this.fill(cfg); });
+    this.starting++;
+    const w = spawnWorker(cfg);
+    return w.ready.then(
+      () => { this.starting--; return w; },
+      (e) => { this.starting--; try { w.kill(); } catch {}; throw e; },
+    );
   }
   release(worker) {
     worker.kill();

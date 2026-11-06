@@ -3,6 +3,14 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import {
+  ACCOUNTS_ROOT,
+  activeAccount,
+  addAccount,
+  loadAccounts,
+  removeAccount,
+  useAccount,
+} from '../src/accounts.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -71,21 +79,132 @@ async function stopServer() {
   return 0;
 }
 
+function runSync(cmd, cmdArgs) {
+  return new Promise((resolve) => {
+    const p = spawn(cmd, cmdArgs, { stdio: 'inherit', shell: process.platform === 'win32', env: process.env });
+    p.on('close', (code) => resolve(code ?? 0));
+    p.on('error', () => resolve(127));
+  });
+}
+
+async function accountCommand(sub, name) {
+  if (!sub || sub === 'list') {
+    const data = loadAccounts();
+    console.log('contas:');
+    for (const [key, item] of Object.entries(data.accounts)) {
+      const mark = key === data.active ? '*' : ' ';
+      console.log(`  ${mark} ${key.padEnd(16)} ${item.dir || '(config global)'}`);
+    }
+    console.log('\nuse: qclaude account add <nome>');
+    return 0;
+  }
+
+  if (sub === 'add') {
+    if (!name) {
+      console.error('informe o nome: qclaude account add <nome>');
+      return 1;
+    }
+    const dir = path.join(ACCOUNTS_ROOT, name);
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`entrando com a conta "${name}" (navegador)...`);
+    const code = await runSync('qodercli', ['--config-dir', dir, 'login']);
+    if (code !== 0) {
+      console.error('login nao concluido.');
+      return code;
+    }
+    addAccount(name, dir);
+    console.log(`conta "${name}" conectada e ativa.`);
+    return 0;
+  }
+
+  if (sub === 'use') {
+    if (!name) {
+      console.error('informe o nome: qclaude account use <nome>');
+      return 1;
+    }
+    try {
+      useAccount(name);
+    } catch (e) {
+      console.error(e.message);
+      return 1;
+    }
+    console.log(`conta ativa: ${name}`);
+    return 0;
+  }
+
+  if (sub === 'remove') {
+    if (!name) {
+      console.error('informe o nome: qclaude account remove <nome>');
+      return 1;
+    }
+    const data = loadAccounts();
+    const dir = data.accounts[name]?.dir;
+    try {
+      removeAccount(name);
+    } catch (e) {
+      console.error(e.message);
+      return 1;
+    }
+    if (dir) fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`conta "${name}" removida.`);
+    return 0;
+  }
+
+  if (sub === 'current') {
+    const a = activeAccount();
+    console.log(`${a.name}${a.dir ? `  ${a.dir}` : '  (config global)'}`);
+    return 0;
+  }
+
+  console.error(`subcomando desconhecido: ${sub}`);
+  return 1;
+}
+
+if (args[0] === 'account') {
+  process.exit(await accountCommand(args[1], args[2]));
+}
+
+
 if (args[0] === '--help' || args[0] === '-h') {
   console.log(`qclaude - Qoder models inside Claude Code
 
-  qclaude                 sobe o servidor (se preciso) e abre o claude
-  qclaude -p "..."        repassa qualquer argumento para o claude
-  qclaude --model X       idem
-  qclaude --status        mostra servidor e modelos
-  qclaude --serve         roda so o servidor, em primeiro plano
-  qclaude --stop          derruba o servidor
+  qclaude                    sobe o servidor (se preciso) e abre o claude
+  qclaude -p "..."           repassa qualquer argumento para o claude
+  qclaude --model X          idem
+  qclaude --account <nome>   abre usando uma conta especifica
+  qclaude --status           servidor, modelos e conta
+  qclaude --serve            roda so o servidor, em primeiro plano
+  qclaude --stop             derruba o servidor
+
+  qclaude account            lista as contas
+  qclaude account add <nome> conecta outra conta (login no navegador)
+  qclaude account use <nome> troca a conta ativa
+  qclaude account remove <nome>
+  qclaude account current
 `);
   process.exit(0);
 }
 
+const accountFlag = args.indexOf('--account');
+if (accountFlag !== -1) {
+  const name = args[accountFlag + 1];
+  if (!name) {
+    console.error('informe o nome: qclaude --account <nome>');
+    process.exit(1);
+  }
+  try {
+    useAccount(name);
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
+  args.splice(accountFlag, 2);
+}
+
 if (args[0] === '--status') {
   const up = await isUp();
+  const acc = activeAccount();
+  console.log(`conta    : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (config global)'}`);
   console.log(`servidor : ${up ? `no ar em 127.0.0.1:${PORT}` : 'parado'}`);
   if (up) {
     try {

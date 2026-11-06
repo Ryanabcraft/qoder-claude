@@ -191,6 +191,21 @@ O `update.cmd` faz tudo de uma vez:
 "%LOCALAPPDATA%\qoder-bridge\update.cmd"
 ```
 
+## Contas
+
+Cada conta roda no próprio `--config-dir`, então as sessões não se misturam:
+
+```bash
+qclaude account add trabalho   # abre o login no navegador para uma conta nova
+qclaude account list           # mostra qual está ativa
+qclaude account use trabalho   # troca a conta ativa
+qclaude --account trabalho     # uma sessão com aquela conta
+qclaude account remove trabalho
+```
+
+`default` usa a configuração global em `~/.qoder`. Contas extras ficam em `accounts/<nome>`,
+fora do repositório e listadas no `.gitignore`.
+
 ## Configuração
 
 | variável | padrão | função |
