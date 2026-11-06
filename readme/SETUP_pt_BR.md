@@ -215,7 +215,7 @@ git remote -v
 ## 10. Resultado desta execução
 
 ```
-repositório : https://github.com/Ryanabcraft/qoder-bridge
+repositório : https://github.com/Ryanabcraft/qoder-claude
 visibilidade: PRIVATE
 branch      : main (tracking origin/main)
 commit      : 8dcae1c feat: anthropic-compatible bridge backed by the Qoder CLI

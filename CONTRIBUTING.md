@@ -12,7 +12,7 @@ is part of the design.
 ## Development
 
 ```bash
-git clone https://github.com/Ryanabcraft/qoder-bridge.git
+git clone https://github.com/Ryanabcraft/qoder-claude.git
 cd qoder-bridge
 node src/server.js
 ```

@@ -215,7 +215,7 @@ git remote -v
 ## 10. Result of this run
 
 ```
-repository  : https://github.com/Ryanabcraft/qoder-bridge
+repository  : https://github.com/Ryanabcraft/qoder-claude
 visibility  : PUBLIC
 branch      : main (tracking origin/main)
 commits     : 8dcae1c feat: anthropic-compatible bridge backed by the Qoder CLI

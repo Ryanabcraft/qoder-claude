@@ -9,7 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
-$RepoSlug = 'Ryanabcraft/qoder-bridge'
+$RepoSlug = 'Ryanabcraft/qoder-claude'
 $Branch = 'main'
 $Port = if ($env:BRIDGE_PORT) { $env:BRIDGE_PORT } else { '8787' }
 

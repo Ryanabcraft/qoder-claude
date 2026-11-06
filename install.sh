@@ -2,7 +2,7 @@
 # qoder-bridge installer for Linux and macOS
 set -eu
 
-REPO="Ryanabcraft/qoder-bridge"
+REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
 PORT="${BRIDGE_PORT:-8787}"
 INSTALL_DIR="${QODER_BRIDGE_HOME:-$HOME/.local/share/qoder-bridge}"

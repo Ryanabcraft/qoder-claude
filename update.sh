@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO="Ryanabcraft/qoder-bridge"
+REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
 
 echo "[1/4] atualizando qodercli..."

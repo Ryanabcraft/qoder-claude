@@ -1,4 +1,4 @@
-# qoder-bridge
+# qoder-claude
 
 A local **Anthropic Messages API** server backed by the [Qoder CLI](https://qoder.com).
 Point Claude Code at it and every request runs on your Qoder plan's models, with native
@@ -22,19 +22,19 @@ Claude Code --/v1/messages--> qoder-bridge --stream-json--> qodercli --> api1.qo
 ### Windows — CMD
 
 ```cmd
-curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.cmd -o install.cmd && install.cmd && del install.cmd
+curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
 ### Windows — PowerShell
 
 ```powershell
-irm https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.ps1 | iex
 ```
 
 ### Linux / macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.sh | bash
 ```
 
 The installer:
@@ -51,10 +51,13 @@ The installer:
 Flags: `-ProjectOnly` / `--project-only` (configure only the current directory),
 `-NoStart` / `--no-start`, `-SkipDeps`, `-InstallDir <path>` / `--dir <path>`.
 
+The install directory keeps the historical name `qoder-bridge` so existing installs keep
+working; only the repository and the command are named `qoder-claude`.
+
 ### Manual
 
 ```bash
-git clone https://github.com/Ryanabcraft/qoder-bridge.git
+git clone https://github.com/Ryanabcraft/qoder-claude.git
 cd qoder-bridge
 npm install -g @qoder-ai/qodercli
 qodercli login

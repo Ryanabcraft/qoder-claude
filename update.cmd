@@ -11,7 +11,7 @@ call "%~dp0stop.cmd" >nul 2>&1
 
 echo [3/3] baixando e aplicando a versao atual...
 set "PS1=%TEMP%\qoder-bridge-install.ps1"
-curl -fsSL "https://raw.githubusercontent.com/Ryanabcraft/qoder-bridge/main/install.ps1" -o "%PS1%"
+curl -fsSL "https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.ps1" -o "%PS1%"
 if errorlevel 1 (
   echo    download falhou.
   exit /b 1
