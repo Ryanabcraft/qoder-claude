@@ -6,6 +6,9 @@ que mantêm a forma, streaming e uma statusline mostrando o modelo em uso.
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
 
+**Índice:** [Instalação](#instalação) · [Abrir](#abrir) · [Contas](#contas) ·
+[Configuração](#configuração) · [Como funciona](#como-funciona) · [Limites](#limites)
+
 Este é o espelho do [README principal](../README.md), em inglês.
 
 ## Recursos
@@ -193,18 +196,75 @@ O `update.cmd` faz tudo de uma vez:
 
 ## Contas
 
-Cada conta roda no próprio `--config-dir`, então as sessões não se misturam:
+Uma **conta** aqui é um perfil isolado do Qoder. Cada uma tem o próprio `--config-dir`, então
+login, sessão e cota de uma nunca encostam na outra.
+
+`default` é o que você já tinha: a configuração global em `~/.qoder`.
+
+### Conectar uma conta nova
 
 ```bash
-qclaude account add trabalho   # abre o login no navegador para uma conta nova
-qclaude account list           # mostra qual está ativa
-qclaude account use trabalho   # troca a conta ativa
-qclaude --account trabalho     # uma sessão com aquela conta
+qclaude account add trabalho
+```
+
+Cria `accounts/trabalho`, abre o login do Qoder no navegador e a deixa ativa quando o login
+termina. Repita com outro nome para cada conta extra.
+
+### Listar e trocar
+
+```bash
+qclaude account list
+
+# contas:
+#   * default          (config global)
+#     trabalho         C:\...\qoder-bridge\accounts\trabalho
+
+qclaude account use trabalho   # ativa a partir de agora
+qclaude account current        # qual está ativa
+qclaude --status               # conta + servidor + modelos
+```
+
+### Uma sessão só, com uma conta específica
+
+```bash
+qclaude --account trabalho
+```
+
+Troca a conta ativa e abre o Claude Code com ela. O resto continua igual.
+
+### Remover
+
+```bash
 qclaude account remove trabalho
 ```
 
-`default` usa a configuração global em `~/.qoder`. Contas extras ficam em `accounts/<nome>`,
-fora do repositório e listadas no `.gitignore`.
+Apaga o perfil e o diretório de credenciais. A `default` não pode ser removida.
+
+### Onde fica cada coisa
+
+| O quê | Onde |
+|---|---|
+| nome da conta ativa | `accounts.json` |
+| cada conta extra | `accounts/<nome>/` |
+| a conta padrão | `~/.qoder` |
+
+`accounts/` e `accounts.json` estão no `.gitignore` — credencial não vai para o repositório.
+
+### Vale saber
+
+- **A cota é por conta.** Trocar de conta troca o limite diário.
+- **O modelo não faz parte da conta.** O Claude Code mantém a escolha; a conta só muda quem responde.
+- **Reinicie a sessão aberta depois de trocar.** `account add` e `use` valem para o próximo worker.
+- **Conta sem login falha rápido:** cerca de 3 segundos, com `Not logged in · Please run /login`.
+
+### Se der problema
+
+| Sintoma | Correção |
+|---|---|
+| `conta "x" nao existe` | `qclaude account list` para ver os nomes exatos |
+| `Not logged in` | `qclaude account add <nome>` de novo e reinicie a sessão |
+| Conta errada respondendo | `qclaude account current` e reinicie a sessão |
+| Login abriu mas nada mudou | o login precisa terminar para a conta ficar ativa |
 
 ## Configuração
 

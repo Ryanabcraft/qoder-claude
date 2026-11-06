@@ -6,6 +6,9 @@ that keep their shape, streaming and a statusline that shows which model answere
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
 
+**Contents:** [Installation](#installation) · [Open it](#open-it) · [Accounts](#accounts) ·
+[Configuration](#configuration) · [How it works](#how-it-works) · [Limitations](#limitations)
+
 ```
 Claude Code --/v1/messages--> qoder-bridge --stream-json--> qodercli --> api1.qoder.sh
 ```
@@ -195,18 +198,78 @@ own, because the bridge asks the CLI:
 
 ## Accounts
 
-Each account runs in its own `--config-dir`, so sessions never mix:
+An **account** here is an isolated Qoder profile. Each one gets its own `--config-dir`, so
+the login, the session and the quota of one never touch another.
+
+`default` is whatever you already had: the global `~/.qoder` config.
+
+### Add an account
 
 ```bash
-qclaude account add work      # browser login for a new account
-qclaude account list          # shows which one is active
-qclaude account use work      # switch the active account
-qclaude --account work        # one session on that account
-qclaude account remove work   # deletes the profile and its store
+qclaude account add work
 ```
 
-`default` uses the global `~/.qoder` config. Extra accounts live in `accounts/<name>`,
-outside the repository and listed in `.gitignore`.
+It creates `accounts/work`, opens the Qoder login in your browser, and makes it active when
+the login finishes. Run the same command with another name for each extra account.
+
+### List and switch
+
+```bash
+qclaude account list
+
+# contas:
+#   * default          (config global)
+#     work             C:\...\qoder-bridge\accounts\work
+
+qclaude account use work     # active from now on
+qclaude account current      # which one is active
+qclaude --status             # account + server + models
+```
+
+### One session on a specific account
+
+```bash
+qclaude --account work
+```
+
+Switches the active account and opens Claude Code with it. Everything else stays the same.
+
+### Remove an account
+
+```bash
+qclaude account remove work
+```
+
+Deletes the profile and its credential directory. `default` cannot be removed.
+
+### Where things live
+
+| What | Where |
+|---|---|
+| active account name | `accounts.json` |
+| each extra account | `accounts/<name>/` |
+| the default account | `~/.qoder` |
+
+`accounts/` and `accounts.json` are listed in `.gitignore` — credentials never reach the repo.
+
+### Good to know
+
+- **Quota is per account.** Switching accounts switches the daily limit.
+- **The model is not part of the account.** Claude Code keeps the model choice; the account
+  only changes who answers.
+- **Restart the open session after switching.** `qclaude account add` and `use` change the
+  next worker, not the one already running.
+- **A logged-out account fails fast:** about 3 seconds, with
+  `Not logged in · Please run /login`.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `conta "x" nao existe` | `qclaude account list` to see the exact names |
+| `Not logged in` | `qclaude account add <name>` again, then restart the session |
+| Wrong account answering | `qclaude account current`, then restart the session |
+| Login opened but nothing changed | the login must finish before the account becomes active |
 
 ## Configuration
 
