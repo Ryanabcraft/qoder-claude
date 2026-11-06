@@ -8,7 +8,6 @@ export function Nav() {
 
   const links = [
     { href: '#how', label: t.nav.how },
-    { href: '#models', label: t.nav.models },
     { href: '#limits', label: t.nav.limits },
   ];
 

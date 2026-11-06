@@ -15,20 +15,3 @@ export const INSTALL = [
   },
 ] as const;
 
-export const MODELS = [
-  'Auto',
-  'Ultimate',
-  'Fast',
-  'Efficient',
-  'Sonus',
-  'Cantus',
-  'Qwen3.8-Max',
-  'Qwen3.8-Flash',
-  'Kimi-K3.1-Pro',
-  'Kimi-K2.8-Preview',
-  'GLM-5.3',
-  'GLM-5.3-Flash',
-  'DeepSeek-V4-Pro',
-  'DeepSeek-Flash',
-  'MiniMax-M3.1-Flash',
-];

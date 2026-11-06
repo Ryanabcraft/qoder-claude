@@ -1,7 +1,7 @@
 export type Dict = {
   langName: string;
   langCode: string;
-  nav: { how: string; models: string; limits: string; github: string };
+  nav: { how: string; limits: string; github: string };
   hero: {
     badge: string;
     h1a: string;
@@ -24,7 +24,6 @@ export type Dict = {
     introC: string;
     chipsLabel: string;
   };
-  cards: { secrets: string; models: string; entry: string; entryDate: string };
   limits: {
     title: string;
     intro: string;
@@ -39,7 +38,7 @@ export type Dict = {
 export const en: Dict = {
   langName: 'English',
   langCode: 'EN',
-  nav: { how: 'how it works', models: 'models', limits: 'limits', github: 'GitHub' },
+  nav: { how: 'how it works', limits: 'limits', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · zero runtime dependencies',
     h1a: 'The terminal stays.',
@@ -81,12 +80,6 @@ export const en: Dict = {
     introC: 'without a release.',
     chipsLabel: 'Available models',
   },
-  cards: {
-    secrets: 'Secrets',
-    models: 'Models',
-    entry: 'Entry point',
-    entryDate: 'boots the bridge, opens the agent',
-  },
   limits: {
     title: 'Where it hurts',
     intro:
@@ -114,7 +107,7 @@ export const en: Dict = {
 export const pt: Dict = {
   langName: 'Português (BR)',
   langCode: 'PT',
-  nav: { how: 'como funciona', models: 'modelos', limits: 'limites', github: 'GitHub' },
+  nav: { how: 'como funciona', limits: 'limites', github: 'GitHub' },
   hero: {
     badge: 'código aberto · MIT · zero dependências de runtime',
     h1a: 'O terminal fica.',
@@ -156,12 +149,6 @@ export const pt: Dict = {
     introC: 'sem precisar de release.',
     chipsLabel: 'Modelos disponíveis',
   },
-  cards: {
-    secrets: 'Segredos',
-    models: 'Modelos',
-    entry: 'Entrada',
-    entryDate: 'sobe a bridge, abre o agente',
-  },
   limits: {
     title: 'Onde dói',
     intro:
@@ -189,7 +176,7 @@ export const pt: Dict = {
 export const es: Dict = {
   langName: 'Español',
   langCode: 'ES',
-  nav: { how: 'cómo funciona', models: 'modelos', limits: 'límites', github: 'GitHub' },
+  nav: { how: 'cómo funciona', limits: 'límites', github: 'GitHub' },
   hero: {
     badge: 'código abierto · MIT · sin dependencias de ejecución',
     h1a: 'La terminal se queda.',
@@ -231,12 +218,6 @@ export const es: Dict = {
     introC: 'sin necesidad de un release.',
     chipsLabel: 'Modelos disponibles',
   },
-  cards: {
-    secrets: 'Secretos',
-    models: 'Modelos',
-    entry: 'Entrada',
-    entryDate: 'levanta el puente, abre el agente',
-  },
   limits: {
     title: 'Dónde duele',
     intro:
@@ -264,7 +245,7 @@ export const es: Dict = {
 export const fr: Dict = {
   langName: 'Français',
   langCode: 'FR',
-  nav: { how: 'fonctionnement', models: 'modèles', limits: 'limites', github: 'GitHub' },
+  nav: { how: 'fonctionnement', limits: 'limites', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · aucune dépendance à l’exécution',
     h1a: 'Le terminal reste.',
@@ -306,12 +287,6 @@ export const fr: Dict = {
     introC: 'sans nouvelle version.',
     chipsLabel: 'Modèles disponibles',
   },
-  cards: {
-    secrets: 'Secrets',
-    models: 'Modèles',
-    entry: 'Entrée',
-    entryDate: 'lance le pont, ouvre l’agent',
-  },
   limits: {
     title: 'Là où ça fait mal',
     intro:
@@ -339,7 +314,7 @@ export const fr: Dict = {
 export const de: Dict = {
   langName: 'Deutsch',
   langCode: 'DE',
-  nav: { how: 'funktionsweise', models: 'modelle', limits: 'grenzen', github: 'GitHub' },
+  nav: { how: 'funktionsweise', limits: 'grenzen', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · keine Laufzeitabhängigkeiten',
     h1a: 'Das Terminal bleibt.',
@@ -380,12 +355,6 @@ export const de: Dict = {
     introB: 'mit zehn Minuten Cache. Ein neues Modell in deinem Tarif erscheint in',
     introC: 'ohne neues Release.',
     chipsLabel: 'Verfügbare Modelle',
-  },
-  cards: {
-    secrets: 'Geheimnisse',
-    models: 'Modelle',
-    entry: 'Einstieg',
-    entryDate: 'startet die Bridge, öffnet den Agenten',
   },
   limits: {
     title: 'Wo es weh tut',
