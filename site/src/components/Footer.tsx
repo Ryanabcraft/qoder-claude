@@ -1,7 +1,10 @@
 import { Github } from 'lucide-react';
 import { REPO } from '@/data/content';
+import { useI18n } from '@/i18n';
 
 export function Footer() {
+  const { t } = useI18n();
+
   return (
     <footer className="border-t border-border">
       <div className="mx-auto max-w-6xl px-6 py-10">
@@ -10,25 +13,29 @@ export function Footer() {
 
           <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
             <a href={`${REPO}#readme`} className="transition-colors hover:text-foreground">
-              README
+              {t.footer.readme}
             </a>
             <a href={`${REPO}/blob/main/LICENSE`} className="transition-colors hover:text-foreground">
-              MIT
+              {t.footer.mit}
             </a>
-            <a href={`${REPO}/blob/main/CONTRIBUTING.md`} className="transition-colors hover:text-foreground">
-              Contributing
+            <a
+              href={`${REPO}/blob/main/CONTRIBUTING.md`}
+              className="transition-colors hover:text-foreground"
+            >
+              {t.footer.contributing}
             </a>
-            <a href={REPO} className="inline-flex items-center gap-2 transition-colors hover:text-foreground">
+            <a
+              href={REPO}
+              className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
+            >
               <Github className="size-4" aria-hidden="true" />
-              Source
+              {t.footer.source}
             </a>
           </div>
         </div>
 
         <p className="mt-8 max-w-3xl text-xs leading-relaxed text-muted-foreground/80">
-          Not affiliated with Anthropic or Qoder. Claude Code and Claude are trademarks of
-          Anthropic; Qoder is a product of its respective owner. This project is an
-          interoperability bridge. Use it within the terms of the accounts you own.
+          {t.footer.disclaimer}
         </p>
       </div>
     </footer>

@@ -1,8 +1,8 @@
 # qoder-claude
 
 A local **Anthropic Messages API** server backed by the [Qoder CLI](https://qoder.com).
-Point Claude Code at it and every request runs on your Qoder plan's models, with native
-tool calls, streaming and a statusline that shows which model answered.
+Point Claude Code at it and every request runs on your Qoder plan's models, with tool calls
+that keep their shape, streaming and a statusline that shows which model answered.
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
 

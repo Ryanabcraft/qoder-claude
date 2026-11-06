@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Check, Copy, Terminal } from 'lucide-react';
 import { INSTALL } from '@/data/content';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export function InstallTabs() {
+  const { t } = useI18n();
   const [active, setActive] = useState(0);
   const [copied, setCopied] = useState(false);
   const item = INSTALL[active];
@@ -20,11 +22,7 @@ export function InstallTabs() {
 
   return (
     <div className="w-full max-w-2xl">
-      <div
-        role="tablist"
-        aria-label="Install commands"
-        className="flex flex-wrap gap-1 border-b border-border"
-      >
+      <div role="tablist" aria-label="Install" className="flex flex-wrap gap-1 border-b border-border">
         {INSTALL.map((tab, i) => (
           <button
             key={tab.id}
@@ -38,7 +36,7 @@ export function InstallTabs() {
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {tab.label}
+            {t.hero.tabs[tab.id]}
           </button>
         ))}
       </div>
@@ -50,14 +48,14 @@ export function InstallTabs() {
         </code>
         <button
           onClick={copy}
-          aria-label={copied ? 'Copied' : 'Copy command'}
+          aria-label={copied ? t.hero.copied : 'Copy command'}
           className="shrink-0 border border-border p-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
         >
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
         </button>
       </div>
       <p aria-live="polite" className="mt-2 h-4 font-mono text-[11px] text-muted-foreground">
-        {copied ? 'copiado' : ''}
+        {copied ? t.hero.copied : ''}
       </p>
     </div>
   );

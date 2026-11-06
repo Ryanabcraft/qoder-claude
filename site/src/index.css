@@ -50,6 +50,26 @@ body {
   animation: travel 5s cubic-bezier(.45,.05,.55,.95) infinite;
 }
 
+.lang-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.lang-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.lang-scroll::-webkit-scrollbar-thumb {
+  background: #24403a;
+  border-radius: 999px;
+  border: 2px solid var(--panel);
+}
+.lang-scroll::-webkit-scrollbar-thumb:hover {
+  background: #35594f;
+}
+.lang-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #24403a transparent;
+  overscroll-behavior: contain;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
