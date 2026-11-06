@@ -1,10 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const target = process.cwd();
+const home = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const target = process.env.QODER_CLAUDE_TARGET || process.cwd();
 const dir = path.join(target, '.claude');
 const file = path.join(dir, 'settings.json');
 const port = process.env.BRIDGE_PORT || '8787';
+const statusline = path.join(home, 'scripts', 'statusline.js');
 
 fs.mkdirSync(dir, { recursive: true });
 
@@ -23,7 +26,12 @@ current.env = {
   ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5',
 };
 
+current.statusLine = {
+  type: 'command',
+  command: `node "${statusline}"`,
+};
+
 fs.writeFileSync(file, JSON.stringify(current, null, 2) + '\n');
 console.log(`ok -> ${file}`);
 if (fs.existsSync(file + '.bak')) console.log(`backup -> ${file}.bak`);
-console.log(`suba o bridge com: "${path.join(process.env.QODER_BRIDGE_HOME || 'D:\\SISTEMAS\\Projetos\\Qoder-Claude\\qoder-bridge', 'start.cmd')}"`);
+console.log(`inicia o bridge com: "${path.join(home, 'start.cmd')}"`);

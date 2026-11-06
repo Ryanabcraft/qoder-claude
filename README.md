@@ -18,6 +18,36 @@ que emite eventos **no mesmo formato Anthropic** (`message_start`, `content_bloc
 `content_block_stop`). O bridge só precisa: montar o prompt, ler esses eventos e traduzir
 tool calls. Nenhum token é tocado, nenhum header assinado.
 
+## Instalação em um comando
+
+Cole no **CMD**:
+
+```cmd
+gh repo clone Ryanabcraft/qoder-bridge "%LOCALAPPDATA%\qoder-bridge" -- --depth 1 2>nul || git -C "%LOCALAPPDATA%\qoder-bridge" pull --ff-only -q & powershell -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\qoder-bridge\install.ps1"
+```
+
+Ou no **PowerShell**:
+
+```powershell
+$d = Join-Path $env:LOCALAPPDATA 'qoder-bridge'
+if (Test-Path (Join-Path $d '.git')) { git -C $d pull --ff-only -q } else { gh repo clone Ryanabcraft/qoder-bridge $d -- --depth 1 }
+& (Join-Path $d 'install.ps1')
+```
+
+O instalador:
+
+1. instala o Node LTS se faltar (winget)
+2. instala o `@qoder-ai/qodercli` se faltar
+3. abre o login do Qoder se não houver sessão
+4. copia o bridge para `%LOCALAPPDATA%\qoder-bridge`
+5. grava `.claude/settings.json` no projeto atual com URL, token e **statusline**
+6. sobe o servidor em background e espera o `/health`
+7. lista os modelos para provar que a rota responde
+
+Flags: `-AllProjects` (configura o usuário inteiro), `-NoStart`, `-SkipDeps`, `-InstallDir <path>`.
+
+O statusline aparece como `Qoder · Auto` no rodapé do Claude Code.
+
 ## Requisitos
 
 - Node 20+
