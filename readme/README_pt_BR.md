@@ -4,6 +4,8 @@ Servidor local compatível com a **Anthropic Messages API** que usa o **Qoder CL
 Aponte o Claude Code para ele e os modelos do seu plano Qoder passam a responder, com tool calls
 nativas, streaming e uma statusline mostrando o modelo em uso.
 
+**Site:** https://ryanabcraft.github.io/qoder-claude/
+
 Este é o espelho do [README principal](../README.md), em inglês.
 
 ## Recursos

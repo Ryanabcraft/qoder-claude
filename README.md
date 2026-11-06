@@ -4,6 +4,8 @@ A local **Anthropic Messages API** server backed by the [Qoder CLI](https://qode
 Point Claude Code at it and every request runs on your Qoder plan's models, with native
 tool calls, streaming and a statusline that shows which model answered.
 
+**Site:** https://ryanabcraft.github.io/qoder-claude/
+
 ```
 Claude Code --/v1/messages--> qoder-bridge --stream-json--> qodercli --> api1.qoder.sh
 ```

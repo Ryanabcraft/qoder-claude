@@ -9,3 +9,6 @@ Thumbs.db
 last_req.json
 *.dump.json
 bridge.pid
+site/node_modules/
+site/dist/
+site/*.log
