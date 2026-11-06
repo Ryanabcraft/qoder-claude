@@ -23,6 +23,11 @@ function detect(): Lang {
   } catch {
     /* storage blocked */
   }
+  const nav = (typeof navigator !== 'undefined' ? navigator.language : 'en').toLowerCase();
+  if (nav.startsWith('pt')) return 'pt';
+  if (nav.startsWith('es')) return 'es';
+  if (nav.startsWith('fr')) return 'fr';
+  if (nav.startsWith('de')) return 'de';
   return 'en';
 }
 
