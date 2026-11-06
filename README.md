@@ -79,13 +79,25 @@ Then add to `~/.claude/settings.json`:
 ## Usage
 
 ```bash
-claude                                   # uses Auto
+claude                                   # uses Auto, with the model's own limits
 claude --model Qwen3.8-Max               # any model from GET /v1/models
-MAX_THINKING_TOKENS=8000 claude          # thinking budget forwarded to the CLI
-QODER_CONTEXT_WINDOW=200000 node src/server.js   # server-side context window
 ```
 
 Inside a session, `/model Qwen3.8-Max` switches at the next request.
+
+Nothing is capped by default: the bridge does not send `--max-output-tokens`,
+`--thinking` or `--context-window` unless you ask for it. The Qoder CLI uses the model's
+native limits. Optional overrides, when you actually want them:
+
+```bash
+# server side
+QODER_MAX_OUTPUT_TOKENS=16000 node src/server.js
+QODER_CONTEXT_WINDOW=200000 node src/server.js
+QODER_THINKING=enabled QODER_THINKING_BUDGET=8000 node src/server.js
+
+# client side (Claude Code forwards it as thinking.budget_tokens)
+MAX_THINKING_TOKENS=8000 claude
+```
 
 ### Models
 
@@ -110,7 +122,7 @@ Set `QODER_MODEL_MAP=1` to map Claude families: `opus` â†’ Ultimate, `sonnet` â†
 | `QODER_THINKING` | from request | `enabled`, `adaptive`, `disabled` |
 | `QODER_THINKING_BUDGET` | from request | thinking tokens |
 | `QODER_CONTEXT_WINDOW` | from request | context window |
-| `QODER_MAX_OUTPUT_TOKENS` | `8192` | output cap |
+| `QODER_MAX_OUTPUT_TOKENS` | unset | optional output cap; unset = model default |
 | `QODER_CLI_BIN` | auto-detected | path to `qodercli.js` |
 | `BRIDGE_LOG` | on | `0` silences access log |
 | `BRIDGE_DUMP` | empty | file path for the last request |

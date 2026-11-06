@@ -77,13 +77,25 @@ Depois adicione em `~/.claude/settings.json`:
 ## Uso
 
 ```bash
-claude                                   # usa Auto
+claude                                   # usa Auto, com os limites do próprio modelo
 claude --model Qwen3.8-Max               # qualquer modelo de GET /v1/models
-MAX_THINKING_TOKENS=8000 claude          # orçamento de pensamento repassado ao CLI
-QODER_CONTEXT_WINDOW=200000 node src/server.js   # janela de contexto no servidor
 ```
 
 Dentro da sessão, `/model Qwen3.8-Max` troca no próximo request.
+
+Nada é limitado por padrão: o bridge não envia `--max-output-tokens`, `--thinking` nem
+`--context-window` a menos que você peça. O Qoder CLI usa os limites nativos do modelo.
+Overrides opcionais, quando você realmente quiser:
+
+```bash
+# no servidor
+QODER_MAX_OUTPUT_TOKENS=16000 node src/server.js
+QODER_CONTEXT_WINDOW=200000 node src/server.js
+QODER_THINKING=enabled QODER_THINKING_BUDGET=8000 node src/server.js
+
+# no cliente (o Claude Code repassa como thinking.budget_tokens)
+MAX_THINKING_TOKENS=8000 claude
+```
 
 ### Modelos
 
@@ -108,7 +120,7 @@ DeepSeek-Flash, MiniMax-M3.1-Flash`
 | `QODER_THINKING` | do request | `enabled`, `adaptive`, `disabled` |
 | `QODER_THINKING_BUDGET` | do request | tokens de pensamento |
 | `QODER_CONTEXT_WINDOW` | do request | janela de contexto |
-| `QODER_MAX_OUTPUT_TOKENS` | `8192` | teto de saída |
+| `QODER_MAX_OUTPUT_TOKENS` | vazio | teto opcional de saída; vazio = padrão do modelo |
 | `QODER_CLI_BIN` | auto | caminho do `qodercli.js` |
 | `BRIDGE_LOG` | ligado | `0` silencia o log |
 | `BRIDGE_DUMP` | vazio | arquivo do último request |
