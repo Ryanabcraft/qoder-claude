@@ -17,7 +17,7 @@ mkdir -p "$STAGE"
 
 if curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP/src.tar.gz"; then
   tar -xzf "$TMP/src.tar.gz" -C "$STAGE"
-  SRC="$STAGE/qoder-bridge-$BRANCH"
+  SRC="$STAGE/${REPO##*/}-$BRANCH"
   if [ -f "$SRC/src/server.js" ]; then
     # rename the shell scripts first: cp onto update.sh itself fails with "text file busy"
     for f in "$SRC"/*.sh; do

@@ -39,7 +39,7 @@ if (-not $SourceDir -or -not (Test-Path (Join-Path $SourceDir 'src\server.js')))
 
 function Install-Winget($id, $cmdName) {
   if (-not (Have 'winget')) { Die "$cmdName is missing and winget was not found. Install it manually." }
-  Warn "$cmdName ausente, instalando via winget ($id)..."
+  Warn "$cmdName missing, installing via winget ($id)..."
   winget install --id $id -e --source winget --accept-package-agreements --accept-source-agreements --silent | Out-Null
   $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
   if (-not (Have $cmdName)) { Die "$cmdName is not on PATH. Reopen the terminal." }
