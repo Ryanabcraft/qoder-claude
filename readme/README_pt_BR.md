@@ -51,11 +51,13 @@ O instalador:
 4. instala o bridge em `%LOCALAPPDATA%\qoder-bridge` ou `~/.local/share/qoder-bridge`
 5. grava o `~/.claude/settings.json` **global** (backup em `.bak`) com URL, token,
    `modelPicker` e statusline
-6. sobe o servidor em background e espera o `/health`
+6. abre o servidor numa janela de terminal e espera o `/health` (sem terminal disponível, cai
+   para background com arquivo de log)
 7. lista os modelos para provar que a rota responde
 
-Flags: `-ProjectOnly` / `--project-only` (configura só o diretório atual),
-`-NoStart` / `--no-start`, `-SkipDeps`, `-InstallDir <path>` / `--dir <path>`.
+Flags do `install.sh`: `--project-only` (configura só o diretório atual), `--no-start`,
+`--dir <path>`. Do `install.ps1`: `-ProjectOnly`, `-NoStart`, `-SkipDeps`, `-InstallDir <path>`.
+`update.sh --no-start` atualiza sem reiniciar o servidor (CI, containers).
 
 O diretório de instalação mantém o nome histórico `qoder-bridge` para não quebrar instalações
 existentes; só o repositório e o comando se chamam `qoder-claude`.
