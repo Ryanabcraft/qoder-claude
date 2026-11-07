@@ -1,0 +1,59 @@
+name: unix install
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - 'start.sh'
+      - 'stop.sh'
+      - 'update.sh'
+      - 'bin/**'
+      - 'scripts/**'
+      - 'src/**'
+      - '.github/workflows/unix-install.yml'
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'start.sh'
+      - 'stop.sh'
+      - 'update.sh'
+      - 'bin/**'
+      - 'scripts/**'
+      - 'src/**'
+      - '.github/workflows/unix-install.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage the source without .git
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/src" "$RUNNER_TEMP/home"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/src"
+
+      - name: Install with no Node on PATH
+        shell: bash
+        run: |
+          env -i HOME="$RUNNER_TEMP/home" TMPDIR="$RUNNER_TEMP" PATH="/usr/bin:/bin" \
+            bash "$RUNNER_TEMP/src/install.sh" \
+              --source "$RUNNER_TEMP/src" --no-start --skip-claude --skip-login
+
+      - name: Verify the installed tree
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/home/.local/node/bin/node" -v
+          "$RUNNER_TEMP/home/.local/bin/qclaude" --help > /dev/null
+          test -f "$RUNNER_TEMP/home/.local/share/qoder-bridge/src/server.js"
+          test -f "$RUNNER_TEMP/home/.claude/settings.json"

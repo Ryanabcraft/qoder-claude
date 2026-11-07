@@ -6,15 +6,23 @@ REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
 PORT="${BRIDGE_PORT:-8787}"
 INSTALL_DIR="${QODER_BRIDGE_HOME:-$HOME/.local/share/qoder-bridge}"
+NODE_LOCAL="$HOME/.local/node"
 PROJECT_ONLY=0
+NODE_BIN=""
+SKIP_CLAUDE=0
+SKIP_LOGIN=0
+SOURCE_DIR=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-start) ;;  # accepted for compatibility; the installer never starts the server
     --project-only) PROJECT_ONLY=1 ;;
+    --skip-claude) SKIP_CLAUDE=1 ;;
+    --skip-login) SKIP_LOGIN=1 ;;
     --dir) shift; INSTALL_DIR="$1" ;;
+    --source) shift; SOURCE_DIR="$1" ;;
     -h|--help)
-      echo "usage: install.sh [--project-only] [--dir <path>]"
+      echo "usage: install.sh [--project-only] [--skip-claude] [--skip-login] [--dir <path>] [--source <dir>]"
       exit 0 ;;
     *) echo "unknown flag: $1"; exit 1 ;;
   esac
@@ -28,24 +36,87 @@ die()  { printf '\n    \033[31mx\033[0m   %s\n' "$1"; exit 1; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-step "Checking dependencies"
-have node || die "Node.js 20+ not found. Install it from https://nodejs.org or use nvm."
-have curl || die "curl not found."
-have tar  || die "tar not found."
-
-NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
-[ "$NODE_MAJOR" -ge 20 ] || die "Node 20+ required (current: $(node -v))."
-ok "node $(node -v)"
-
-step "Downloading the bridge"
 TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
 trap 'rm -rf "$TMP"' EXIT
-curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP/src.tar.gz" \
-  || die "download failed."
-tar -xzf "$TMP/src.tar.gz" -C "$TMP"
-SRC="$TMP/${REPO##*/}-$BRANCH"
+
+node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
+
+install_node() {
+  local os arch version file want got
+  os=$(uname -s)
+  arch=$(uname -m)
+  case "$os" in
+    Linux) os=linux ;;
+    Darwin) os=darwin ;;
+    *) return 1 ;;
+  esac
+  case "$arch" in
+    x86_64|amd64) arch=x64 ;;
+    arm64|aarch64) arch=arm64 ;;
+    *) return 1 ;;
+  esac
+
+  curl -fsSL "https://nodejs.org/dist/index.tab" -o "$TMP/node.tab" || return 1
+  version=$(awk -F'\t' 'NR > 1 && $10 != "-" { print $1; exit }' "$TMP/node.tab")
+  [ -n "$version" ] || return 1
+
+  file="node-$version-$os-$arch.tar.gz"
+  curl -fsSL "https://nodejs.org/dist/$version/$file" -o "$TMP/$file" || return 1
+  if curl -fsSL "https://nodejs.org/dist/$version/SHASUMS256.txt" -o "$TMP/sums.txt"; then
+    want=$(grep " $file\$" "$TMP/sums.txt" | awk '{print $1}')
+    if have sha256sum; then
+      got=$(sha256sum "$TMP/$file" | awk '{print $1}')
+    elif have shasum; then
+      got=$(shasum -a 256 "$TMP/$file" | awk '{print $1}')
+    fi
+    if [ -n "$want" ] && [ -n "${got:-}" ] && [ "$want" != "$got" ]; then
+      warn "checksum mismatch for $file"
+      return 1
+    fi
+  fi
+
+  mkdir -p "$NODE_LOCAL"
+  tar -xzf "$TMP/$file" -C "$NODE_LOCAL" --strip-components=1 || return 1
+  NODE_BIN="$NODE_LOCAL/bin/node"
+  [ -x "$NODE_BIN" ] || return 1
+  return 0
+}
+
+step "Checking dependencies"
+have curl || die "curl not found."
+have tar  || die "tar not found."
+have awk  || die "awk not found."
+
+if have node && [ "$(node_major "$(command -v node)")" -ge 20 ]; then
+  NODE_BIN="$(command -v node)"
+  ok "node $(node -v)"
+elif [ -x "$NODE_LOCAL/bin/node" ] && [ "$(node_major "$NODE_LOCAL/bin/node")" -ge 20 ]; then
+  NODE_BIN="$NODE_LOCAL/bin/node"
+  export PATH="$NODE_LOCAL/bin:$PATH"
+  ok "node $("$NODE_BIN" -v) (local)"
+else
+  if have node; then
+    warn "node $(node -v) is older than 20; installing the official LTS into $NODE_LOCAL"
+  else
+    warn "node not found; installing the official LTS into $NODE_LOCAL (no sudo)"
+  fi
+  install_node || die "could not install Node.js automatically. Install Node 20+ from https://nodejs.org and run again."
+  export PATH="$NODE_LOCAL/bin:$PATH"
+  ok "node $("$NODE_BIN" -v) at $NODE_LOCAL"
+fi
+
+step "Downloading the bridge"
+if [ -n "$SOURCE_DIR" ]; then
+  SRC="$SOURCE_DIR"
+  ok "using local source at $SRC"
+else
+  curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP/src.tar.gz" \
+    || die "download failed."
+  tar -xzf "$TMP/src.tar.gz" -C "$TMP"
+  SRC="$TMP/${REPO##*/}-$BRANCH"
+  ok "source downloaded"
+fi
 [ -f "$SRC/src/server.js" ] || die "invalid package."
-ok "source downloaded"
 
 step "Installing the Qoder CLI"
 if have qodercli; then
@@ -60,7 +131,9 @@ else
 fi
 
 step "Installing Claude Code"
-if have claude; then
+if [ "$SKIP_CLAUDE" -eq 1 ]; then
+  warn "skipped (--skip-claude)"
+elif have claude; then
   ok "claude $(claude --version 2>/dev/null | head -n 1)"
 else
   if curl -fsSL "https://claude.ai/install.sh" -o "$TMP/claude-install.sh" && bash "$TMP/claude-install.sh"; then
@@ -81,7 +154,9 @@ else
 fi
 
 step "Checking Qoder login"
-if qodercli status 2>/dev/null | grep -q 'Username:'; then
+if [ "$SKIP_LOGIN" -eq 1 ]; then
+  warn "skipped (--skip-login)"
+elif qodercli status 2>/dev/null | grep -q 'Username:'; then
   ok "$(qodercli status 2>/dev/null | grep 'Username:')"
 else
   warn "no active session; opening login"
@@ -96,7 +171,7 @@ ok "files copied"
 
 step "Installing the qclaude command"
 mkdir -p "$HOME/.local/bin"
-printf '#!/usr/bin/env bash\nexec node "%s/bin/qclaude.js" "$@"\n' "$INSTALL_DIR" > "$HOME/.local/bin/qclaude"
+printf '#!/usr/bin/env bash\nexec "%s" "%s/bin/qclaude.js" "$@"\n' "$NODE_BIN" "$INSTALL_DIR" > "$HOME/.local/bin/qclaude"
 chmod +x "$HOME/.local/bin/qclaude"
 ok "$HOME/.local/bin/qclaude"
 case ":$PATH:" in
@@ -105,12 +180,20 @@ case ":$PATH:" in
     warn "~/.local/bin is not on PATH. Add this line to ~/.bashrc or ~/.zshrc:"
     printf '        export PATH="$HOME/.local/bin:$PATH"\n' ;;
 esac
+if [ "$NODE_BIN" = "$NODE_LOCAL/bin/node" ]; then
+  case ":$PATH:" in
+    *":$NODE_LOCAL/bin:"*) ;;
+    *)
+      warn "add Node to PATH for start.sh/update.sh too:"
+      printf '        export PATH="$HOME/.local/node/bin:$PATH"\n' ;;
+  esac
+fi
 
 step "Configuring Claude Code"
 if [ "$PROJECT_ONLY" -eq 1 ]; then
-  QODER_CLAUDE_TARGET="$(pwd)" node "$INSTALL_DIR/scripts/enable-here.js"
+  QODER_CLAUDE_TARGET="$(pwd)" "$NODE_BIN" "$INSTALL_DIR/scripts/enable-here.js"
 else
-  QODER_CLAUDE_TARGET="$HOME" node "$INSTALL_DIR/scripts/enable-here.js"
+  QODER_CLAUDE_TARGET="$HOME" "$NODE_BIN" "$INSTALL_DIR/scripts/enable-here.js"
 fi
 
 printf '\n  \033[32mQoder-Claude installed.\033[0m\n\n'

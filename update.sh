@@ -3,6 +3,10 @@ set -eu
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
+if ! command -v node >/dev/null 2>&1 && [ -x "$HOME/.local/node/bin/node" ]; then
+  PATH="$HOME/.local/node/bin:$PATH"
+  export PATH
+fi
 STAGE="$DIR/.update-stage"
 TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
 trap 'rm -rf "${TMP:-}" "${STAGE:-}"' EXIT

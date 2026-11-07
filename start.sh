@@ -19,5 +19,14 @@ if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
   exit 0
 fi
 
+NODE="$(command -v node 2>/dev/null || true)"
+if [ -z "$NODE" ] && [ -x "$HOME/.local/node/bin/node" ]; then
+  NODE="$HOME/.local/node/bin/node"
+fi
+if [ -z "$NODE" ]; then
+  echo "  [x] node not found. run the installer again." >&2
+  exit 1
+fi
+
 echo $$ > "$DIR/bridge.pid"
-exec node "$DIR/src/server.js"
+exec "$NODE" "$DIR/src/server.js"
