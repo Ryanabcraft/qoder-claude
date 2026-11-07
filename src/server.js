@@ -75,6 +75,14 @@ function errorBody(message, status) {
   return { type: 'error', error: { type: errorType(status), message } };
 }
 
+function stripToolBlocks(text) {
+  if (!text) return text;
+  let out = text.replace(/<tool_calls>[\s\S]*?<\/tool_calls>/g, '');
+  const open = out.lastIndexOf('<tool_calls>');
+  if (open !== -1) out = out.slice(0, open);
+  return out.replace(/\s+$/, '');
+}
+
 async function handleMessages(req, res, body) {
   const t0 = Date.now();
   const stream = body.stream !== false;
@@ -107,7 +115,7 @@ async function handleMessages(req, res, body) {
         content.push({ type: 'tool_use', id: `toolu_${randomUUID().replace(/-/g, '').slice(0, 20)}`, name: c.name, input: c.input });
       }
     } else {
-      content.push({ type: 'text', text: out.text });
+      content.push({ type: 'text', text: stripToolBlocks(out.text) });
     }
     log(`  done session=${out.sessionHit ? 'hit' : 'miss'} key=${out.sessionKey || '-'} from=${out.from ?? 0} total=${Date.now() - t0}ms`);
     return send(res, 200, {
@@ -153,7 +161,7 @@ async function handleMessages(req, res, body) {
   let nextIndex = 0;
   let textIndex = -1;
   let emitted = '';
-  let gateState = wantsTools ? 'text' : 'text';
+  let gateState = 'text';
   let pending = '';
   const MARK = '<tool_calls>';
 
@@ -176,7 +184,6 @@ async function handleMessages(req, res, body) {
 
   const feed = (t) => {
     if (!t) return;
-    if (!wantsTools) return emitText(t);
     if (gateState === 'tool') { pending += t; return; }
     pending += t;
     const at = pending.indexOf(MARK);
@@ -255,7 +262,8 @@ async function handleMessages(req, res, body) {
       usage: { output_tokens: estimate(full) },
     });
   } else {
-    if (full.length > emitted.length) emitText(full.slice(emitted.length));
+    const visible = stripToolBlocks(full);
+    if (visible.length > emitted.length) emitText(visible.slice(emitted.length));
     stopText();
     write('message_delta', {
       type: 'message_delta',
