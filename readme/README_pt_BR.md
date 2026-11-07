@@ -304,6 +304,20 @@ desconhecido.
 - O CLI roda com `--max-model-request-retries 0`; ajuste com `BRIDGE_MODEL_RETRIES`.
 - Respostas em stream também levam um `: ping` de keepalive a cada 12 s.
 
+## Painel
+
+Com o servidor no ar, abra **http://127.0.0.1:8787/ui**.
+
+| aba | o que faz |
+|---|---|
+| Overview | transporte, porta, conta, quantidade de modelos, uptime; atualizar e parar |
+| Accounts | lista, adiciona (login no navegador), troca e remove |
+| Models | a lista viva de modelos |
+| Test | envia um prompt curto e mostra status, latência e resposta |
+| Logs | últimas 200 linhas do `bridge.log` |
+
+Tudo em loopback e com a mesma `BRIDGE_API_KEY` da API, quando definida.
+
 ## Transportes
 
 | transporte | como funciona |

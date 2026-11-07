@@ -1,4 +1,6 @@
 import http from 'node:http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls } from './prompt.js';
@@ -6,6 +8,7 @@ import { runCompletion, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { detectModels } from './models.js';
+import { handleUi } from './uiApi.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
@@ -14,6 +17,8 @@ const TRANSPORT = process.env.BRIDGE_TRANSPORT || (directCompletion ? 'direct' :
 const run = TRANSPORT === 'direct' && directCompletion ? directCompletion : runCompletion;
 const LOG_FILE = process.env.BRIDGE_LOG_FILE || '';
 const LOG_ON = process.env.BRIDGE_LOG !== '0';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const LOG_PATH = LOG_FILE || path.join(ROOT, 'bridge.log');
 
 function log(msg) {
   if (!LOG_ON) return;
@@ -285,6 +290,10 @@ const server = http.createServer(async (req, res) => {
   const path = url.pathname.replace(/\/+$/, '');
   log(`${new Date().toISOString()} ${req.method} ${url.pathname}${url.search}`);
 
+  if (url.pathname === '/ui' || url.pathname.startsWith('/ui/')) {
+    if (await handleUi(req, res, url, { authorized, logFile: LOG_PATH })) return;
+  }
+
   if (req.method === 'GET' && (path === '/health' || path === '/')) {
     return send(res, 200, { ok: true, service: 'qoder-bridge', port: PORT });
   }
@@ -345,6 +354,7 @@ server.headersTimeout = 0;
 server.listen(PORT, HOST, () => {
   log(`qoder-bridge on http://${HOST}:${PORT}`);
   log(`claude:  ANTHROPIC_BASE_URL=http://${HOST}:${PORT}`);
+  log(`dashboard: http://${HOST}:${PORT}/ui`);
   log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');
   log('close this window or press Ctrl+C to stop.');
   log(`models: ${detectModels().slice(0, 5).join(', ')}, ...`);
