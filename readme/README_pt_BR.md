@@ -1,7 +1,7 @@
 # qoder-claude (Português)
 
-Servidor local compatível com a **Anthropic Messages API** que usa o **Qoder CLI** como backend.
-Aponte o Claude Code para ele e os modelos do seu plano Qoder passam a responder, com tool calls
+Servidor local compatível com a **Anthropic Messages API** apoiado no seu plano Qoder.
+Aponte o Claude Code para ele e os modelos do seu plano passam a responder, com tool calls
 que mantêm a forma, streaming e uma statusline mostrando o modelo em uso.
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
@@ -14,11 +14,14 @@ Este é o espelho do [README principal](../README.md), em inglês.
 ## Recursos
 
 - `/v1/messages` compatível com Anthropic, SSE real e blocos `tool_use`
-- Pool de workers aquecidos: ~2 s por request com o pool pronto
+- Transporte direto: assina e cifra cada requisição com o WASM embutido do Qoder, sem processo do CLI
+- Pool de workers aquecidos no fallback CLI: ~2 s por request com o pool pronto
+- Quantas contas você quiser, com failover automático quando uma bate a cota
 - Modelo, orçamento de pensamento e janela de contexto selecionáveis por request
 - Statusline `Qoder · <modelo>` gravada nas configurações do Claude Code
 - Instalador de um comando no Windows: dependências, login, configuração, servidor e health check
-- Nenhum manuseio de credencial: o bridge nunca lê, guarda ou repassa tokens do Qoder
+- O token fica local: o bridge decifra o cofre do Qoder em memória para assinar a requisição e
+  não o envia para nenhum outro host
 
 ## Instalação
 
