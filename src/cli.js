@@ -60,8 +60,7 @@ function baseArgs(cfg) {
     '--max-model-request-retries', String(process.env.BRIDGE_MODEL_RETRIES ?? 0),
     '--cwd', cleanWorkspace(),
     '--model', cfg.model,
-    '--system-prompt',
-    [cfg.system, cfg.hasTools ? TOOL_BRIDGE_RULES : ''].filter(Boolean).join('\n\n'),
+    '--system-prompt', cfg.system,
   ];
   const budget = Number(process.env.QODER_MAX_OUTPUT_TOKENS || 0);
   if (budget > 0) args.push('--max-output-tokens', String(budget));
@@ -72,16 +71,6 @@ function baseArgs(cfg) {
   if (cfg.contextWindow) args.push('--context-window', String(cfg.contextWindow));
   return args;
 }
-
-const TOOL_BRIDGE_RULES = [
-  'You are the model behind this agent. The instructions above come from the agent and must be followed exactly.',
-  'The tools are listed in the TOOLS section of every user turn. They are real: the caller executes them.',
-  'To call one, reply with nothing but:',
-  '<tool_calls>[{"name":"<tool>","input":{...}}]</tool_calls>',
-  'No prose before or after the block, and "input" must match the schema exactly.',
-  'Never paste file contents into the reply when a tool can read or write it.',
-  'Otherwise answer in plain text.',
-].join('\n');
 
 export function workerConfig(body = {}, system = '') {
   const model = resolveModel(body.model);

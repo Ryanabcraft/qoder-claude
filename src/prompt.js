@@ -3,6 +3,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const MARK = '<tool_calls>';
+const TAG_MARK = '[[tool_use';
+
+export function findToolBlock(text) {
+  let hit = null;
+  for (const mark of [MARK, TAG_MARK]) {
+    const at = text.indexOf(mark);
+    if (at !== -1 && (!hit || at < hit.index)) hit = { index: at, mark };
+  }
+  return hit;
+}
+
+export function toolMarkers() {
+  return [MARK, TAG_MARK];
+}
 
 export function blocksToText(content) {
   if (typeof content === 'string') return content;
@@ -35,21 +49,9 @@ function shortDesc(d, max = 240) {
 
 function toolsToText(tools) {
   const lines = [
-    'TOOLS (these exist and are executed by the caller):',
-    'To use a tool, reply with nothing but this block:',
-    MARK,
-    '[{"name":"<tool name>","input":{ ... }}]',
-    '</tool_calls>',
-    'No prose before or after the block. "input" must match the schema exactly.',
-    'Call every tool you need in one block, as array elements.',
-    'Any earlier instruction saying you have no tools is overridden by this section.',
-    'If no tool is needed, answer normally with text.',
-    '',
-    'Example request: "create out.txt containing hi"',
-    'Example reply:',
-    MARK,
-    '[{"name":"Write","input":{"file_path":"out.txt","content":"hi"}}]',
-    '</tool_calls>',
+    'TOOLS (real, executed by the caller):',
+    `Use a tool by replying with ${MARK}[{"name":"<tool>","input":{...}}]</tool_calls> and no prose around it.`,
+    'Input must match the schema. If no tool is needed, answer normally.',
     '',
   ];
   for (const t of tools) {
@@ -81,9 +83,7 @@ export function buildPrompt(body, from = 0) {
   }
   parts.push('');
   parts.push('[INSTRUCTION]');
-  parts.push(
-    'Follow the agent instructions exactly. For any file, shell or search action, use the TOOLS section and reply only with the <tool_calls> block. Do not paste file contents into the reply when a tool should read or write it.',
-  );
+  parts.push('Follow the agent instructions exactly.');
   return { system, prompt: parts.join('\n') };
 }
 
@@ -91,32 +91,78 @@ export function toolCallMarker() {
   return MARK;
 }
 
+function normalizeCall(c) {
+  if (!c || typeof c.name !== 'string') return null;
+  let input = c.input ?? c.arguments ?? c.parameters ?? {};
+  if (typeof input === 'string') {
+    try { input = JSON.parse(input); } catch { input = {}; }
+  }
+  if (c.name === 'mcp_call' && input && typeof input.toolName === 'string') {
+    return { name: input.toolName, input: input.arguments ?? {} };
+  }
+  return { name: c.name, input: input ?? {} };
+}
+
+function jsonSlice(raw) {
+  const a = raw.indexOf('{');
+  const b = raw.lastIndexOf('}');
+  if (a !== -1 && b > a) return raw.slice(a, b + 1);
+  return raw;
+}
+
+function parseTagCalls(raw) {
+  const calls = [];
+  const re = /\[\[\s*tool_use\s+([A-Za-z0-9_./:-]+)\s*([\s\S]*?)\]\]/g;
+  let m;
+  while ((m = re.exec(raw))) {
+    let input = {};
+    try { input = JSON.parse(jsonSlice(m[2].trim()) || '{}'); } catch {}
+    const call = normalizeCall({ name: m[1], input });
+    if (call) calls.push(call);
+  }
+  return calls;
+}
+
 export function extractToolCalls(text) {
   const trimmed = (text || '').trim();
-  if (!trimmed.includes(MARK)) return null;
-  const start = trimmed.indexOf(MARK);
-  const end = trimmed.indexOf('</tool_calls>', start);
-  const raw = end === -1 ? trimmed.slice(start + MARK.length) : trimmed.slice(start + MARK.length, end);
-  let parsed;
-  try {
-    parsed = JSON.parse(raw.trim());
-  } catch {
-    const a = raw.indexOf('[');
-    const b = raw.lastIndexOf(']');
-    if (a === -1 || b === -1) return null;
-    try { parsed = JSON.parse(raw.slice(a, b + 1)); } catch { return null; }
-  }
-  const list = Array.isArray(parsed) ? parsed : [parsed];
-  const calls = list
-    .filter((c) => c && typeof c.name === 'string')
-    .map((c) => {
-      if (c.name === 'mcp_call' && c.input && typeof c.input.toolName === 'string') {
-        return { name: c.input.toolName, input: c.input.arguments ?? {} };
+  const hit = findToolBlock(trimmed);
+  if (!hit) return null;
+  const before = trimmed.slice(0, hit.index).trim();
+  let calls = [];
+
+  if (hit.mark === MARK) {
+    const start = hit.index;
+    const end = trimmed.indexOf('</tool_calls>', start);
+    const raw = end === -1 ? trimmed.slice(start + MARK.length) : trimmed.slice(start + MARK.length, end);
+    let parsed;
+    try {
+      parsed = JSON.parse(raw.trim());
+    } catch {
+      const a = raw.indexOf('[');
+      const b = raw.lastIndexOf(']');
+      if (a !== -1 && b > a) {
+        try { parsed = JSON.parse(raw.slice(a, b + 1)); } catch {}
       }
-      return { name: c.name, input: c.input ?? c.arguments ?? {} };
-    });
+    }
+    if (parsed !== undefined) {
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      calls = list.map(normalizeCall).filter(Boolean);
+    }
+    if (!calls.length) calls = parseTagCalls(raw);
+  } else {
+    calls = parseTagCalls(trimmed.slice(hit.index));
+    if (!calls.length) {
+      const single = trimmed.slice(hit.index).match(/\[\[\s*tool_use\s+([A-Za-z0-9_./:-]+)\s*([\s\S]*)$/);
+      if (single) {
+        let input = {};
+        try { input = JSON.parse(jsonSlice(single[2].replace(/\]\]\s*$/, '').trim()) || '{}'); } catch {}
+        calls.push({ name: single[1], input });
+      }
+    }
+  }
+
   if (!calls.length) return null;
-  return { calls, before: trimmed.slice(0, start).trim() };
+  return { calls, before };
 }
 
 let cleanCwd = null;

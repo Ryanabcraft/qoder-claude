@@ -416,15 +416,19 @@ não é prático.
 
 O CLI oficial já emite eventos no formato Anthropic com
 `--output-format stream-json --include-partial-messages`. O bridge monta o prompt, lê esses
-eventos e repassa. O system prompt do próprio agente vai intacto para o CLI, com apenas o
-contrato de tool call anexado — o modelo mantém as regras do agente e chama ferramenta em vez
-de colar o conteúdo no chat. As tool calls são negociadas em texto:
+eventos e repassa. O system prompt do agente vai **intacto** para o modelo — nada é anexado a
+ele. A lista de ferramentas viaja numa seção própria do turno, então o modelo mantém as regras
+do Claude Code e continua sabendo quais ferramentas existem.
+
+As tool calls são negociadas em texto e o bridge aceita os dois formatos que o modelo produz:
 
 ```
 <tool_calls>[{"name":"Write","input":{"file_path":"a.txt","content":"x"}}]</tool_calls>
+[[tool_use Read {"file_path":"a.txt"}]]
 ```
 
-O bridge converte o bloco em `tool_use` real e o Claude Code executa.
+O bloco vira um `tool_use` real e o Claude Code executa. O gate do stream segura o texto assim
+que qualquer um dos marcadores aparece, então bloco pela metade nunca chega ao cliente.
 
 ## Limites
 
