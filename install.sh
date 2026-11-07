@@ -15,9 +15,9 @@ while [ $# -gt 0 ]; do
     --project-only) PROJECT_ONLY=1 ;;
     --dir) shift; INSTALL_DIR="$1" ;;
     -h|--help)
-      echo "uso: install.sh [--no-start] [--project-only] [--dir <path>]"
+      echo "usage: install.sh [--no-start] [--project-only] [--dir <path>]"
       exit 0 ;;
-    *) echo "flag desconhecida: $1"; exit 1 ;;
+    *) echo "unknown flag: $1"; exit 1 ;;
   esac
   shift
 done
@@ -28,6 +28,18 @@ warn() { printf '    \033[33m!!\033[0m  %s\n' "$1"; }
 die()  { printf '\n    \033[31mx\033[0m   %s\n' "$1"; exit 1; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+health() { curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; }
+
+wait_health() {
+  i=0
+  while [ $i -lt 30 ]; do
+    health && return 0
+    i=$((i + 1))
+    sleep 1
+  done
+  return 1
+}
 
 step "Checking dependencies"
 have node || die "Node.js 20+ not found. Install it from https://nodejs.org or use nvm."
@@ -81,7 +93,9 @@ chmod +x "$HOME/.local/bin/qclaude"
 ok "$HOME/.local/bin/qclaude"
 case ":$PATH:" in
   *":$HOME/.local/bin:"*) ok "~/.local/bin is already on PATH" ;;
-  *) warn "adicione ao PATH: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+  *)
+    warn "~/.local/bin is not on PATH. Add this line to ~/.bashrc or ~/.zshrc:"
+    printf '        export PATH="$HOME/.local/bin:$PATH"\n' ;;
 esac
 
 step "Configuring Claude Code"
@@ -93,19 +107,15 @@ fi
 
 if [ "$NO_START" -eq 0 ]; then
   step "Starting the server"
-  if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
+  if health; then
     ok "already running at 127.0.0.1:$PORT"
+  elif node "$INSTALL_DIR/bin/qclaude.js" --window >/dev/null 2>&1; then
+    ok "server window opened at 127.0.0.1:$PORT"
   else
+    warn "no terminal found; starting in the background (log: $INSTALL_DIR/bridge.log)"
     nohup node "$INSTALL_DIR/src/server.js" >> "$INSTALL_DIR/bridge.log" 2>&1 &
     echo $! > "$INSTALL_DIR/bridge.pid"
-    ready=0
-    i=0
-    while [ $i -lt 30 ]; do
-      if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then ready=1; break; fi
-      i=$((i + 1))
-      sleep 1
-    done
-    [ "$ready" -eq 1 ] || die "server did not respond; see $INSTALL_DIR/bridge.log"
+    wait_health || die "server did not respond; see $INSTALL_DIR/bridge.log"
     ok "server running at 127.0.0.1:$PORT"
   fi
 fi

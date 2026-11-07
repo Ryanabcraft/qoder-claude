@@ -37,12 +37,16 @@ async function isUp() {
     process.exit(1);
   }
 
-  if (window && openServerWindow()) {
-    for (let i = 0; i < 120; i++) {
-      if (await isUp()) return null;
-      await wait(500);
+  if (window) {
+    if (openServerWindow()) {
+      for (let i = 0; i < 120; i++) {
+        if (await isUp()) return null;
+        await wait(500);
+      }
+      console.error('qclaude: the server window did not come up; starting it here instead.');
+    } else {
+      console.log(`qclaude: no terminal found; logging to ${LOG}`);
     }
-    console.error('qclaude: the server window did not come up; starting it here instead.');
   }
 
   const out = fs.openSync(LOG, 'a');
