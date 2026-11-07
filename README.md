@@ -429,15 +429,20 @@ The Qoder inference endpoint encrypts and signs each request body (`Authorizatio
 
 The official CLI already emits Anthropic-shaped events with
 `--output-format stream-json --include-partial-messages`. The bridge builds the prompt,
-reads those events and forwards them. The agent's own system prompt is passed to the CLI
-intact, with only the tool-call contract appended — the model keeps the agent's rules, so it
-calls tools instead of pasting file contents into the reply. Tool calls are negotiated in text:
+reads those events and forwards them. The agent's system prompt is passed to the model
+**verbatim** — nothing is appended to it. The tool list travels in its own section of the
+turn, so the model keeps Claude Code's rules and still knows which tools exist.
+
+Tool calls are negotiated in text and the bridge accepts either shape the model produces:
 
 ```
 <tool_calls>[{"name":"Write","input":{"file_path":"a.txt","content":"x"}}]</tool_calls>
+[[tool_use Read {"file_path":"a.txt"}]]
 ```
 
-The bridge converts the block into a real `tool_use` block and Claude Code executes it.
+The block is converted into a real `tool_use` block and Claude Code executes it. The
+streaming gate holds the text as soon as either marker appears, so a partial block never
+reaches the client as chat.
 
 ## Limitations
 

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { buildPrompt, extractToolCalls } from './prompt.js';
+import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './prompt.js';
 import { runCompletion, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
@@ -94,8 +94,8 @@ function errorBody(message, status) {
 function stripToolBlocks(text) {
   if (!text) return text;
   let out = text.replace(/<tool_calls>[\s\S]*?<\/tool_calls>/g, '');
-  const open = out.lastIndexOf('<tool_calls>');
-  if (open !== -1) out = out.slice(0, open);
+  const hit = findToolBlock(out);
+  if (hit) out = out.slice(0, hit.index);
   return out.replace(/\s+$/, '');
 }
 
@@ -228,7 +228,7 @@ async function handleMessages(req, res, body) {
   let emitted = '';
   let gateState = 'text';
   let pending = '';
-  const MARK = '<tool_calls>';
+  const MARKS = toolMarkers();
 
   const startText = () => {
     if (textIndex !== -1) return;
@@ -247,21 +247,28 @@ async function handleMessages(req, res, body) {
     textIndex = -1;
   };
 
+  const holdTail = (s) => {
+    let hold = 0;
+    for (const mark of MARKS) {
+      for (let k = Math.min(mark.length - 1, s.length); k > 0; k--) {
+        if (mark.startsWith(s.slice(-k))) { if (k > hold) hold = k; break; }
+      }
+    }
+    return hold;
+  };
+
   const feed = (t) => {
     if (!t) return;
     if (gateState === 'tool') { pending += t; return; }
     pending += t;
-    const at = pending.indexOf(MARK);
-    if (at !== -1) {
-      emitText(pending.slice(0, at));
-      pending = pending.slice(at);
+    const hit = findToolBlock(pending);
+    if (hit) {
+      emitText(pending.slice(0, hit.index));
+      pending = pending.slice(hit.index);
       gateState = 'tool';
       return;
     }
-    let hold = 0;
-    for (let k = Math.min(MARK.length - 1, pending.length); k > 0; k--) {
-      if (MARK.startsWith(pending.slice(-k))) { hold = k; break; }
-    }
+    const hold = holdTail(pending);
     const safe = pending.slice(0, pending.length - hold);
     pending = pending.slice(pending.length - hold);
     emitText(safe);
