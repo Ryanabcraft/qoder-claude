@@ -14,9 +14,17 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-echo "[1/4] updating qodercli..."
+echo "[1/4] checking qodercli and claude..."
 npm install -g @qoder-ai/qodercli >/dev/null 2>&1 || \
   npm install -g --prefix "$HOME/.local" @qoder-ai/qodercli >/dev/null 2>&1 || true
+if command -v claude >/dev/null 2>&1; then
+  echo "    claude present"
+else
+  echo "    claude missing; installing"
+  npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
+    npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
+  command -v claude >/dev/null 2>&1 || echo "    install it manually: npm i -g @anthropic-ai/claude-code"
+fi
 
 echo "[2/4] updating the bridge..."
 TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
