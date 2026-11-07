@@ -60,16 +60,35 @@ if (-not (Have 'qodercli')) {
 }
 Ok ('qodercli ' + ((& cmd /c 'qodercli --version 2>nul' | Select-Object -First 1) -join '').Trim())
 
-Step 'Installing Claude Code'
-if (Have 'claude') {
-  Ok (('claude ' + ((& cmd /c 'claude --version 2>nul' | Select-Object -First 1) -join '')).Trim())
-} else {
-  if ($SkipDeps) { Warn 'claude is missing (-SkipDeps). Install it with: npm i -g @anthropic-ai/claude-code' }
-  else {
-    npm install -g @anthropic-ai/claude-code | Out-Null
-    if (Have 'claude') { Ok 'claude installed' }
-    else { Warn 'claude is not on PATH yet; reopen the terminal. It installs with: npm i -g @anthropic-ai/claude-code' }
+function Find-Claude {
+  $cmd = Get-Command claude -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  $dirs = @()
+  if ($env:APPDATA) { $dirs += (Join-Path $env:APPDATA 'npm') }
+  if ($env:LOCALAPPDATA) { $dirs += (Join-Path $env:LOCALAPPDATA 'Programs\claude') }
+  foreach ($d in $dirs) {
+    foreach ($n in @('claude.cmd', 'claude.exe', 'claude.bat')) {
+      $p = Join-Path $d $n
+      if (Test-Path $p) { return $p }
+    }
   }
+  return $null
+}
+
+Step 'Installing Claude Code'
+$claude = Find-Claude
+if (-not $claude) {
+  if ($SkipDeps) {
+    Warn 'claude is missing (-SkipDeps). Install it with: npm i -g @anthropic-ai/claude-code'
+  } else {
+    npm install -g @anthropic-ai/claude-code | Out-Null
+    $claude = Find-Claude
+  }
+}
+if ($claude) {
+  Ok 'claude ready'
+} else {
+  Warn 'claude could not be installed; qclaude will retry on first run'
 }
 
 Step 'Checking Qoder login'
@@ -124,53 +143,20 @@ foreach ($t in $targets) {
   Ok "$t\.claude\settings.json"
 }
 
-if ($NoStart) {
-  Warn 'server not started (-NoStart)'
-} else {
-  Step 'Starting the server'
-  $listening = $false
-  try {
-    $probe = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2
-    $listening = ($probe.StatusCode -eq 200)
-  } catch {}
-  if ($listening) {
-    Ok "already running at 127.0.0.1:$Port"
-  } else {
-    $startCmd = Join-Path $InstallDir 'start.cmd'
-    Start-Process -FilePath 'cmd.exe' -ArgumentList "/c `"`"$startCmd`"`"" -WorkingDirectory $InstallDir | Out-Null
-    $ready = $false
-    for ($i = 0; $i -lt 40; $i++) {
-      Start-Sleep -Milliseconds 500
-      try {
-        $probe = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2
-        if ($probe.StatusCode -eq 200) { $ready = $true; break }
-      } catch {}
-    }
-    if (-not $ready) {
-      Warn 'the server did not respond; see bridge.log'
-      $log = Join-Path $InstallDir 'bridge.log'
-      if (Test-Path $log) { Get-Content $log -Tail 15 | ForEach-Object { Write-Host "    $_" } }
-      Die 'incomplete install: server did not start'
-    }
-    Ok "server running at 127.0.0.1:$Port (qoder-bridge window open)"
-  }
-}
-
-Step 'Validating the full path'
-try {
-  $r = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/v1/models" -TimeoutSec 10
-  Ok ("models: " + (($r.data | Select-Object -First 6 | ForEach-Object { $_.id }) -join ', ') + ', ...')
-} catch { Warn 'could not list models' }
-
 Write-Host ''
 Write-Host '  Qoder-Claude installed.' -ForegroundColor Green
-Write-Host '  Open with: qclaude' -ForegroundColor Cyan
+Write-Host ''
+Write-Host '  Start with: qclaude' -ForegroundColor Cyan
+Write-Host ''
+Write-Host '  qclaude starts the bridge, opens claude, and stops the bridge when claude exits.'
 Write-Host ''
 Write-Host "  bridge    : $InstallDir"
 Write-Host "  port      : $Port"
-Write-Host "  server    : `"$InstallDir\start.cmd`"  (window with logs)"
+Write-Host "  logs      : `"$InstallDir\bridge.log`""
 Write-Host "  stop      : `"$InstallDir\stop.cmd`""
 Write-Host '  statusline: Qoder > <model> inside claude'
+Write-Host ''
+Write-Host '  Open a new terminal first so qclaude is on PATH.' -ForegroundColor DarkGray
 Write-Host ''
 Write-Host '  open a new terminal and run: qclaude' -ForegroundColor Cyan
 Write-Host ''

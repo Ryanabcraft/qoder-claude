@@ -54,5 +54,4 @@ current.statusLine = {
 fs.writeFileSync(file, JSON.stringify(current, null, 2) + '\n');
 console.log(`ok -> ${file}`);
 if (fs.existsSync(file + '.bak')) console.log(`backup -> ${file}.bak`);
-const starter = process.platform === 'win32' ? 'start.cmd' : 'start.sh';
-console.log(`start the bridge with: "${path.join(home, starter)}"`);
+console.log('open it with: qclaude');

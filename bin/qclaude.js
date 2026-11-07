@@ -118,19 +118,68 @@ function openServerWindow() {
   }
 }
 
-function runClaude(claudeArgs) {
-  const attempt = (useShell) => new Promise((resolve, reject) => {
-    const p = spawn('claude', claudeArgs, { stdio: 'inherit', env: process.env, shell: useShell });
-    p.on('close', (code) => resolve(code ?? 0));
-    p.on('error', reject);
+function findClaude() {
+  const win = process.platform === 'win32';
+  const names = win ? ['claude.cmd', 'claude.exe', 'claude.bat', 'claude'] : ['claude'];
+  const dirs = String(process.env.PATH || '').split(win ? ';' : ':').filter(Boolean);
+  if (win) {
+    if (process.env.APPDATA) dirs.push(path.join(process.env.APPDATA, 'npm'));
+    if (process.env.LOCALAPPDATA) dirs.push(path.join(process.env.LOCALAPPDATA, 'Programs', 'claude'));
+  } else {
+    dirs.push(path.join(process.env.HOME || '', '.local', 'bin'), '/usr/local/bin', '/opt/homebrew/bin');
+  }
+  for (const dir of dirs) {
+    for (const name of names) {
+      const candidate = path.join(dir, name);
+      try {
+        if (fs.existsSync(candidate)) return candidate;
+      } catch {}
+    }
+  }
+  return null;
+}
+
+async function ensureClaude() {
+  const found = findClaude();
+  if (found) return found;
+
+  console.log('qclaude: claude is not installed; installing @anthropic-ai/claude-code...');
+  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  await new Promise((resolve) => {
+    const p = spawn(npm, ['install', '-g', '@anthropic-ai/claude-code'], {
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
+    p.on('close', resolve);
+    p.on('error', resolve);
   });
-  return attempt(false)
-    .catch(() => attempt(true))
-    .catch((e) => {
+
+  const after = findClaude();
+  if (after) return after;
+  console.error('qclaude: could not install claude.');
+  console.error('qclaude: run this once and try again: npm install -g @anthropic-ai/claude-code');
+  process.exit(127);
+}
+
+const quoteArg = (a) => (/[\s"]/.test(a) ? `"${String(a).replace(/"/g, '\\"')}"` : a);
+
+function runClaude(bin, claudeArgs) {
+  return new Promise((resolve) => {
+    const isScript = /\.(cmd|bat)$/i.test(bin);
+    const p = isScript
+      ? spawn(`"${bin}" ${claudeArgs.map(quoteArg).join(' ')}`, {
+          stdio: 'inherit',
+          env: process.env,
+          shell: true,
+        })
+      : spawn(bin, claudeArgs, { stdio: 'inherit', env: process.env });
+    p.on('close', (code) => resolve(code ?? 0));
+    p.on('error', (e) => {
       console.error(`qclaude: could not open claude (${e.message}).`);
       console.error('qclaude: install it with: npm install -g @anthropic-ai/claude-code');
-      return 127;
+      resolve(127);
     });
+  });
 }
 
 async function stopServer() {
@@ -281,14 +330,13 @@ if (args[0] === 'rotation') {
 if (args[0] === '--help' || args[0] === '-h') {
   console.log(`qclaude - Qoder models inside Claude Code
 
-  qclaude                    boots the server if needed, then opens claude
+  qclaude                    starts the bridge, opens claude, stops the bridge on exit
   qclaude -p "..."           forwards any argument to claude
   qclaude --model X          same
   qclaude --account <name>   opens with a specific account
   qclaude --status           server, models and account
   qclaude --serve            server only, foreground
-  qclaude --window           opens the server in its own terminal window
-  qclaude --no-window        keeps the server attached to this terminal
+  qclaude --window           keeps the server in its own terminal window
   qclaude --stop             stops the server
 
   qclaude account            lists the accounts
@@ -378,13 +426,24 @@ if (args[0] === '--serve') {
   process.on('SIGTERM', stop);
   child.on('exit', (code) => process.exit(code ?? 0));
 } else {
-  const noWindow = args.includes('--no-window');
-  const claudeArgs = args.filter((a) => a !== '--no-window');
-  const child = await startServer({ window: !noWindow });
+  const wantWindow = args.includes('--window');
+  const claudeArgs = args.filter((a) => a !== '--window' && a !== '--no-window');
+
+  const claudeBin = await ensureClaude();
+  const child = await startServer({ window: wantWindow });
+
   if (claudeArgs.length === 0) console.log(`qclaude: opening claude in ${process.cwd()}`);
-  const code = await runClaude(claudeArgs);
-  if (child) {
-    try { child.kill(); } catch {}
-  }
+  if (child) console.log(`qclaude: bridge started at 127.0.0.1:${PORT} (log: ${LOG})`);
+
+  const stop = () => {
+    if (child) {
+      try { child.kill(); } catch {}
+    }
+  };
+  process.on('SIGINT', () => { stop(); process.exit(130); });
+  process.on('SIGTERM', () => { stop(); process.exit(143); });
+
+  const code = await runClaude(claudeBin, claudeArgs);
+  stop();
   process.exit(code);
 }
