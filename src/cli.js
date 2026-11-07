@@ -61,7 +61,7 @@ function baseArgs(cfg) {
     '--cwd', cleanWorkspace(),
     '--model', cfg.model,
     '--system-prompt',
-    [cfg.system, TOOL_BRIDGE_RULES].filter(Boolean).join('\n\n'),
+    [cfg.system, cfg.hasTools ? TOOL_BRIDGE_RULES : ''].filter(Boolean).join('\n\n'),
   ];
   const budget = Number(process.env.QODER_MAX_OUTPUT_TOKENS || 0);
   if (budget > 0) args.push('--max-output-tokens', String(budget));
@@ -100,6 +100,7 @@ export function workerConfig(body = {}, system = '') {
   if (effort) effort = String(effort).toLowerCase();
   const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 0) || undefined;
   const account = activeAccount();
+  const hasTools = Array.isArray(body.tools) && body.tools.length > 0;
   const systemKey = system ? createHash('sha1').update(system).digest('hex').slice(0, 12) : '';
   const key = [
     account.name,
@@ -108,9 +109,10 @@ export function workerConfig(body = {}, system = '') {
     thinkingBudget || '',
     effort || '',
     contextWindow || '',
+    hasTools ? 'tools' : 'notools',
     systemKey,
   ].join('|');
-  return { model, thinking, thinkingBudget, effort, contextWindow, system, account: account.name, configDir: account.dir, key };
+  return { model, thinking, thinkingBudget, effort, contextWindow, system, hasTools, account: account.name, configDir: account.dir, key };
 }
 
 function killTree(proc) {
