@@ -79,10 +79,18 @@ Step 'Installing Claude Code'
 $claude = Find-Claude
 if (-not $claude) {
   if ($SkipDeps) {
-    Warn 'claude is missing (-SkipDeps). Install it with: npm i -g @anthropic-ai/claude-code'
+    Warn 'claude is missing (-SkipDeps). Install it with: irm https://claude.ai/install.ps1 | iex'
   } else {
-    npm install -g @anthropic-ai/claude-code | Out-Null
+    try {
+      Invoke-RestMethod -UseBasicParsing -Uri 'https://claude.ai/install.ps1' | Invoke-Expression
+    } catch {
+      Warn 'the official installer failed; trying npm'
+    }
     $claude = Find-Claude
+    if (-not $claude -and (Have 'npm')) {
+      npm install -g @anthropic-ai/claude-code | Out-Null
+      $claude = Find-Claude
+    }
   }
 }
 if ($claude) {

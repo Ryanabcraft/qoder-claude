@@ -123,6 +123,7 @@ function findClaude() {
   const names = win ? ['claude.cmd', 'claude.exe', 'claude.bat', 'claude'] : ['claude'];
   const dirs = String(process.env.PATH || '').split(win ? ';' : ':').filter(Boolean);
   if (win) {
+    if (process.env.USERPROFILE) dirs.push(path.join(process.env.USERPROFILE, '.local', 'bin'));
     if (process.env.APPDATA) dirs.push(path.join(process.env.APPDATA, 'npm'));
     if (process.env.LOCALAPPDATA) dirs.push(path.join(process.env.LOCALAPPDATA, 'Programs', 'claude'));
   } else {
@@ -139,25 +140,40 @@ function findClaude() {
   return null;
 }
 
+function runInstaller(command, args, shell) {
+  return new Promise((resolve) => {
+    const p = spawn(command, args, { stdio: 'inherit', shell });
+    p.on('close', (code) => resolve(code === 0));
+    p.on('error', () => resolve(false));
+  });
+}
+
 async function ensureClaude() {
   const found = findClaude();
   if (found) return found;
 
-  console.log('qclaude: claude is not installed; installing @anthropic-ai/claude-code...');
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  await new Promise((resolve) => {
-    const p = spawn(npm, ['install', '-g', '@anthropic-ai/claude-code'], {
-      stdio: 'inherit',
-      shell: process.platform === 'win32',
-    });
-    p.on('close', resolve);
-    p.on('error', resolve);
-  });
+  console.log('qclaude: claude is not installed; running the official installer...');
+  const win = process.platform === 'win32';
+  const official = win
+    ? await runInstaller(
+        'powershell.exe',
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', 'irm https://claude.ai/install.ps1 | iex'],
+        false,
+      )
+    : await runInstaller('bash', ['-lc', 'curl -fsSL https://claude.ai/install.sh | bash'], false);
 
-  const after = findClaude();
+  let after = findClaude();
   if (after) return after;
+
+  if (!official) console.log('qclaude: official installer failed; trying npm...');
+  const npm = win ? 'npm.cmd' : 'npm';
+  await runInstaller(npm, ['install', '-g', '@anthropic-ai/claude-code'], win);
+
+  after = findClaude();
+  if (after) return after;
+
   console.error('qclaude: could not install claude.');
-  console.error('qclaude: run this once and try again: npm install -g @anthropic-ai/claude-code');
+  console.error(`qclaude: ${win ? 'irm https://claude.ai/install.ps1 | iex' : 'curl -fsSL https://claude.ai/install.sh | bash'}`);
   process.exit(127);
 }
 
@@ -176,7 +192,9 @@ function runClaude(bin, claudeArgs) {
     p.on('close', (code) => resolve(code ?? 0));
     p.on('error', (e) => {
       console.error(`qclaude: could not open claude (${e.message}).`);
-      console.error('qclaude: install it with: npm install -g @anthropic-ai/claude-code');
+      console.error(process.platform === 'win32'
+        ? 'qclaude: install it with: irm https://claude.ai/install.ps1 | iex'
+        : 'qclaude: install it with: curl -fsSL https://claude.ai/install.sh | bash');
       resolve(127);
     });
   });

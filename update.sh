@@ -3,6 +3,10 @@ set -eu
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
+STAGE="$DIR/.update-stage"
+TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
+trap 'rm -rf "${TMP:-}" "${STAGE:-}"' EXIT
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-start) ;;  # accepted for compatibility; the updater never starts the server
@@ -18,16 +22,17 @@ npm install -g @qoder-ai/qodercli >/dev/null 2>&1 || \
 if command -v claude >/dev/null 2>&1; then
   echo "    claude present"
 else
-  echo "    claude missing; installing"
-  npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
-    npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
-  command -v claude >/dev/null 2>&1 || echo "    install it manually: npm i -g @anthropic-ai/claude-code"
+  echo "    claude missing; running the official installer"
+  curl -fsSL "https://claude.ai/install.sh" -o "$TMP/claude-install.sh" && bash "$TMP/claude-install.sh" || true
+  export PATH="$HOME/.local/bin:$PATH"
+  if ! command -v claude >/dev/null 2>&1; then
+    npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
+      npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
+  fi
+  command -v claude >/dev/null 2>&1 || echo "    install it manually: curl -fsSL https://claude.ai/install.sh | bash"
 fi
 
 echo "[2/4] updating the bridge..."
-TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
-STAGE="$DIR/.update-stage"
-trap 'rm -rf "${TMP:-}" "${STAGE:-}"' EXIT
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 
