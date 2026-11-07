@@ -62,8 +62,7 @@ function baseArgs(cfg) {
     '--model', cfg.model,
     '--system-prompt', cfg.system,
   ];
-  const budget = Number(process.env.QODER_MAX_OUTPUT_TOKENS || 0);
-  if (budget > 0) args.push('--max-output-tokens', String(budget));
+  if (cfg.maxTokens) args.push('--max-output-tokens', String(cfg.maxTokens));
   if (cfg.configDir) args.push('--config-dir', cfg.configDir);
   if (cfg.thinking) args.push('--thinking', cfg.thinking);
   if (cfg.thinkingBudget) args.push('--thinking-budget', String(cfg.thinkingBudget));
@@ -88,6 +87,12 @@ export function workerConfig(body = {}, system = '') {
   if (!effort) effort = process.env.QODER_REASONING_EFFORT;
   if (effort) effort = String(effort).toLowerCase();
   const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 0) || undefined;
+  const requestedTokens = Number(body.max_tokens);
+  const maxTokens = requestedTokens > 0
+    ? requestedTokens
+    : Number(process.env.QODER_MAX_OUTPUT_TOKENS) > 0
+      ? Number(process.env.QODER_MAX_OUTPUT_TOKENS)
+      : undefined;
   const account = activeAccount();
   const hasTools = Array.isArray(body.tools) && body.tools.length > 0;
   const systemKey = system ? createHash('sha1').update(system).digest('hex').slice(0, 12) : '';
@@ -98,10 +103,11 @@ export function workerConfig(body = {}, system = '') {
     thinkingBudget || '',
     effort || '',
     contextWindow || '',
+    maxTokens || '',
     hasTools ? 'tools' : 'notools',
     systemKey,
   ].join('|');
-  return { model, thinking, thinkingBudget, effort, contextWindow, system, hasTools, account: account.name, configDir: account.dir, key };
+  return { model, thinking, thinkingBudget, effort, contextWindow, maxTokens, system, hasTools, account: account.name, configDir: account.dir, key };
 }
 
 function killTree(proc) {

@@ -427,10 +427,14 @@ the CLI refreshes the store, then switch back.
 | `QODER_THINKING` | from request | `enabled`, `adaptive`, `disabled` |
 | `QODER_THINKING_BUDGET` | from request | thinking tokens |
 | `QODER_CONTEXT_WINDOW` | from request | context window |
-| `QODER_MAX_OUTPUT_TOKENS` | unset | optional output cap; unset = model default |
+| `QODER_MAX_OUTPUT_TOKENS` | from request | fallback cap used only when the request sends no `max_tokens` |
 | `QODER_CLI_BIN` | auto-detected | path to `qodercli.js` |
 | `BRIDGE_LOG` | on | `0` silences access log |
 | `BRIDGE_DUMP` | empty | file path for the last request |
+
+`max_tokens` from the request is forwarded to the backend as-is. The bridge applies no cap of
+its own: the ceiling is whatever the model accepts. That matters for `/compact`, which asks for
+a large summary budget, and for long `Write` payloads.
 
 ## Endpoints
 
