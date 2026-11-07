@@ -113,7 +113,7 @@
               </div>
               <table class="table">
                 <thead>
-                  <tr><th>Time</th><th>Model</th><th>Transport</th><th>Status</th><th class="right">Latency</th></tr>
+                  <tr><th>Time</th><th>Model</th><th>Account</th><th>Status</th><th class="right">Latency</th></tr>
                 </thead>
                 <tbody id="recent"></tbody>
               </table>
@@ -121,6 +121,24 @@
           </section>
 
           <section id="pane-accounts" class="pane">
+            <div class="card rot-card">
+              <div class="card-head">
+                <div>
+                  <h2>Automatic failover</h2>
+                  <p class="muted small">
+                    When an account hits its quota, gets rate-limited or loses its session, the bridge
+                    pauses it and retries the same request on the next account.
+                  </p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="rot-toggle" />
+                  <span class="track"><span class="knob"></span></span>
+                  <span class="switch-label" id="rot-label">off</span>
+                </label>
+              </div>
+              <div class="rot-strip" id="rot-strip"></div>
+            </div>
+
             <div class="card">
               <div class="card-head">
                 <div>

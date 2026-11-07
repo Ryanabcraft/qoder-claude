@@ -227,9 +227,9 @@ the login finishes. Run the same command with another name for each extra accoun
 ```bash
 qclaude account list
 
-# contas:
-#   * default          (config global)
-#     work             C:\...\qoder-bridge\accounts\work
+# accounts (failover on):
+#   * default          active       (global config)
+#     work             ready        C:\...\qoder-bridge\accounts\work
 
 qclaude account use work     # active from now on
 qclaude account current      # which one is active
@@ -262,6 +262,48 @@ Deletes the profile and its credential directory. `default` cannot be removed.
 
 `accounts/` and `accounts.json` are listed in `.gitignore` — credentials never reach the repo.
 
+### Automatic failover
+
+With more than one account, the bridge rotates them by itself. When the active profile hits
+its daily quota, gets rate-limited or loses its session, that account is **paused** and the
+same request is retried on the next one — no restart, no manual switch.
+
+```
+account 1/3: work
+account work paused 1800s: upstream 403: Billing daily count exceeded
+account 2/3: personal
+done session=miss total=2311ms
+```
+
+| what happened | pause |
+|---|---|
+| billing / daily count / quota / `403` | 30 minutes |
+| `401`, not logged in, expired token | 10 minutes |
+| `429` rate limit | 1 minute |
+| timeout, connection reset | 30 seconds |
+
+Order: the active account first, then the rest in file order. Paused accounts go to the end of
+the queue and come back on their own when the timer expires. A successful reply from an account
+clears its pause.
+
+```bash
+qclaude rotation            # pool, state of each account
+qclaude rotation on|off     # turn automatic failover on or off
+qclaude account pause work  # keep an account out of the pool
+qclaude account resume work # put it back
+```
+
+The dashboard has the same switch on the **Accounts** tab, plus a per-account Enable/Disable
+button and a live countdown for paused profiles. `BRIDGE_COOLDOWN_MS` sets a fallback pause
+for errors that match none of the classes above.
+
+Two limits worth knowing:
+
+- **Only before the first visible token.** If the reply already started streaming, the bridge
+  cannot rewrite it on another account; the error is returned instead.
+- **Rotation is per request.** The worker of a Claude Code session is bound to one account;
+  when the account changes, the next turn starts a new worker with the full history.
+
 ### Good to know
 
 - **Quota is per account.** Switching accounts switches the daily limit.
@@ -276,10 +318,12 @@ Deletes the profile and its credential directory. `default` cannot be removed.
 
 | Symptom | Fix |
 |---|---|
-| `conta "x" nao existe` | `qclaude account list` to see the exact names |
+| `account "x" does not exist` | `qclaude account list` to see the exact names |
 | `Not logged in` | `qclaude account add <name>` again, then restart the session |
 | Wrong account answering | `qclaude account current`, then restart the session |
 | Login opened but nothing changed | the login must finish before the account becomes active |
+| Failover never fires | `qclaude rotation` — check `on` and that the other accounts are not disabled |
+| Everything is paused | the pool is empty for now; wait for the timer or `qclaude account resume <name>` |
 
 ## Sessions
 
@@ -303,6 +347,9 @@ the bridge falls back to a fresh worker with the full history — never a delta 
 
 - Qoder refusal (daily quota, `403`, `not logged in`) → **400 `invalid_request_error`** with the
   real message. Claude Code does not retry a 400, so the "retry in 4m 10s" banner disappears.
+- Before returning that error, the bridge tries the next account in the pool (see
+  [Automatic failover](#automatic-failover)). The 400 only reaches Claude Code when no account
+  can answer.
 - Rate limit (`429`) → 429 `rate_limit_error`.
 - Timeouts and connection resets → 503 `overloaded_error`.
 - The CLI runs with `--max-model-request-retries 0`; override with `BRIDGE_MODEL_RETRIES`.
@@ -315,7 +362,7 @@ With the server running, open **http://127.0.0.1:8787/ui**.
 | tab | what it does |
 |---|---|
 | Overview | transport, port, account, model count, uptime; refresh and stop |
-| Accounts | list, add (browser login), switch, remove |
+| Accounts | failover switch, pool state, add (browser login), switch, pause, remove |
 | Models | the live model list |
 | Test | send a short prompt and see status, latency and the answer |
 | Logs | last 200 lines of `bridge.log` |

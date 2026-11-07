@@ -1,7 +1,7 @@
-import { KeyRound, SlidersHorizontal, Wrench } from 'lucide-react';
+import { KeyRound, RefreshCcw, SlidersHorizontal, Wrench } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
-const ICONS = [Wrench, KeyRound, SlidersHorizontal];
+const ICONS = [Wrench, KeyRound, SlidersHorizontal, RefreshCcw];
 
 export function Features() {
   const { t } = useI18n();

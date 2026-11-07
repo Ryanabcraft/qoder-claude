@@ -253,6 +253,66 @@ main { padding: 8px 26px 26px; flex: 1; }
 .badge.ok { border-color: rgba(34, 197, 94, 0.45); color: var(--ok); background: rgba(34, 197, 94, 0.1); }
 .badge.err { border-color: rgba(248, 113, 113, 0.45); color: var(--err); background: rgba(248, 113, 113, 0.1); }
 .badge.on { border-color: rgba(59, 130, 246, 0.5); color: #93b4ff; background: rgba(59, 130, 246, 0.12); }
+.badge.paused { border-color: rgba(245, 158, 11, 0.5); color: var(--warn); background: rgba(245, 158, 11, 0.12); }
+.badge.off { opacity: 0.6; }
+
+/* rotation */
+.rot-card { margin-bottom: 16px; }
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch .track {
+  width: 42px; height: 24px;
+  border-radius: 999px;
+  background: #182242;
+  border: 1px solid var(--line);
+  position: relative;
+  transition: background 0.18s, border-color 0.18s;
+}
+.switch .knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.18s, background 0.18s;
+}
+.switch input:checked + .track {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(34, 211, 238, 0.85));
+  border-color: transparent;
+}
+.switch input:checked + .track .knob { transform: translateX(18px); background: #fff; }
+.switch input:focus-visible + .track { outline: 2px solid var(--a2); outline-offset: 2px; }
+.switch-label { font-size: 12px; color: var(--muted); min-width: 20px; }
+
+.rot-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.rot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--card-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rot-pill i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted);
+  flex: 0 0 auto;
+}
+.rot-pill.live { border-color: rgba(34, 197, 94, 0.4); color: var(--ink); }
+.rot-pill.live i { background: var(--ok); }
+.rot-pill.paused { border-color: rgba(245, 158, 11, 0.4); }
+.rot-pill.paused i { background: var(--warn); }
+.rot-pill.off { opacity: 0.55; }
+.rot-pill b { font-weight: 600; color: var(--ink); }
 
 /* buttons */
 .btn {

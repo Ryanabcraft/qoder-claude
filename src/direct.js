@@ -12,12 +12,18 @@ const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
 const VERSION = process.env.QODER_CLI_VERSION || '1.1.84';
 
-let cached = null;
+const cache = new Map();
 
-function context(force = false) {
+function configDirFor(dir) {
+  return dir || CONFIG_DIR;
+}
+
+function context(dir, force = false) {
+  const root = configDirFor(dir);
+  const cached = cache.get(root);
   if (cached && !force) return cached;
-  const userFile = path.join(CONFIG_DIR, '.auth', 'user');
-  const midFile = path.join(CONFIG_DIR, '.auth', 'machine_id');
+  const userFile = path.join(root, '.auth', 'user');
+  const midFile = path.join(root, '.auth', 'machine_id');
   const user = fs.readFileSync(userFile, 'utf8').trim();
   const mid = fs.readFileSync(midFile, 'utf8').trim();
 
@@ -45,8 +51,13 @@ function context(force = false) {
     scene: 'assistant',
   });
   const ctx = new auth.QoderContext(mid, VERSION, info, client);
-  cached = { ctx, uid: creds.uid };
-  return cached;
+  const built = { ctx, uid: creds.uid };
+  cache.set(root, built);
+  return built;
+}
+
+export function forgetContext(dir) {
+  cache.delete(configDirFor(dir));
 }
 
 function buildPayload(body, model) {
@@ -84,7 +95,12 @@ function parseEnvelope(line) {
 }
 
 export async function directCompletion({ body, cfg, signal, onEvent }) {
-  const { ctx } = context();
+  let ctx;
+  try {
+    ({ ctx } = context(cfg.configDir));
+  } catch (e) {
+    return { text: '', usage: {}, error: `not logged in: ${e.message}` };
+  }
   const payload = buildPayload(body, cfg.model);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
   const headers = Object.fromEntries(req.headers);

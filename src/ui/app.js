@@ -72,9 +72,11 @@ async function loadStatus() {
 function renderKpis() {
   const s = state.status;
   const m = state.metrics || {};
+  const rot = s?.rotation || {};
+  const rotSub = rot.on ? `failover on · ${rot.count || 0} in pool` : 'failover off';
   const kpis = [
     { label: 'Requests', value: String(m.total || 0), sub: `${m.ok || 0} ok · ${m.err || 0} errors`, icon: 'bolt' },
-    { label: 'Accounts', value: String(Object.keys(state.accounts?.accounts || {}).length), sub: `active: ${s?.account?.name || '-'}`, icon: 'users' },
+    { label: 'Accounts', value: String(Object.keys(state.accounts?.accounts || {}).length), sub: rotSub, icon: 'users' },
     { label: 'Models', value: String((state.models || []).length), sub: `transport: ${s?.transport || '-'}`, icon: 'layers' },
   ];
   const box = $('#kpis');
@@ -178,7 +180,7 @@ function renderRecent() {
     tr.append(
       el('td', 'mono', time),
       el('td', '', r.model),
-      el('td', 'mono', r.transport),
+      el('td', 'mono', r.account || '-'),
       el('td'),
       el('td', 'right mono', `${r.ms} ms`),
     );
@@ -189,21 +191,68 @@ function renderRecent() {
 }
 
 /* accounts */
+function waitLabel(seconds) {
+  if (seconds <= 0) return '';
+  if (seconds < 90) return `${seconds}s`;
+  return `${Math.ceil(seconds / 60)}m`;
+}
+
+function renderRotation() {
+  const rot = state.accounts?.rotation;
+  if (!rot) return;
+  const toggle = $('#rot-toggle');
+  toggle.checked = rot.on;
+  $('#rot-label').textContent = rot.on ? 'on' : 'off';
+
+  const strip = $('#rot-strip');
+  strip.textContent = '';
+  const ordered = [...rot.accounts].sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    if (a.coolingLeft !== b.coolingLeft) return a.coolingLeft ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+  for (const a of ordered) {
+    const cls = !a.enabled ? 'off' : a.coolingLeft ? 'paused' : 'live';
+    const pill = el('span', 'rot-pill ' + cls);
+    pill.append(el('i'));
+    pill.append(el('b', '', a.name));
+    const note = !a.enabled
+      ? 'disabled'
+      : a.coolingLeft
+        ? `paused ${waitLabel(a.coolingLeft)}`
+        : a.active
+          ? 'active'
+          : 'ready';
+    pill.append(el('span', '', note));
+    strip.append(pill);
+  }
+  if (!ordered.length) strip.append(el('span', 'muted small', 'no accounts'));
+}
+
 function renderAccounts() {
   const data = state.accounts;
   const body = $('#account-list');
   if (!data) return;
   body.textContent = '';
+  const rot = data.rotation;
+  const byName = new Map((rot?.accounts || []).map((a) => [a.name, a]));
+
   for (const [name, item] of Object.entries(data.accounts)) {
     if (state.filter && !name.toLowerCase().includes(state.filter)) continue;
+    const info = byName.get(name) || {};
     const tr = el('tr');
     tr.append(el('td', '', name));
-
-    const loc = el('td', 'mono', item.dir || '~/.qoder');
-    tr.append(loc);
+    tr.append(el('td', 'mono', item.dir || '~/.qoder'));
 
     const st = el('td');
-    st.append(el('span', 'badge ' + (name === data.active ? 'on' : ''), name === data.active ? 'active' : 'idle'));
+    if (info.coolingLeft) {
+      st.append(el('span', 'badge paused', `paused ${waitLabel(info.coolingLeft)}`));
+      if (info.reason) st.append(el('div', 'muted small', info.reason.slice(0, 60)));
+    } else if (info.enabled === false) {
+      st.append(el('span', 'badge off', 'disabled'));
+    } else {
+      st.append(el('span', 'badge ' + (name === data.active ? 'on' : ''), name === data.active ? 'active' : 'ready'));
+    }
     tr.append(st);
 
     const actions = el('td', 'right');
@@ -214,6 +263,23 @@ function renderAccounts() {
         await refreshAll();
       };
       actions.append(use);
+    }
+    if (info.enabled === false) {
+      const on = el('button', 'btn small', 'Enable');
+      on.style.marginLeft = '6px';
+      on.onclick = async () => {
+        await api(`accounts/${encodeURIComponent(name)}/enabled`, { method: 'POST', body: JSON.stringify({ enabled: true }) });
+        await refreshAll();
+      };
+      actions.append(on);
+    } else if (rot?.on) {
+      const off = el('button', 'btn small', 'Disable');
+      off.style.marginLeft = '6px';
+      off.onclick = async () => {
+        await api(`accounts/${encodeURIComponent(name)}/enabled`, { method: 'POST', body: JSON.stringify({ enabled: false }) });
+        await refreshAll();
+      };
+      actions.append(off);
     }
     if (name !== 'default') {
       const del = el('button', 'btn small danger', 'Remove');
@@ -229,6 +295,15 @@ function renderAccounts() {
     body.append(tr);
   }
 }
+
+$('#rot-toggle').addEventListener('change', async (e) => {
+  const on = e.target.checked;
+  $('#rot-label').textContent = on ? 'on' : 'off';
+  try {
+    await api('rotation', { method: 'POST', body: JSON.stringify({ on }) });
+  } catch {}
+  await refreshAll();
+});
 
 let loginTimer = null;
 
@@ -342,6 +417,7 @@ async function refreshAll() {
   $('#side-dot').className = 'status-dot ok';
   $('#avatar').textContent = (s.account.name || 'q').charAt(0).toUpperCase();
   $('#foot-account').textContent = `${s.account.label || s.account.name} · 127.0.0.1:${s.port}`;
+  renderRotation();
   renderAccounts();
   renderModels();
   await refreshMetrics();
