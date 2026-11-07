@@ -14,5 +14,3 @@ site/dist/
 site/*.log
 accounts/
 accounts.json
-vendor/
-probe/
