@@ -51,13 +51,15 @@ O instalador:
 4. instala o bridge em `%LOCALAPPDATA%\qoder-bridge` ou `~/.local/share/qoder-bridge`
 5. grava o `~/.claude/settings.json` **global** (backup em `.bak`) com URL, token,
    `modelPicker` e statusline
-6. abre o servidor numa janela de terminal e espera o `/health` (sem terminal disponível, cai
-   para background com arquivo de log)
-7. lista os modelos para provar que a rota responde
+6. imprime `Start with: qclaude`
 
-Flags do `install.sh`: `--project-only` (configura só o diretório atual), `--no-start`,
-`--dir <path>`. Do `install.ps1`: `-ProjectOnly`, `-NoStart`, `-SkipDeps`, `-InstallDir <path>`.
-`update.sh --no-start` atualiza sem reiniciar o servidor (CI, containers).
+O instalador não deixa servidor rodando. O `qclaude` sobe a bridge na hora, abre o Claude Code e
+derruba a bridge quando o Claude sai. `qclaude --window` mantém o servidor numa janela própria;
+`qclaude --serve` roda em primeiro plano.
+
+Flags do `install.sh`: `--project-only` (configura só o diretório atual), `--dir <path>`.
+Do `install.ps1`: `-ProjectOnly`, `-SkipDeps`, `-InstallDir <path>`. `update.cmd` / `update.sh`
+atualizam no lugar e param qualquer servidor antigo.
 
 O diretório de instalação mantém o nome histórico `qoder-bridge` para não quebrar instalações
 existentes; só o repositório e o comando se chamam `qoder-claude`.

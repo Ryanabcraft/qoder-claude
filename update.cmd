@@ -21,5 +21,5 @@ set "RC=%ERRORLEVEL%"
 del "%PS1%" >nul 2>&1
 
 echo.
-echo done. restart claude to reload /model.
+echo done. start with: qclaude
 exit /b %RC%

@@ -1,10 +1,12 @@
 {
   "name": "qoder-claude",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/server.js"
   }
