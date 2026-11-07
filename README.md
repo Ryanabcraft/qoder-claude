@@ -308,6 +308,20 @@ the bridge falls back to a fresh worker with the full history — never a delta 
 - The CLI runs with `--max-model-request-retries 0`; override with `BRIDGE_MODEL_RETRIES`.
 - Stream responses also carry a `: ping` keepalive every 12 s.
 
+## Dashboard
+
+With the server running, open **http://127.0.0.1:8787/ui**.
+
+| tab | what it does |
+|---|---|
+| Overview | transport, port, account, model count, uptime; refresh and stop |
+| Accounts | list, add (browser login), switch, remove |
+| Models | the live model list |
+| Test | send a short prompt and see status, latency and the answer |
+| Logs | last 200 lines of `bridge.log` |
+
+Everything is loopback-only and uses the same `BRIDGE_API_KEY` as the API when one is set.
+
 ## Transports
 
 | transport | how it works |

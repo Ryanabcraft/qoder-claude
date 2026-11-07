@@ -273,6 +273,7 @@ if (args[0] === '--status') {
   const acc = activeAccount();
   console.log(`account  : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (global config)'}`);
   console.log(`server   : ${up ? `running at 127.0.0.1:${PORT}` : 'stopped'}`);
+  if (up) console.log(`dashboard: http://127.0.0.1:${PORT}/ui`);
   if (up) {
     try {
       const r = await fetch(`http://127.0.0.1:${PORT}/v1/models`);
