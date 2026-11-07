@@ -72,6 +72,8 @@ function buildPayload(body, model) {
   }
 
   const payload = { messages, model: String(model).toLowerCase(), agent_id: AGENT_ID };
+  const maxTokens = Number(body.max_tokens);
+  if (maxTokens > 0) payload.max_tokens = maxTokens;
 
   if (Array.isArray(body.tools) && body.tools.length) {
     payload.tools = body.tools.map((t) => ({

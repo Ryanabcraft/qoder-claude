@@ -421,10 +421,14 @@ para o CLI renovar o cofre, depois volte.
 | `QODER_THINKING` | do request | `enabled`, `adaptive`, `disabled` |
 | `QODER_THINKING_BUDGET` | do request | tokens de pensamento |
 | `QODER_CONTEXT_WINDOW` | do request | janela de contexto |
-| `QODER_MAX_OUTPUT_TOKENS` | vazio | teto opcional de saída; vazio = padrão do modelo |
+| `QODER_MAX_OUTPUT_TOKENS` | do request | fallback usado só quando o request não manda `max_tokens` |
 | `QODER_CLI_BIN` | auto | caminho do `qodercli.js` |
 | `BRIDGE_LOG` | ligado | `0` silencia o log |
 | `BRIDGE_DUMP` | vazio | arquivo do último request |
+
+O `max_tokens` do request vai para o backend como veio. A bridge não aplica teto próprio: o
+limite é o que o modelo aceita. Isso importa no `/compact`, que pede um orçamento alto de
+resumo, e em `Write` de arquivos grandes.
 
 ## Como funciona
 
