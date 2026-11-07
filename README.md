@@ -1,6 +1,6 @@
 # qoder-claude
 
-A local **Anthropic Messages API** server backed by the [Qoder CLI](https://qoder.com).
+A local **Anthropic Messages API** server backed by [Qoder](https://qoder.com).
 Point Claude Code at it and every request runs on your Qoder plan's models, with tool calls
 that keep their shape, streaming and a statusline that shows which model answered.
 
@@ -10,17 +10,21 @@ that keep their shape, streaming and a statusline that shows which model answere
 [Configuration](#configuration) · [How it works](#how-it-works) · [Limitations](#limitations)
 
 ```
-Claude Code --/v1/messages--> qoder-bridge --stream-json--> qodercli --> api1.qoder.sh
+Claude Code --/v1/messages--> qoder-bridge --WASM-signed--> api1.qoder.sh
+                                 `-- fallback: qodercli -----^
 ```
 
 ## Features
 
 - Anthropic-compatible `/v1/messages` with real SSE streaming and `tool_use` blocks
-- Warm CLI worker pool: ~2 s per request once the pool is up
+- Direct transport: signs and encrypts each request with the embedded Qoder WASM, no CLI process
+- Warm worker pool on the CLI fallback: ~2 s per request once the pool is up
+- Any number of accounts, with automatic failover when one hits its quota
 - Model, thinking budget and context window selectable per request
 - `Qoder · <model>` statusline written into Claude Code settings
 - One-command installer for Windows: dependencies, login, config, server, health check
-- No credential handling: the bridge never reads, stores or replays Qoder tokens
+- The token stays local: the bridge decrypts the Qoder store in memory to sign a request and
+  never sends it to any other host
 
 ## Installation
 
