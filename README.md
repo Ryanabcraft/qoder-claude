@@ -78,7 +78,8 @@ Then add to `~/.claude/settings.json`:
     "ANTHROPIC_AUTH_TOKEN": "dummy",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-5",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5"
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5",
+    "CLAUDE_CODE_AUTO_MODE_SERVER": "0"
   },
   "statusLine": {
     "type": "command",
@@ -86,6 +87,10 @@ Then add to `~/.claude/settings.json`:
   }
 }
 ```
+
+`CLAUDE_CODE_AUTO_MODE_SERVER=0` stops Claude Code from asking for server-side auto-mode
+checks. A local gateway cannot forward the `safeguards` field, so without it Claude Code shows
+the "auto mode classifier requests" notice on every session and runs those checks itself.
 
 ### Open it
 

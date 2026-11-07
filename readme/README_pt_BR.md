@@ -76,7 +76,8 @@ Depois adicione em `~/.claude/settings.json`:
     "ANTHROPIC_AUTH_TOKEN": "dummy",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-5",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5"
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5",
+    "CLAUDE_CODE_AUTO_MODE_SERVER": "0"
   },
   "statusLine": {
     "type": "command",
@@ -84,6 +85,10 @@ Depois adicione em `~/.claude/settings.json`:
   }
 }
 ```
+
+`CLAUDE_CODE_AUTO_MODE_SERVER=0` impede o Claude Code de pedir as checagens de auto mode do
+servidor. Um gateway local não consegue repassar o campo `safeguards`, então sem isso o Claude
+Code mostra o aviso de "classifier requests" a cada sessão e faz essas checagens por conta.
 
 ### Abrir
 
