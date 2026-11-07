@@ -45,7 +45,8 @@ curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/insta
 
 O instalador:
 
-1. confere o Node.js 20+ (instala o LTS via winget no Windows; no resto, diz o que instalar)
+1. confere o Node.js 20+ — instala quando falta (winget no Windows; tarball oficial do LTS em
+   `~/.local/node` no Linux e macOS, sem sudo, com checksum conferido)
 2. instala o `@qoder-ai/qodercli` e o Claude Code se faltarem (o Claude pelo instalador
    oficial `claude.ai/install`, não pelo npm)
 3. abre o login do Qoder se não houver sessão
@@ -58,7 +59,8 @@ O instalador não deixa servidor rodando. O `qclaude` sobe a bridge na hora, abr
 derruba a bridge quando o Claude sai. `qclaude --window` mantém o servidor numa janela própria;
 `qclaude --serve` roda em primeiro plano.
 
-Flags do `install.sh`: `--project-only` (configura só o diretório atual), `--dir <path>`.
+Flags do `install.sh`: `--project-only` (configura só o diretório atual), `--dir <path>`,
+`--skip-claude`, `--skip-login` e `--source <dir>` (instala de um checkout local).
 Do `install.ps1`: `-ProjectOnly`, `-SkipDeps`, `-InstallDir <path>`. `update.cmd` / `update.sh`
 atualizam no lugar e param qualquer servidor antigo.
 
