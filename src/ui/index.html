@@ -5,88 +5,187 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>qoder-claude · dashboard</title>
     <link rel="icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/ui/style.css" />
   </head>
   <body>
-    <header class="top">
-      <div class="brand">
-        <span class="dot"></span>
-        <strong>qoder-claude</strong>
-        <span class="muted">dashboard</span>
-      </div>
-      <div class="top-right">
-        <span id="pill-status" class="pill">checking…</span>
-        <a class="pill link" href="https://github.com/Ryanabcraft/qoder-claude" target="_blank" rel="noreferrer">GitHub</a>
-      </div>
-    </header>
-
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="overview" role="tab">Overview</button>
-      <button class="tab" data-tab="accounts" role="tab">Accounts</button>
-      <button class="tab" data-tab="models" role="tab">Models</button>
-      <button class="tab" data-tab="test" role="tab">Test</button>
-      <button class="tab" data-tab="logs" role="tab">Logs</button>
-    </nav>
-
-    <main>
-      <section id="tab-overview" class="panel active">
-        <div class="grid" id="status-grid"></div>
-        <div class="row-actions">
-          <button id="btn-refresh" class="btn">Refresh</button>
-          <button id="btn-stop" class="btn danger">Stop server</button>
+    <div class="app">
+      <aside class="side">
+        <div class="logo">
+          <span class="logo-mark">Q</span>
+          <span class="logo-text">qoder-claude</span>
         </div>
-      </section>
 
-      <section id="tab-accounts" class="panel">
-        <div class="panel-head">
+        <nav class="side-nav">
+          <button class="side-item active" data-pane="overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button class="side-item" data-pane="accounts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <span>Accounts</span>
+          </button>
+          <button class="side-item" data-pane="models">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+            <span>Models</span>
+          </button>
+          <button class="side-item" data-pane="test">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <span>Test</span>
+          </button>
+          <button class="side-item" data-pane="logs">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+            <span>Logs</span>
+          </button>
+        </nav>
+
+        <div class="side-foot">
+          <span class="status-dot" id="side-dot"></span>
+          <span id="side-status">checking…</span>
+        </div>
+      </aside>
+
+      <div class="content">
+        <header class="bar">
           <div>
-            <h2>Accounts</h2>
-            <p class="muted">Each account runs in its own config directory. Quota is per account.</p>
+            <h1 id="pane-title">Dashboard</h1>
+            <p class="muted" id="pane-sub">local control panel</p>
           </div>
-          <form id="form-add" class="inline">
-            <input id="new-account" placeholder="account name" autocomplete="off" />
-            <button class="btn primary" type="submit">Connect</button>
-          </form>
-        </div>
-        <div id="login-box" class="login hidden">
-          <p class="muted">Finish the sign-in in your browser:</p>
-          <a id="login-url" class="login-url" target="_blank" rel="noreferrer"></a>
-          <p id="login-state" class="muted"></p>
-        </div>
-        <ul id="account-list" class="list"></ul>
-      </section>
+          <div class="bar-right">
+            <label class="search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input id="search" placeholder="Search" autocomplete="off" />
+            </label>
+            <div class="avatar" id="avatar">R</div>
+          </div>
+        </header>
 
-      <section id="tab-models" class="panel">
-        <div class="panel-head">
-          <h2>Models</h2>
-          <span class="muted" id="models-count"></span>
-        </div>
-        <ul id="model-list" class="chips"></ul>
-        <p class="muted small">Read from the CLI cache, refreshed every ten minutes.</p>
-      </section>
+        <main>
+          <section id="pane-overview" class="pane active">
+            <div class="kpis" id="kpis"></div>
 
-      <section id="tab-test" class="panel">
-        <div class="panel-head"><h2>Test a request</h2></div>
-        <div class="inline">
-          <input id="test-prompt" value="say exactly: ok" />
-          <button id="btn-test" class="btn primary">Send</button>
-        </div>
-        <pre id="test-out" class="pre">—</pre>
-      </section>
+            <div class="split">
+              <div class="card">
+                <div class="card-head">
+                  <div>
+                    <h2>Daily requests</h2>
+                    <p class="muted small">last 30 minutes</p>
+                  </div>
+                  <div class="legend">
+                    <span><i class="dot blue"></i> requests</span>
+                    <span><i class="dot cyan"></i> avg ms</span>
+                  </div>
+                </div>
+                <div class="chart" id="chart"></div>
+              </div>
 
-      <section id="tab-logs" class="panel">
-        <div class="panel-head">
-          <h2>Logs</h2>
-          <button id="btn-logs" class="btn">Reload</button>
-        </div>
-        <pre id="log-out" class="pre tall">—</pre>
-      </section>
-    </main>
+              <div class="card donut-card">
+                <h2>Success rate</h2>
+                <div class="donut" id="donut">
+                  <svg viewBox="0 0 120 120">
+                    <defs>
+                      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#ec4899" />
+                        <stop offset="1" stop-color="#22d3ee" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="60" cy="60" r="48" class="donut-bg" />
+                    <circle cx="60" cy="60" r="48" class="donut-fg" id="donut-ring" />
+                  </svg>
+                  <div class="donut-label">
+                    <span class="muted small">success</span>
+                    <strong id="donut-value">—</strong>
+                  </div>
+                </div>
+                <p class="muted small" id="donut-sub">no requests yet</p>
+              </div>
+            </div>
 
-    <footer class="foot">
-      <span class="muted">local only · 127.0.0.1</span>
-      <span class="muted" id="foot-account"></span>
-    </footer>
+            <div class="card">
+              <div class="card-head">
+                <h2>Recent requests</h2>
+                <button class="btn ghost" id="btn-refresh">Refresh</button>
+              </div>
+              <table class="table">
+                <thead>
+                  <tr><th>Time</th><th>Model</th><th>Transport</th><th>Status</th><th class="right">Latency</th></tr>
+                </thead>
+                <tbody id="recent"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="pane-accounts" class="pane">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Accounts</h2>
+                  <p class="muted small">Each account has its own config directory. Quota is per account.</p>
+                </div>
+                <form id="form-add" class="inline">
+                  <input id="new-account" placeholder="account name" autocomplete="off" />
+                  <button class="btn primary" type="submit">Connect</button>
+                </form>
+              </div>
+
+              <div id="login-box" class="login hidden">
+                <p class="muted small">Finish the sign-in in your browser:</p>
+                <a id="login-url" class="login-url" target="_blank" rel="noreferrer"></a>
+                <p id="login-state" class="muted small"></p>
+              </div>
+
+              <table class="table">
+                <thead><tr><th>Account</th><th>Location</th><th>State</th><th class="right">Actions</th></tr></thead>
+                <tbody id="account-list"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="pane-models" class="pane">
+            <div class="card">
+              <div class="card-head">
+                <div><h2>Models</h2><p class="muted small">read from the CLI cache</p></div>
+                <span class="pill" id="models-count"></span>
+              </div>
+              <ul id="model-list" class="chips"></ul>
+            </div>
+          </section>
+
+          <section id="pane-test" class="pane">
+            <div class="card">
+              <div class="card-head">
+                <div><h2>Test a request</h2><p class="muted small">round-trip through the active transport</p></div>
+              </div>
+              <div class="inline wide">
+                <input id="test-prompt" value="say exactly: ok" />
+                <button id="btn-test" class="btn primary">Send</button>
+              </div>
+              <pre id="test-out" class="pre">—</pre>
+            </div>
+          </section>
+
+          <section id="pane-logs" class="pane">
+            <div class="card">
+              <div class="card-head">
+                <div><h2>Logs</h2><p class="muted small">last 200 lines</p></div>
+                <button id="btn-logs" class="btn ghost">Reload</button>
+              </div>
+              <pre id="log-out" class="pre tall">—</pre>
+            </div>
+          </section>
+        </main>
+
+        <footer class="foot">
+          <span class="muted small" id="foot-account">—</span>
+          <button class="btn ghost danger" id="btn-stop">Stop server</button>
+        </footer>
+      </div>
+    </div>
 
     <script src="/ui/app.js"></script>
   </body>

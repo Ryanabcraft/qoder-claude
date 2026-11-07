@@ -9,6 +9,7 @@ let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { detectModels } from './models.js';
 import { handleUi } from './uiApi.js';
+import { record } from './metrics.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
@@ -101,6 +102,9 @@ async function handleMessages(req, res, body) {
   const model = cfg.model;
   const inTokens = estimate(built.prompt + built.system);
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+  const started = Date.now();
+  res.once('finish', () => record({ model: cfg.model, status: res.statusCode, ms: Date.now() - started, transport: TRANSPORT }));
+
   const ac = new AbortController();
   req.on('close', () => ac.abort());
 

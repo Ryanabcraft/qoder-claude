@@ -13,6 +13,7 @@ import {
 } from './accounts.js';
 import { detectModels } from './models.js';
 import { resolveCli } from './cliPath.js';
+import { snapshot } from './metrics.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const UI_DIR = path.join(HERE, 'ui');
@@ -150,6 +151,10 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
     sendJson(res, 200, { ok: true });
     setTimeout(() => process.exit(0), 150);
     return true;
+  }
+
+  if (req.method === 'GET' && route === 'metrics') {
+    return sendJson(res, 200, snapshot()), true;
   }
 
   if (req.method === 'GET' && route === 'models') {

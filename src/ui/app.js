@@ -1,14 +1,25 @@
-const $ = (sel) => document.querySelector(sel);
+const $ = (s) => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text !== undefined) n.textContent = text;
   return n;
 };
+const svgEl = (tag, attrs = {}) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+};
+
+let state = { status: null, accounts: null, models: [], metrics: null, filter: '' };
 
 async function api(path, opts = {}) {
-  const headers = { 'content-type': 'application/json', ...(opts.headers || {}) };
-  const res = await fetch('/ui/api/' + path, { ...opts, headers });
+  const res = await fetch('/ui/api/' + path, {
+    ...opts,
+    headers: { 'content-type': 'application/json', ...(opts.headers || {}) },
+  });
   const text = await res.text();
   let body = {};
   try { body = JSON.parse(text); } catch { body = { error: text }; }
@@ -16,76 +27,206 @@ async function api(path, opts = {}) {
   return body;
 }
 
-/* tabs */
-document.querySelectorAll('.tab').forEach((tab) => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t === tab));
-    document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === 'tab-' + tab.dataset.tab));
-    if (tab.dataset.tab === 'logs') loadLogs();
-  });
+/* navigation */
+const TITLES = {
+  overview: ['Dashboard', 'local control panel'],
+  accounts: ['Accounts', 'switch, add or remove a Qoder profile'],
+  models: ['Models', 'live list from the CLI cache'],
+  test: ['Test', 'round-trip through the active transport'],
+  logs: ['Logs', 'last lines of bridge.log'],
+};
+
+function showPane(name) {
+  document.querySelectorAll('.side-item').forEach((b) => b.classList.toggle('active', b.dataset.pane === name));
+  document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('active', p.id === 'pane-' + name));
+  const [title, sub] = TITLES[name] || TITLES.overview;
+  $('#pane-title').textContent = title;
+  $('#pane-sub').textContent = sub;
+  if (name === 'logs') loadLogs();
+}
+document.querySelectorAll('.side-item').forEach((b) => b.addEventListener('click', () => showPane(b.dataset.pane)));
+
+/* search */
+$('#search').addEventListener('input', (e) => {
+  state.filter = e.target.value.toLowerCase();
+  renderRecent();
+  renderAccounts();
+  renderModels();
 });
 
-/* status */
+/* status + kpis */
 async function loadStatus() {
-  const pill = $('#pill-status');
   try {
     const s = await api('status');
-    pill.textContent = `${s.transport} · 127.0.0.1:${s.port}`;
-    pill.className = 'pill ok';
-    const cards = [
-      ['Transport', s.transport],
-      ['Port', String(s.port)],
-      ['Account', s.account.label || s.account.name],
-      ['Models', String(s.models)],
-      ['Uptime', `${Math.floor(s.uptime / 60)}m`],
-      ['Version', s.version],
-    ];
-    const grid = $('#status-grid');
-    grid.textContent = '';
-    for (const [k, v] of cards) {
-      const c = el('div', 'card');
-      c.append(el('div', 'k', k), el('div', 'v' + (k === 'Uptime' || k === 'Version' ? '' : ' mono'), v));
-      grid.append(c);
+    state.status = s;
+    $('#side-status').textContent = `${s.transport} · ${s.port}`;
+    $('#side-dot').className = 'status-dot ok';
+    $('#avatar').textContent = (s.account.name || 'q').charAt(0).toUpperCase();
+    $('#foot-account').textContent = `${s.account.label || s.account.name} · 127.0.0.1:${s.port}`;
+  } catch {
+    $('#side-status').textContent = 'offline';
+    $('#side-dot').className = 'status-dot bad';
+  }
+}
+
+function renderKpis() {
+  const s = state.status;
+  const m = state.metrics || {};
+  const kpis = [
+    { label: 'Requests', value: String(m.total || 0), sub: `${m.ok || 0} ok · ${m.err || 0} errors`, icon: 'bolt' },
+    { label: 'Accounts', value: String(Object.keys(state.accounts?.accounts || {}).length), sub: `active: ${s?.account?.name || '-'}`, icon: 'users' },
+    { label: 'Models', value: String((state.models || []).length), sub: `transport: ${s?.transport || '-'}`, icon: 'layers' },
+  ];
+  const box = $('#kpis');
+  box.textContent = '';
+  for (const k of kpis) {
+    const card = el('div', 'card kpi');
+    const top = el('div', 'top');
+    top.append(el('span', 'label', k.label), icon(k.icon));
+    card.append(top, el('div', 'value', k.value), el('div', 'sub', k.sub));
+    box.append(card);
+  }
+}
+
+function icon(name) {
+  const wrap = el('span', 'icon');
+  const svg = svgEl('svg', { viewBox: '0 0 24 24' });
+  const paths = {
+    bolt: ['M13 2 4 14h7l-1 8 9-12h-7z'],
+    users: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8', 'M22 21v-2a4 4 0 0 0-3-3.9'],
+    layers: ['M12 2 2 7l10 5 10-5-10-5', 'M2 12l10 5 10-5', 'M2 17l10 5 10-5'],
+  };
+  for (const d of paths[name] || []) svg.append(svgEl('path', { d }));
+  wrap.append(svg);
+  return wrap;
+}
+
+/* chart */
+function renderChart() {
+  const box = $('#chart');
+  box.textContent = '';
+  const data = state.metrics?.buckets || [];
+  const W = 600, H = 210, P = { l: 34, r: 10, t: 10, b: 22 };
+  const innerW = W - P.l - P.r;
+  const innerH = H - P.t - P.b;
+  const maxCount = Math.max(4, ...data.map((d) => d.count));
+  const maxAvg = Math.max(100, ...data.map((d) => d.avg));
+
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none' });
+  for (let i = 0; i <= 3; i++) {
+    const y = P.t + (innerH / 3) * i;
+    svg.append(svgEl('line', { x1: P.l, x2: W - P.r, y1: y, y2: y, class: 'grid-line' }));
+    const t = svgEl('text', { x: 0, y: y + 3, class: 'axis' });
+    t.textContent = String(Math.round(maxCount - (maxCount / 3) * i));
+    svg.append(t);
+  }
+
+  const xAt = (i) => P.l + (innerW * i) / Math.max(1, data.length - 1);
+  const yCount = (v) => P.t + innerH - (v / maxCount) * innerH;
+  const yAvg = (v) => P.t + innerH - (v / maxAvg) * innerH;
+
+  if (data.length) {
+    const area = svgEl('path', {
+      d: `M${xAt(0)},${P.t + innerH} ` + data.map((d, i) => `L${xAt(i)},${yCount(d.count)}`).join(' ') + ` L${xAt(data.length - 1)},${P.t + innerH} Z`,
+      fill: 'rgba(59,130,246,0.18)',
+    });
+    svg.append(area);
+    svg.append(svgEl('polyline', {
+      points: data.map((d, i) => `${xAt(i)},${yCount(d.count)}`).join(' '),
+      class: 'line-a',
+    }));
+    svg.append(svgEl('polyline', {
+      points: data.map((d, i) => `${xAt(i)},${yAvg(d.avg)}`).join(' '),
+      class: 'line-b',
+    }));
+    for (let i = 0; i < data.length; i += 6) {
+      const t = svgEl('text', { x: xAt(i), y: H - 4, class: 'axis' });
+      t.textContent = data[i].label;
+      svg.append(t);
     }
-    $('#foot-account').textContent = 'account: ' + (s.account.label || s.account.name);
-  } catch (e) {
-    pill.textContent = 'offline';
-    pill.className = 'pill bad';
+  }
+  box.append(svg);
+}
+
+function renderDonut() {
+  const pct = state.metrics?.success ?? 100;
+  const ring = $('#donut-ring');
+  const circumference = 2 * Math.PI * 48;
+  ring.setAttribute('stroke-dasharray', `${(circumference * pct) / 100} ${circumference}`);
+  $('#donut-value').textContent = `${pct}%`;
+  const total = state.metrics?.total || 0;
+  $('#donut-sub').textContent = total ? `${total} request${total === 1 ? '' : 's'}` : 'no requests yet';
+}
+
+/* recent */
+function renderRecent() {
+  const list = state.metrics?.recent || [];
+  const body = $('#recent');
+  body.textContent = '';
+  const rows = list.filter((r) => !state.filter || r.model.toLowerCase().includes(state.filter));
+  if (!rows.length) {
+    const tr = el('tr');
+    const td = el('td', 'muted', 'no requests yet');
+    td.colSpan = 5;
+    tr.append(td);
+    body.append(tr);
+    return;
+  }
+  for (const r of rows) {
+    const tr = el('tr');
+    const time = new Date(r.t).toLocaleTimeString();
+    tr.append(
+      el('td', 'mono', time),
+      el('td', '', r.model),
+      el('td', 'mono', r.transport),
+      el('td'),
+      el('td', 'right mono', `${r.ms} ms`),
+    );
+    const badge = el('span', 'badge ' + (r.status >= 200 && r.status < 300 ? 'ok' : 'err'), String(r.status));
+    tr.children[3].append(badge);
+    body.append(tr);
   }
 }
 
 /* accounts */
-async function loadAccounts() {
-  const data = await api('accounts');
-  const list = $('#account-list');
-  list.textContent = '';
+function renderAccounts() {
+  const data = state.accounts;
+  const body = $('#account-list');
+  if (!data) return;
+  body.textContent = '';
   for (const [name, item] of Object.entries(data.accounts)) {
-    const li = el('li');
-    const active = name === data.active;
-    li.append(el('span', 'name', name));
-    if (active) li.append(el('span', 'badge on', 'active'));
-    li.append(el('span', 'path', item.dir || 'global ~/.qoder'));
+    if (state.filter && !name.toLowerCase().includes(state.filter)) continue;
+    const tr = el('tr');
+    tr.append(el('td', '', name));
 
-    const actions = el('div', 'actions');
-    if (!active) {
+    const loc = el('td', 'mono', item.dir || '~/.qoder');
+    tr.append(loc);
+
+    const st = el('td');
+    st.append(el('span', 'badge ' + (name === data.active ? 'on' : ''), name === data.active ? 'active' : 'idle'));
+    tr.append(st);
+
+    const actions = el('td', 'right');
+    if (name !== data.active) {
       const use = el('button', 'btn small', 'Use');
       use.onclick = async () => {
         await api('accounts/use', { method: 'POST', body: JSON.stringify({ name }) });
-        await Promise.all([loadAccounts(), loadStatus()]);
+        await refreshAll();
       };
       actions.append(use);
     }
     if (name !== 'default') {
       const del = el('button', 'btn small danger', 'Remove');
+      del.style.marginLeft = '6px';
       del.onclick = async () => {
-        if (!confirm(`Remove account "${name}" and its credentials?`)) return;
+        if (!confirm(`Remove "${name}" and its credentials?`)) return;
         await api('accounts/' + encodeURIComponent(name), { method: 'DELETE' });
-        await Promise.all([loadAccounts(), loadStatus()]);
+        await refreshAll();
       };
       actions.append(del);
     }
-    li.append(actions);
-    list.append(li);
+    tr.append(actions);
+    body.append(tr);
   }
 }
 
@@ -94,11 +235,11 @@ let loginTimer = null;
 async function startLogin(name) {
   const box = $('#login-box');
   const link = $('#login-url');
-  const state = $('#login-state');
+  const st = $('#login-state');
   box.classList.remove('hidden');
   link.textContent = 'waiting for the login URL…';
   link.removeAttribute('href');
-  state.textContent = '';
+  st.textContent = '';
 
   const { id } = await api('accounts', { method: 'POST', body: JSON.stringify({ name }) });
 
@@ -108,7 +249,7 @@ async function startLogin(name) {
       if (j.url) {
         link.textContent = j.url;
         link.href = j.url;
-        state.textContent = 'open the link, approve, and wait.';
+        st.textContent = 'open the link, approve, and wait.';
         if (!link.dataset.opened) {
           link.dataset.opened = '1';
           window.open(j.url, '_blank', 'noreferrer');
@@ -118,17 +259,17 @@ async function startLogin(name) {
         clearInterval(loginTimer);
         loginTimer = null;
         if (j.ok) {
-          state.textContent = 'connected.';
-          await Promise.all([loadAccounts(), loadStatus()]);
+          st.textContent = 'connected.';
+          await refreshAll();
           setTimeout(() => box.classList.add('hidden'), 1500);
         } else {
-          state.textContent = 'login failed: ' + (j.log || 'unknown error');
+          st.textContent = 'login failed: ' + (j.log || 'unknown error');
         }
         return;
       }
       setTimeout(poll, 1500);
     } catch (e) {
-      state.textContent = e.message;
+      st.textContent = e.message;
     }
   };
   poll();
@@ -148,12 +289,12 @@ $('#form-add').addEventListener('submit', async (e) => {
 });
 
 /* models */
-async function loadModels() {
-  const { models } = await api('models');
+function renderModels() {
   const list = $('#model-list');
   list.textContent = '';
-  for (const m of models) list.append(el('li', '', m));
-  $('#models-count').textContent = `${models.length} available`;
+  const items = (state.models || []).filter((m) => !state.filter || m.toLowerCase().includes(state.filter));
+  for (const m of items) list.append(el('li', '', m));
+  $('#models-count').textContent = `${state.models.length} available`;
 }
 
 /* test */
@@ -163,6 +304,7 @@ $('#btn-test').addEventListener('click', async () => {
   try {
     const r = await api('test', { method: 'POST', body: JSON.stringify({ prompt: $('#test-prompt').value }) });
     out.textContent = JSON.stringify(r, null, 2);
+    await refreshMetrics();
   } catch (e) {
     out.textContent = 'error: ' + e.message;
   }
@@ -182,16 +324,38 @@ async function loadLogs() {
 }
 $('#btn-logs').addEventListener('click', loadLogs);
 
-/* actions */
-$('#btn-refresh').addEventListener('click', () => Promise.all([loadStatus(), loadAccounts()]));
+/* refresh */
+async function refreshMetrics() {
+  state.metrics = await api('metrics');
+  renderKpis();
+  renderChart();
+  renderDonut();
+  renderRecent();
+}
+
+async function refreshAll() {
+  const [s, a, m] = await Promise.all([api('status'), api('accounts'), api('models')]);
+  state.status = s;
+  state.accounts = a;
+  state.models = m.models;
+  $('#side-status').textContent = `${s.transport} · ${s.port}`;
+  $('#side-dot').className = 'status-dot ok';
+  $('#avatar').textContent = (s.account.name || 'q').charAt(0).toUpperCase();
+  $('#foot-account').textContent = `${s.account.label || s.account.name} · 127.0.0.1:${s.port}`;
+  renderAccounts();
+  renderModels();
+  await refreshMetrics();
+}
+
+$('#btn-refresh').addEventListener('click', refreshAll);
 $('#btn-stop').addEventListener('click', async () => {
   if (!confirm('Stop the bridge server?')) return;
-  try {
-    await fetch('/ui/api/stop', { method: 'POST' });
-  } catch {}
-  setTimeout(() => loadStatus(), 800);
+  try { await fetch('/ui/api/stop', { method: 'POST' }); } catch {}
+  setTimeout(loadStatus, 800);
 });
 
-/* boot */
-Promise.all([loadStatus(), loadAccounts(), loadModels()]).catch(() => {});
-setInterval(loadStatus, 15000);
+refreshAll().catch(() => {});
+setInterval(async () => {
+  try { await refreshMetrics(); } catch {}
+}, 10000);
+setInterval(loadStatus, 20000);
