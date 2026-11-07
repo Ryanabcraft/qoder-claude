@@ -35,6 +35,7 @@ warn() { printf '    \033[33m!!\033[0m  %s\n' "$1"; }
 die()  { printf '\n    \033[31mx\033[0m   %s\n' "$1"; exit 1; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
+claude_ok() { have claude && claude --version >/dev/null 2>&1; }
 
 TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
 trap 'rm -rf "$TMP"' EXIT
@@ -133,7 +134,7 @@ fi
 step "Installing Claude Code"
 if [ "$SKIP_CLAUDE" -eq 1 ]; then
   warn "skipped (--skip-claude)"
-elif have claude; then
+elif claude_ok; then
   ok "claude $(claude --version 2>/dev/null | head -n 1)"
 else
   if curl -fsSL "https://claude.ai/install.sh" -o "$TMP/claude-install.sh" && bash "$TMP/claude-install.sh"; then
@@ -142,11 +143,11 @@ else
     warn "official installer failed; trying npm"
   fi
   export PATH="$HOME/.local/bin:$PATH"
-  if ! have claude; then
+  if ! claude_ok; then
     npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
       npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
   fi
-  if have claude; then
+  if claude_ok; then
     ok "claude installed"
   else
     warn "claude is not on PATH; install it with: curl -fsSL https://claude.ai/install.sh | bash"
