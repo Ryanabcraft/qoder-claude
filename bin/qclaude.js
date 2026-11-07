@@ -118,24 +118,103 @@ function openServerWindow() {
   }
 }
 
+// Reads the PE header without running the file: a truncated or foreign binary
+// only shows up as a modal "16-bit application" dialog once executed.
+function peArchOk(file) {
+  try {
+    const fd = fs.openSync(file, 'r');
+    const size = fs.fstatSync(fd).size;
+    if (size < 64) { fs.closeSync(fd); return false; }
+    const head = Buffer.alloc(64);
+    fs.readSync(fd, head, 0, 64, 0);
+    if (head[0] !== 0x4d || head[1] !== 0x5a) { fs.closeSync(fd); return false; }
+    const peOff = head.readUInt32LE(0x3c);
+    if (peOff + 6 > size) { fs.closeSync(fd); return false; }
+    const pe = Buffer.alloc(6);
+    fs.readSync(fd, pe, 0, 6, peOff);
+    fs.closeSync(fd);
+    if (pe[0] !== 0x50 || pe[1] !== 0x45) return false;
+    const machine = pe.readUInt16LE(4);
+    const want = process.arch === 'arm64' ? 0xaa64 : process.arch === 'ia32' ? 0x014c : 0x8664;
+    return machine === want;
+  } catch {
+    return false;
+  }
+}
+
+function claudeWorks(bin) {
+  const win = process.platform === 'win32';
+  if (win) {
+    if (/\.exe$/i.test(bin)) return peArchOk(bin);
+    if (/\.(cmd|bat)$/i.test(bin)) {
+      try {
+        const body = fs.readFileSync(bin, 'utf8');
+        const hit = body.match(/([A-Za-z]:\\[^"\r\n]*?claude\.exe|%~?dp0%?[^"\r\n]*?claude\.exe)/i);
+        if (!hit) return true;
+        const target = hit[1].replace(/%~?dp0%?/i, path.dirname(bin));
+        return fs.existsSync(target) ? peArchOk(target) : false;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+  try {
+    const r = spawnSync(bin, ['--version'], { stdio: 'ignore', timeout: 8000 });
+    return r.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 function findClaude() {
   const win = process.platform === 'win32';
-  const names = win ? ['claude.cmd', 'claude.exe', 'claude.bat', 'claude'] : ['claude'];
-  const dirs = String(process.env.PATH || '').split(win ? ';' : ':').filter(Boolean);
+  const names = win ? ['claude.exe', 'claude.cmd', 'claude.bat'] : ['claude'];
+  const dirs = [];
+
   if (win) {
     if (process.env.USERPROFILE) dirs.push(path.join(process.env.USERPROFILE, '.local', 'bin'));
-    if (process.env.APPDATA) dirs.push(path.join(process.env.APPDATA, 'npm'));
     if (process.env.LOCALAPPDATA) dirs.push(path.join(process.env.LOCALAPPDATA, 'Programs', 'claude'));
   } else {
     dirs.push(path.join(process.env.HOME || '', '.local', 'bin'), '/usr/local/bin', '/opt/homebrew/bin');
   }
+  let npmBroken = false;
+  let npmDir = '';
+  if (win && process.env.APPDATA) {
+    npmDir = path.join(process.env.APPDATA, 'npm');
+    const npmExe = path.join(npmDir, 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+    if (fs.existsSync(npmExe) && !peArchOk(npmExe)) {
+      npmBroken = true;
+      console.log(`qclaude: the npm copy at ${npmExe} does not match this Windows build; using the official install`);
+    }
+  }
+
+  dirs.push(
+    ...String(process.env.PATH || '')
+      .split(win ? ';' : ':')
+      .filter(Boolean)
+      .filter((dir) => !(npmBroken && path.resolve(dir).toLowerCase() === path.resolve(npmDir).toLowerCase())),
+  );
+  if (win && npmDir && !npmBroken) dirs.push(npmDir);
+
+  const seen = new Set();
+  const broken = [];
   for (const dir of dirs) {
     for (const name of names) {
       const candidate = path.join(dir, name);
+      if (seen.has(candidate)) continue;
+      seen.add(candidate);
       try {
-        if (fs.existsSync(candidate)) return candidate;
-      } catch {}
+        if (!fs.existsSync(candidate)) continue;
+      } catch {
+        continue;
+      }
+      if (claudeWorks(candidate)) return candidate;
+      broken.push(candidate);
     }
+  }
+  if (broken.length) {
+    console.log(`qclaude: ignoring an unusable claude at ${broken[0]}`);
   }
   return null;
 }
@@ -174,6 +253,7 @@ async function ensureClaude() {
 
   console.error('qclaude: could not install claude.');
   console.error(`qclaude: ${win ? 'irm https://claude.ai/install.ps1 | iex' : 'curl -fsSL https://claude.ai/install.sh | bash'}`);
+  console.error('qclaude: if an npm copy is broken, remove it: npm uninstall -g @anthropic-ai/claude-code');
   process.exit(127);
 }
 

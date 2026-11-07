@@ -60,16 +60,50 @@ if (-not (Have 'qodercli')) {
 }
 Ok ('qodercli ' + ((& cmd /c 'qodercli --version 2>nul' | Select-Object -First 1) -join '').Trim())
 
+function Test-PeArch($p) {
+  try {
+    $fs = [IO.File]::OpenRead($p)
+    $br = New-Object IO.BinaryReader($fs)
+    if ($br.ReadUInt16() -ne 0x5A4D) { $fs.Close(); return $false }
+    $fs.Position = 0x3C
+    $off = $br.ReadUInt32()
+    $fs.Position = $off
+    if ($br.ReadUInt32() -ne 0x00004550) { $fs.Close(); return $false }
+    $machine = $br.ReadUInt16()
+    $fs.Close()
+    $want = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 0xAA64 } else { 0x8664 }
+    return ($machine -eq $want)
+  } catch { return $false }
+}
+
 function Find-Claude {
-  $cmd = Get-Command claude -ErrorAction SilentlyContinue
-  if ($cmd) { return $cmd.Source }
+  $npmDir = if ($env:APPDATA) { Join-Path $env:APPDATA 'npm' } else { '' }
+  $npmBroken = $false
+  if ($npmDir) {
+    $npmExe = Join-Path $npmDir 'node_modules\@anthropic-ai\claude-code\bin\claude.exe'
+    if ((Test-Path $npmExe) -and -not (Test-PeArch $npmExe)) {
+      Warn "the npm copy at $npmExe does not match this Windows build"
+      $npmBroken = $true
+    }
+  }
+
   $dirs = @()
-  if ($env:APPDATA) { $dirs += (Join-Path $env:APPDATA 'npm') }
+  if ($env:USERPROFILE) { $dirs += (Join-Path $env:USERPROFILE '.local\bin') }
   if ($env:LOCALAPPDATA) { $dirs += (Join-Path $env:LOCALAPPDATA 'Programs\claude') }
+  $dirs += ($env:Path -split ';' | Where-Object { $_ })
+  if ($npmDir -and -not $npmBroken) { $dirs += $npmDir }
+
   foreach ($d in $dirs) {
-    foreach ($n in @('claude.cmd', 'claude.exe', 'claude.bat')) {
+    if ($npmBroken -and $npmDir -and ($d.TrimEnd('\') -ieq $npmDir.TrimEnd('\'))) { continue }
+    foreach ($n in @('claude.exe', 'claude.cmd', 'claude.bat')) {
       $p = Join-Path $d $n
-      if (Test-Path $p) { return $p }
+      if (-not (Test-Path $p)) { continue }
+      if ($n -eq 'claude.exe') {
+        if (Test-PeArch $p) { return $p }
+        Warn "ignoring incompatible binary at $p"
+      } else {
+        return $p
+      }
     }
   }
   return $null

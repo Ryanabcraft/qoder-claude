@@ -342,6 +342,7 @@ Two limits worth knowing:
 | `account "x" does not exist` | `qclaude account list` to see the exact names |
 | `Not logged in` | `qclaude account add <name>` again, then restart the session |
 | Wrong account answering | `qclaude account current`, then restart the session |
+| `claude.exe is not compatible with the version of Windows` | an old npm copy is broken. `qclaude` now ignores it and uses the official build; remove the stale one with `npm uninstall -g @anthropic-ai/claude-code` |
 | Login opened but nothing changed | the login must finish before the account becomes active |
 | Failover never fires | `qclaude rotation` — check `on` and that the other accounts are not disabled |
 | Everything is paused | the pool is empty for now; wait for the timer or `qclaude account resume <name>` |

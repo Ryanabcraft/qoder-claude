@@ -23,17 +23,17 @@ done
 echo "[1/4] checking qodercli and claude..."
 npm install -g @qoder-ai/qodercli >/dev/null 2>&1 || \
   npm install -g --prefix "$HOME/.local" @qoder-ai/qodercli >/dev/null 2>&1 || true
-if command -v claude >/dev/null 2>&1; then
+if command -v claude >/dev/null 2>&1 && claude --version >/dev/null 2>&1; then
   echo "    claude present"
 else
   echo "    claude missing; running the official installer"
   curl -fsSL "https://claude.ai/install.sh" -o "$TMP/claude-install.sh" && bash "$TMP/claude-install.sh" || true
   export PATH="$HOME/.local/bin:$PATH"
-  if ! command -v claude >/dev/null 2>&1; then
+  if ! (command -v claude >/dev/null 2>&1 && claude --version >/dev/null 2>&1); then
     npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
       npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
   fi
-  command -v claude >/dev/null 2>&1 || echo "    install it manually: curl -fsSL https://claude.ai/install.sh | bash"
+  (command -v claude >/dev/null 2>&1 && claude --version >/dev/null 2>&1) || echo "    install it manually: curl -fsSL https://claude.ai/install.sh | bash"
 fi
 
 echo "[2/4] updating the bridge..."
