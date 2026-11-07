@@ -60,6 +60,18 @@ if (-not (Have 'qodercli')) {
 }
 Ok ('qodercli ' + ((& cmd /c 'qodercli --version 2>nul' | Select-Object -First 1) -join '').Trim())
 
+Step 'Installing Claude Code'
+if (Have 'claude') {
+  Ok (('claude ' + ((& cmd /c 'claude --version 2>nul' | Select-Object -First 1) -join '')).Trim())
+} else {
+  if ($SkipDeps) { Warn 'claude is missing (-SkipDeps). Install it with: npm i -g @anthropic-ai/claude-code' }
+  else {
+    npm install -g @anthropic-ai/claude-code | Out-Null
+    if (Have 'claude') { Ok 'claude installed' }
+    else { Warn 'claude is not on PATH yet; reopen the terminal. It installs with: npm i -g @anthropic-ai/claude-code' }
+  }
+}
+
 Step 'Checking Qoder login'
 $status = (& cmd /c 'qodercli status 2>nul' | Out-String)
 if ($status -match 'Username:') {

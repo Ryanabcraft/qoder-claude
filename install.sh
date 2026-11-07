@@ -72,6 +72,20 @@ else
   ok "qodercli installed"
 fi
 
+step "Installing Claude Code"
+if have claude; then
+  ok "claude $(claude --version 2>/dev/null | head -n 1)"
+else
+  npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
+    npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
+  export PATH="$HOME/.local/bin:$PATH"
+  if have claude; then
+    ok "claude installed"
+  else
+    warn "claude is not on PATH; install it with: npm i -g @anthropic-ai/claude-code"
+  fi
+fi
+
 step "Checking Qoder login"
 if qodercli status 2>/dev/null | grep -q 'Username:'; then
   ok "$(qodercli status 2>/dev/null | grep 'Username:')"

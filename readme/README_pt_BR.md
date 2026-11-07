@@ -46,7 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/insta
 O instalador:
 
 1. confere o Node.js 20+ (instala o LTS via winget no Windows; no resto, diz o que instalar)
-2. instala o `@qoder-ai/qodercli` se faltar
+2. instala o `@qoder-ai/qodercli` e o Claude Code se faltarem
 3. abre o login do Qoder se não houver sessão
 4. instala o bridge em `%LOCALAPPDATA%\qoder-bridge` ou `~/.local/share/qoder-bridge`
 5. grava o `~/.claude/settings.json` **global** (backup em `.bak`) com URL, token,
@@ -61,6 +61,11 @@ Flags do `install.sh`: `--project-only` (configura só o diretório atual), `--n
 
 O diretório de instalação mantém o nome histórico `qoder-bridge` para não quebrar instalações
 existentes; só o repositório e o comando se chamam `qoder-claude`.
+
+**Por que o Qoder CLI continua sendo instalado:** ele é dono do login (`qodercli login`), que
+grava o cofre de credenciais usado pelo transporte direto para assinar; é a fonte da lista de
+modelos; e é o transporte de fallback quando `vendor/` não está presente. No caminho padrão a
+bridge não chama o CLI.
 
 ### Manual
 
