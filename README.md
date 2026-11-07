@@ -308,6 +308,28 @@ the bridge falls back to a fresh worker with the full history — never a delta 
 - The CLI runs with `--max-model-request-retries 0`; override with `BRIDGE_MODEL_RETRIES`.
 - Stream responses also carry a `: ping` keepalive every 12 s.
 
+## Transports
+
+| transport | how it works |
+|---|---|
+| `direct` (default when `vendor/` exists) | signs and encrypts the request with the embedded Qoder WASM and calls `api1.qoder.sh` over HTTPS. No CLI process. |
+| `cli` | spawns `qodercli` per request (fallback, and the only mode when `vendor/` is missing) |
+
+`BRIDGE_TRANSPORT=direct|cli` forces one.
+
+How the direct path works:
+
+1. reads `~/.qoder/.auth/user` (AES; key = first 16 chars of `.auth/machine_id`)
+2. derives fresh auth fields with `generate_runtime_auth_fields`
+3. builds a `QoderContext` and calls `prepareInferRequest`
+4. POSTs the signed, encrypted body and parses the SSE envelopes
+
+`vendor/qoder-auth.cjs` is the wasm-bindgen glue extracted from the official CLI bundle;
+`vendor/qoder_auth_wasm_bg.wasm` is the module itself. `probe/` holds the extraction scripts.
+
+When the access token expires, run once with `BRIDGE_TRANSPORT=cli` (or `qodercli login`) so
+the CLI refreshes the store, then switch back.
+
 ## Configuration
 
 | variable | default | purpose |

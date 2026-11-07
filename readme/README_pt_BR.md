@@ -304,6 +304,28 @@ desconhecido.
 - O CLI roda com `--max-model-request-retries 0`; ajuste com `BRIDGE_MODEL_RETRIES`.
 - Respostas em stream também levam um `: ping` de keepalive a cada 12 s.
 
+## Transportes
+
+| transporte | como funciona |
+|---|---|
+| `direct` (padrão quando `vendor/` existe) | assina e cifra a requisição com o WASM embutido do Qoder e chama `api1.qoder.sh` por HTTPS. Sem processo do CLI. |
+| `cli` | sobe o `qodercli` por request (fallback, e o único modo quando `vendor/` está ausente) |
+
+`BRIDGE_TRANSPORT=direct|cli` força um deles.
+
+Como o caminho direto funciona:
+
+1. lê `~/.qoder/.auth/user` (AES; chave = primeiros 16 caracteres de `.auth/machine_id`)
+2. deriva os campos de auth com `generate_runtime_auth_fields`
+3. monta um `QoderContext` e chama `prepareInferRequest`
+4. faz o POST do corpo assinado e cifrado e lê os envelopes SSE
+
+`vendor/qoder-auth.cjs` é o glue wasm-bindgen extraído do bundle oficial;
+`vendor/qoder_auth_wasm_bg.wasm` é o módulo. `probe/` guarda os scripts de extração.
+
+Quando o access token expira, rode uma vez com `BRIDGE_TRANSPORT=cli` (ou `qodercli login`)
+para o CLI renovar o cofre, depois volte.
+
 ## Configuração
 
 | variável | padrão | função |

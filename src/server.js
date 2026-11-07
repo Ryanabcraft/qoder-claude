@@ -3,11 +3,15 @@ import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls } from './prompt.js';
 import { runCompletion, workerConfig } from './cli.js';
+let directCompletion = null;
+try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { detectModels } from './models.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
 const KEY = process.env.BRIDGE_API_KEY || '';
+const TRANSPORT = process.env.BRIDGE_TRANSPORT || (directCompletion ? 'direct' : 'cli');
+const run = TRANSPORT === 'direct' && directCompletion ? directCompletion : runCompletion;
 const LOG_FILE = process.env.BRIDGE_LOG_FILE || '';
 const LOG_ON = process.env.BRIDGE_LOG !== '0';
 
@@ -98,7 +102,7 @@ async function handleMessages(req, res, body) {
   if (!stream) {
     let out;
     try {
-      out = await runCompletion({ body, cfg, signal: ac.signal });
+      out = await run({ body, cfg, signal: ac.signal });
     } catch (e) {
       const status = errorStatus(e.message || '');
       return send(res, status, errorBody(e.message || 'request failed', status));
@@ -204,7 +208,7 @@ async function handleMessages(req, res, body) {
 
   let out;
   try {
-    out = await runCompletion({
+    out = await run({
       body, cfg, signal: ac.signal,
       onEvent: (ev) => {
         if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') { startStream(); feed(ev.delta.text || ''); }

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const MARK = '<tool_calls>';
 
-function blocksToText(content) {
+export function blocksToText(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
   return content
