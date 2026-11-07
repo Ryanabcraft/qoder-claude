@@ -63,13 +63,20 @@ step "Installing Claude Code"
 if have claude; then
   ok "claude $(claude --version 2>/dev/null | head -n 1)"
 else
-  npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
-    npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
+  if curl -fsSL "https://claude.ai/install.sh" -o "$TMP/claude-install.sh" && bash "$TMP/claude-install.sh"; then
+    ok "official installer finished"
+  else
+    warn "official installer failed; trying npm"
+  fi
   export PATH="$HOME/.local/bin:$PATH"
+  if ! have claude; then
+    npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || \
+      npm install -g --prefix "$HOME/.local" @anthropic-ai/claude-code >/dev/null 2>&1 || true
+  fi
   if have claude; then
     ok "claude installed"
   else
-    warn "claude is not on PATH; install it with: npm i -g @anthropic-ai/claude-code"
+    warn "claude is not on PATH; install it with: curl -fsSL https://claude.ai/install.sh | bash"
   fi
 fi
 

@@ -49,7 +49,8 @@ curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/insta
 The installer:
 
 1. checks Node.js 20+ (installs LTS via winget on Windows; tells you what to install elsewhere)
-2. installs `@qoder-ai/qodercli` and Claude Code if missing
+2. installs `@qoder-ai/qodercli` and Claude Code if missing (Claude through the official
+   `claude.ai/install` script, not npm)
 3. opens the Qoder login flow if there is no session
 4. installs the bridge to `%LOCALAPPDATA%\qoder-bridge` or `~/.local/share/qoder-bridge`
 5. writes the **global** `~/.claude/settings.json` (backup kept as `.bak`) with URL, token,
