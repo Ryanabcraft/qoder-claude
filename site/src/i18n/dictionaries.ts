@@ -65,11 +65,15 @@ export const en: Dict = {
       },
       {
         title: 'Credentials',
-        body: 'The Qoder token never crosses the bridge. The CLI reads its own store, signs its own requests and owns its session; the bridge only talks to it over stdio.',
+        body: 'The Qoder token stays in your config directory. The bridge reads it locally, signs each request with the embedded Qoder WASM, and never forwards it to any other host.',
       },
       {
         title: 'Your controls',
         body: 'Model picker, effort slider, thinking budget, statusline. The values you set in Claude Code arrive at the model unchanged, because the bridge forwards them.',
+      },
+      {
+        title: 'Account failover',
+        body: 'Add as many Qoder accounts as you want. When one hits its daily quota, gets rate-limited or loses its session, the bridge pauses it and retries the same request on the next account — no restart, no manual switch.',
       },
     ],
   },
@@ -87,7 +91,7 @@ export const en: Dict = {
     rows: [
       ['Latency', '~2s with a warm worker, 10–15s while the pool refills'],
       ['Context', 'the full history is serialized into every request'],
-      ['Transport', 'the CLI is the only path; the API body is encrypted and signed'],
+      ['Transport', 'direct by default — the embedded WASM signs the request; the CLI stays as fallback'],
       ['Tools', 'negotiated in text, converted to tool_use by the bridge'],
     ],
     fullA: 'Full detail, including the reason the API cannot be called directly, lives in the',
@@ -134,11 +138,15 @@ export const pt: Dict = {
       },
       {
         title: 'Credenciais',
-        body: 'O token do Qoder nunca passa pela bridge. O CLI lê o próprio cofre, assina as próprias requisições e é dono da própria sessão; a bridge só fala com ele por stdio.',
+        body: 'O token do Qoder fica no seu diretório de configuração. A bridge lê localmente, assina cada requisição com o WASM embutido do Qoder e não encaminha o token para nenhum outro host.',
       },
       {
         title: 'Seus controles',
         body: 'Seletor de modelo, força de raciocínio, orçamento de pensamento, statusline. O que você define no Claude Code chega ao modelo intacto, porque a bridge repassa.',
+      },
+      {
+        title: 'Failover de contas',
+        body: 'Adicione quantas contas Qoder quiser. Quando uma bate a cota diária, leva rate limit ou perde a sessão, a bridge pausa essa conta e repete a mesma requisição na próxima — sem reiniciar, sem trocar na mão.',
       },
     ],
   },
@@ -156,7 +164,7 @@ export const pt: Dict = {
     rows: [
       ['Latência', '~2s com worker quente, 10–15s enquanto o pool repõe'],
       ['Contexto', 'o histórico inteiro é serializado em cada requisição'],
-      ['Transporte', 'o CLI é o único caminho; o corpo da API é cifrado e assinado'],
+      ['Transporte', 'direto por padrão — o WASM embutido assina a requisição; o CLI fica como fallback'],
       ['Ferramentas', 'negociadas em texto, convertidas em tool_use pela bridge'],
     ],
     fullA: 'O detalhe completo, incluindo o motivo de a API não poder ser chamada direto, está no',
@@ -203,11 +211,15 @@ export const es: Dict = {
       },
       {
         title: 'Credenciales',
-        body: 'El token de Qoder nunca pasa por el puente. El CLI lee su propio almacén, firma sus peticiones y es dueño de su sesión; el puente solo habla con él por stdio.',
+        body: 'El token de Qoder se queda en tu directorio de configuración. El puente lo lee en local, firma cada petición con el WASM de Qoder embebido y no lo reenvía a ningún otro host.',
       },
       {
         title: 'Tus controles',
         body: 'Selector de modelo, nivel de esfuerzo, presupuesto de pensamiento, statusline. Lo que defines en Claude Code llega al modelo sin cambios, porque el puente lo reenvía.',
+      },
+      {
+        title: 'Failover de cuentas',
+        body: 'Añade tantas cuentas de Qoder como quieras. Cuando una agota la cuota diaria, recibe un rate limit o pierde la sesión, el puente la pausa y repite la misma petición en la siguiente — sin reiniciar, sin cambiar a mano.',
       },
     ],
   },
@@ -225,7 +237,7 @@ export const es: Dict = {
     rows: [
       ['Latencia', '~2s con worker caliente, 10–15s mientras el pool se repone'],
       ['Contexto', 'el historial completo se serializa en cada petición'],
-      ['Transporte', 'el CLI es el único camino; el cuerpo de la API va cifrado y firmado'],
+      ['Transporte', 'directo por defecto — el WASM embebido firma la petición; el CLI queda como fallback'],
       ['Herramientas', 'negociadas en texto, convertidas a tool_use por el puente'],
     ],
     fullA: 'El detalle completo, incluido el motivo por el que la API no se puede llamar directamente, está en el',
@@ -272,11 +284,15 @@ export const fr: Dict = {
       },
       {
         title: 'Identifiants',
-        body: 'Le jeton Qoder ne traverse jamais le pont. Le CLI lit son propre coffre, signe ses requêtes et possède sa session ; le pont ne lui parle que par stdio.',
+        body: 'Le jeton Qoder reste dans votre dossier de configuration. Le pont le lit en local, signe chaque requête avec le WASM Qoder embarqué et ne le transmet à aucun autre hôte.',
       },
       {
         title: 'Vos réglages',
         body: 'Sélecteur de modèle, niveau d’effort, budget de réflexion, statusline. Ce que vous réglez dans Claude Code arrive au modèle intact, parce que le pont le transmet.',
+      },
+      {
+        title: 'Bascule de comptes',
+        body: 'Ajoutez autant de comptes Qoder que vous voulez. Quand l’un atteint son quota quotidien, prend un rate limit ou perd sa session, le pont le met en pause et rejoue la même requête sur le suivant — sans redémarrage, sans bascule manuelle.',
       },
     ],
   },
@@ -294,7 +310,7 @@ export const fr: Dict = {
     rows: [
       ['Latence', '~2s avec un worker chaud, 10–15s pendant que le pool se recharge'],
       ['Contexte', 'l’historique complet est sérialisé à chaque requête'],
-      ['Transport', 'le CLI est le seul chemin ; le corps de l’API est chiffré et signé'],
+      ['Transport', 'direct par défaut — le WASM embarqué signe la requête ; le CLI reste en secours'],
       ['Outils', 'négociés en texte, convertis en tool_use par le pont'],
     ],
     fullA: 'Le détail complet, y compris la raison pour laquelle l’API ne peut pas être appelée directement, se trouve dans le',
@@ -341,11 +357,15 @@ export const de: Dict = {
       },
       {
         title: 'Zugangsdaten',
-        body: 'Das Qoder-Token passiert die Bridge nie. Die CLI liest ihren eigenen Speicher, signiert ihre Anfragen und besitzt ihre Sitzung; die Bridge spricht nur über stdio mit ihr.',
+        body: 'Das Qoder-Token bleibt in deinem Konfigurationsordner. Die Bridge liest es lokal, signiert jede Anfrage mit dem eingebetteten Qoder-WASM und leitet es an keinen anderen Host weiter.',
       },
       {
         title: 'Deine Regler',
         body: 'Modellauswahl, Effort-Stufe, Denkbudget, Statusline. Was du in Claude Code einstellst, kommt unverändert beim Modell an, weil die Bridge es weiterreicht.',
+      },
+      {
+        title: 'Konto-Failover',
+        body: 'Füge so viele Qoder-Konten hinzu, wie du willst. Erreicht eines sein Tageslimit, bekommt ein Rate Limit oder verliert seine Sitzung, pausiert die Bridge es und wiederholt dieselbe Anfrage beim nächsten Konto — ohne Neustart, ohne manuelles Umschalten.',
       },
     ],
   },
@@ -363,7 +383,7 @@ export const de: Dict = {
     rows: [
       ['Latenz', '~2s mit warmem Worker, 10–15s während der Pool nachfüllt'],
       ['Kontext', 'der gesamte Verlauf wird bei jeder Anfrage serialisiert'],
-      ['Transport', 'die CLI ist der einzige Weg; der API-Body ist verschlüsselt und signiert'],
+      ['Transport', 'standardmäßig direkt — das eingebettete WASM signiert die Anfrage; die CLI bleibt als Fallback'],
       ['Werkzeuge', 'als Text ausgehandelt, von der Bridge in tool_use umgewandelt'],
     ],
     fullA: 'Alle Details, einschließlich des Grundes, warum die API nicht direkt aufgerufen werden kann, stehen im',

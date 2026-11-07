@@ -9,6 +9,9 @@ import {
   addAccount,
   loadAccounts,
   removeAccount,
+  rotationSnapshot,
+  setAccountEnabled,
+  setRotation,
   useAccount,
 } from '../src/accounts.js';
 
@@ -154,13 +157,35 @@ function runSync(cmd, cmdArgs) {
 
 async function accountCommand(sub, name) {
   if (!sub || sub === 'list') {
-    const data = loadAccounts();
-    console.log('accounts:');
-    for (const [key, item] of Object.entries(data.accounts)) {
-      const mark = key === data.active ? '*' : ' ';
-      console.log(`  ${mark} ${key.padEnd(16)} ${item.dir || '(global config)'}`);
+    const rot = rotationSnapshot();
+    console.log(`accounts (failover ${rot.on ? 'on' : 'off'}):`);
+    for (const item of rot.accounts) {
+      const mark = item.active ? '*' : ' ';
+      const state = !item.enabled
+        ? 'disabled'
+        : item.coolingLeft
+          ? `paused ${Math.ceil(item.coolingLeft / 60)}m`
+          : item.active
+            ? 'active'
+            : 'ready';
+      console.log(`  ${mark} ${item.name.padEnd(16)} ${state.padEnd(12)} ${item.dir || '(global config)'}`);
     }
-    console.log('\nuse: qclaude account add <name>');
+    console.log('\nadd: qclaude account add <name>   pause: qclaude account pause <name>');
+    return 0;
+  }
+
+  if (sub === 'pause' || sub === 'resume') {
+    if (!name) {
+      console.error(`name required: qclaude account ${sub} <name>`);
+      return 1;
+    }
+    try {
+      setAccountEnabled(name, sub === 'resume');
+    } catch (e) {
+      console.error(e.message);
+      return 1;
+    }
+    console.log(`account "${name}" ${sub === 'resume' ? 'enabled' : 'disabled'}.`);
     return 0;
   }
 
@@ -229,6 +254,25 @@ if (args[0] === 'account') {
   process.exit(await accountCommand(args[1], args[2]));
 }
 
+if (args[0] === 'rotation') {
+  if (!args[1]) {
+    const rot = rotationSnapshot();
+    console.log(`failover: ${rot.on ? 'on' : 'off'}   pool: ${rot.accounts.filter((a) => a.enabled).length}`);
+    for (const a of rot.accounts) {
+      const state = !a.enabled ? 'disabled' : a.coolingLeft ? `paused ${Math.ceil(a.coolingLeft / 60)}m` : a.active ? 'active' : 'ready';
+      console.log(`  ${a.name.padEnd(16)} ${state}`);
+    }
+    process.exit(0);
+  }
+  if (args[1] !== 'on' && args[1] !== 'off') {
+    console.error('usage: qclaude rotation [on|off]');
+    process.exit(1);
+  }
+  setRotation(args[1] === 'on');
+  console.log(`failover ${args[1]}.`);
+  process.exit(0);
+}
+
 
 if (args[0] === '--help' || args[0] === '-h') {
   console.log(`qclaude - Qoder models inside Claude Code
@@ -246,8 +290,13 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude account            lists the accounts
   qclaude account add <name> connects another account (browser login)
   qclaude account use <name> switches the active account
+  qclaude account pause <name>   takes an account out of rotation
+  qclaude account resume <name>  puts it back in rotation
   qclaude account remove <name>
   qclaude account current
+
+  qclaude rotation           shows the failover pool
+  qclaude rotation on|off    switches automatic failover
 `);
   process.exit(0);
 }
@@ -271,7 +320,10 @@ if (accountFlag !== -1) {
 if (args[0] === '--status') {
   const up = await isUp();
   const acc = activeAccount();
+  const rot = rotationSnapshot();
+  const pool = rot.accounts.filter((a) => a.enabled).length;
   console.log(`account  : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (global config)'}`);
+  console.log(`failover : ${rot.on ? `on (${pool} account${pool === 1 ? '' : 's'} in the pool)` : 'off'}`);
   console.log(`server   : ${up ? `running at 127.0.0.1:${PORT}` : 'stopped'}`);
   if (up) console.log(`dashboard: http://127.0.0.1:${PORT}/ui`);
   if (up) {

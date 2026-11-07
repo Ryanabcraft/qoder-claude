@@ -9,6 +9,9 @@ import {
   addAccount,
   loadAccounts,
   removeAccount,
+  rotationSnapshot,
+  setAccountEnabled,
+  setRotation,
   useAccount,
 } from './accounts.js';
 import { detectModels } from './models.js';
@@ -99,12 +102,18 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
 
   if (req.method === 'GET' && route === 'status') {
     const acc = activeAccount();
+    const rot = rotationSnapshot();
     return sendJson(res, 200, {
       ok: true,
       port: Number(process.env.BRIDGE_PORT || 8787),
       transport: process.env.BRIDGE_TRANSPORT || 'auto',
       version: JSON.parse(fs.readFileSync(path.join(HERE, '..', 'package.json'), 'utf8')).version,
       account: { name: acc.name, dir: acc.dir, label: acc.label },
+      rotation: {
+        on: rot.on,
+        count: rot.accounts.filter((a) => a.enabled).length,
+        paused: rot.accounts.filter((a) => a.coolingLeft).length,
+      },
       models: detectModels().length,
       uptime: Math.round(process.uptime()),
     }), true;
@@ -112,7 +121,20 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
 
   if (req.method === 'GET' && route === 'accounts') {
     const data = loadAccounts();
-    return sendJson(res, 200, { active: data.active, accounts: data.accounts }), true;
+    return sendJson(res, 200, { active: data.active, accounts: data.accounts, rotation: rotationSnapshot() }), true;
+  }
+
+  if (req.method === 'POST' && route === 'rotation') {
+    const body = await readBody(req);
+    const on = setRotation(body.on !== false && body.on !== 0);
+    return sendJson(res, 200, { ok: true, on }), true;
+  }
+
+  if (req.method === 'POST' && route.startsWith('accounts/') && route.endsWith('/enabled')) {
+    const name = decodeURIComponent(route.slice('accounts/'.length, -'/enabled'.length));
+    const body = await readBody(req);
+    try { setAccountEnabled(name, body.enabled !== false); } catch (e) { return sendJson(res, 400, { error: e.message }), true; }
+    return sendJson(res, 200, { ok: true }), true;
   }
 
   if (req.method === 'POST' && route === 'accounts') {

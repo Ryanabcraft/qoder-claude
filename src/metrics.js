@@ -8,12 +8,12 @@ const state = {
   samples: [],
 };
 
-export function record({ model, status, ms, transport }) {
+export function record({ model, status, ms, transport, account }) {
   state.total += 1;
   const ok = status >= 200 && status < 300;
   if (ok) state.ok += 1;
   else state.err += 1;
-  state.samples.push({ t: Date.now(), model: model || '-', status, ms, transport: transport || 'cli' });
+  state.samples.push({ t: Date.now(), model: model || '-', status, ms, transport: transport || 'cli', account: account || '-' });
   if (state.samples.length > MAX_SAMPLES) state.samples.shift();
 }
 

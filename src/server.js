@@ -10,6 +10,12 @@ try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { detectModels } from './models.js';
 import { handleUi } from './uiApi.js';
 import { record } from './metrics.js';
+import {
+  candidateAccounts,
+  clearCooldown,
+  isRotatable,
+  markCooldown,
+} from './accounts.js';
 
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
@@ -93,6 +99,50 @@ function stripToolBlocks(text) {
   return out.replace(/\s+$/, '');
 }
 
+function cfgForAccount(cfg, account) {
+  const rest = cfg.key.split('|').slice(1).join('|');
+  return { ...cfg, account: account.name, configDir: account.dir, key: `${account.name}|${rest}` };
+}
+
+/**
+ * Tries the accounts in order. A quota/billing/auth failure on one profile cools
+ * it down and the next attempt runs on the following account. Requests that
+ * already produced visible text never rotate: the caller cannot rewrite a stream.
+ */
+async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => true }) {
+  const accounts = candidateAccounts();
+  let last = { text: '', usage: {}, error: 'no account available', account: cfg.account };
+
+  for (let i = 0; i < accounts.length; i++) {
+    const account = accounts[i];
+    const attempt = cfgForAccount(cfg, account);
+    if (accounts.length > 1 && process.env.BRIDGE_LOG !== '0') {
+      log(`  account ${i + 1}/${accounts.length}: ${account.name}`);
+    }
+
+    let out;
+    try {
+      out = await run({ body, cfg: attempt, signal, onEvent });
+    } catch (e) {
+      out = { text: '', usage: {}, error: e.message || String(e) };
+    }
+
+    if (!out.error) {
+      clearCooldown(account.name);
+      return { ...out, account: account.name };
+    }
+
+    last = { ...out, account: account.name };
+
+    if (!isRotatable(out.error)) break;
+    const ms = markCooldown(account.name, out.error);
+    log(`  account ${account.name} paused ${Math.round(ms / 1000)}s: ${String(out.error).slice(0, 160)}`);
+    if (!canRotate()) break;
+  }
+
+  return last;
+}
+
 async function handleMessages(req, res, body) {
   const t0 = Date.now();
   const stream = body.stream !== false;
@@ -103,7 +153,8 @@ async function handleMessages(req, res, body) {
   const inTokens = estimate(built.prompt + built.system);
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const started = Date.now();
-  res.once('finish', () => record({ model: cfg.model, status: res.statusCode, ms: Date.now() - started, transport: TRANSPORT }));
+  let usedAccount = cfg.account;
+  res.once('finish', () => record({ model: cfg.model, status: res.statusCode, ms: Date.now() - started, transport: TRANSPORT, account: usedAccount }));
 
   const ac = new AbortController();
   req.on('close', () => ac.abort());
@@ -111,11 +162,12 @@ async function handleMessages(req, res, body) {
   if (!stream) {
     let out;
     try {
-      out = await run({ body, cfg, signal: ac.signal });
+      out = await runWithRotation({ body, cfg, signal: ac.signal });
     } catch (e) {
       const status = errorStatus(e.message || '');
       return send(res, status, errorBody(e.message || 'request failed', status));
     }
+    usedAccount = out.account || usedAccount;
     if (out.error) {
       const status = errorStatus(out.error);
       return send(res, status, errorBody(out.error, status));
@@ -217,12 +269,14 @@ async function handleMessages(req, res, body) {
 
   let out;
   try {
-    out = await run({
+    out = await runWithRotation({
       body, cfg, signal: ac.signal,
+      canRotate: () => emitted.length === 0 && !headersSent,
       onEvent: (ev) => {
         if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') { startStream(); feed(ev.delta.text || ''); }
       },
     });
+    usedAccount = out.account || usedAccount;
   } catch (e) {
     clearInterval(keepalive);
     if (!headersSent) {
@@ -294,7 +348,7 @@ const server = http.createServer(async (req, res) => {
   const path = url.pathname.replace(/\/+$/, '');
   log(`${new Date().toISOString()} ${req.method} ${url.pathname}${url.search}`);
 
-  if (url.pathname === '/ui' || url.pathname.startsWith('/ui/')) {
+  if (url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname === '/favicon.svg') {
     if (await handleUi(req, res, url, { authorized, logFile: LOG_PATH })) return;
   }
 
