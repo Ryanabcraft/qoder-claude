@@ -56,7 +56,7 @@ trap 'rm -rf "$TMP"' EXIT
 curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" -o "$TMP/src.tar.gz" \
   || die "download failed."
 tar -xzf "$TMP/src.tar.gz" -C "$TMP"
-SRC="$TMP/qoder-bridge-$BRANCH"
+SRC="$TMP/${REPO##*/}-$BRANCH"
 [ -f "$SRC/src/server.js" ] || die "invalid package."
 ok "source downloaded"
 
