@@ -3,6 +3,16 @@ set -eu
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
+NO_START=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-start) NO_START=1 ;;
+    -h|--help) echo "usage: update.sh [--no-start]"; exit 0 ;;
+    *) echo "unknown flag: $1"; exit 1 ;;
+  esac
+  shift
+done
 
 echo "[1/4] updating qodercli..."
 npm install -g @qoder-ai/qodercli >/dev/null 2>&1 || \
@@ -37,25 +47,29 @@ rm -rf "$STAGE"
 echo "[3/4] rewriting settings and model picker..."
 QODER_CLAUDE_TARGET="$HOME" node "$DIR/scripts/enable-here.js"
 
-echo "[4/4] restarting the server..."
-"$DIR/stop.sh" >/dev/null 2>&1 || true
-sleep 1
-PORT="${BRIDGE_PORT:-8787}"
-if node "$DIR/bin/qclaude.js" --window >/dev/null 2>&1; then
-  echo "    server window opened at 127.0.0.1:$PORT"
+if [ "$NO_START" -eq 1 ]; then
+  echo "[4/4] server restart skipped (--no-start)"
 else
-  nohup node "$DIR/src/server.js" >> "$DIR/bridge.log" 2>&1 &
-  echo $! > "$DIR/bridge.pid"
-  i=0
-  while [ "$i" -lt 30 ]; do
-    if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-      echo "    running at 127.0.0.1:$PORT (pid $(cat "$DIR/bridge.pid"))"
-      break
-    fi
-    i=$((i + 1))
-    sleep 1
-  done
-  [ "$i" -lt 30 ] || echo "    did not respond; see $DIR/bridge.log"
+  echo "[4/4] restarting the server..."
+  "$DIR/stop.sh" >/dev/null 2>&1 || true
+  sleep 1
+  PORT="${BRIDGE_PORT:-8787}"
+  if node "$DIR/bin/qclaude.js" --window >/dev/null 2>&1; then
+    echo "    server window opened at 127.0.0.1:$PORT"
+  else
+    nohup node "$DIR/src/server.js" >> "$DIR/bridge.log" 2>&1 &
+    echo $! > "$DIR/bridge.pid"
+    i=0
+    while [ "$i" -lt 30 ]; do
+      if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
+        echo "    running at 127.0.0.1:$PORT (pid $(cat "$DIR/bridge.pid"))"
+        break
+      fi
+      i=$((i + 1))
+      sleep 1
+    done
+    [ "$i" -lt 30 ] || echo "    did not respond; see $DIR/bridge.log"
+  fi
 fi
 
 echo
