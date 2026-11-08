@@ -108,11 +108,12 @@ Code mostra o aviso de "classifier requests" a cada sessão e faz essas checagen
 ### Abrir
 
 ```bash
-qclaude                # sobe o servidor se preciso e abre o Claude Code
+qclaude                # sobe o servidor, abre o dashboard e abre o Claude Code
 qclaude -p "..."       # qualquer argumento é repassado ao claude
 qclaude --model X      # idem
 qclaude --status       # servidor e lista de modelos
 qclaude --serve        # só o servidor, em primeiro plano
+qclaude --no-browser   # não abre a aba do dashboard
 qclaude --stop         # derruba o servidor
 ```
 
@@ -121,15 +122,18 @@ pelo `start.cmd` fica intocado.
 
 ## Rodando
 
-Por padrão o `qclaude` abre o servidor em **uma janela de terminal própria** — um `cmd` novo no
-Windows, o Terminal no macOS e o primeiro emulador disponível no Linux (`$TERMINAL`,
-`x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `alacritty`, `kitty`,
-`xterm`). A janela atual fica com o Claude Code.
+Por padrão o servidor roda **junto da sessão**: o `qclaude` sobe, guarda o log em `bridge.log`
+e derruba quando o Claude sai. O dashboard abre no navegador na mesma hora, uma vez por
+abertura interativa.
 
 ```bash
-qclaude --window      # só a janela do servidor
-qclaude --no-window   # servidor preso a este terminal
+qclaude --window       # servidor numa janela de terminal própria
+qclaude --no-browser   # sem a aba do dashboard
 ```
+
+`--window` usa um `cmd` novo no Windows, o Terminal no macOS e o primeiro emulador disponível
+no Linux (`$TERMINAL`, `x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`,
+`alacritty`, `kitty`, `xterm`).
 
 No Windows o `start.cmd` continua existindo e abre um console visível com a porta, o caminho do
 log e cada request conforme acontece. Fechar essa janela — ou Ctrl+C — encerra o servidor.

@@ -65,6 +65,27 @@ async function isUp() {
   process.exit(1);
 }
 
+function openDashboard() {
+  if (process.env.BRIDGE_NO_BROWSER === '1') return;
+  const url = `http://127.0.0.1:${PORT}/ui`;
+  try {
+    let child;
+    if (process.platform === 'win32') {
+      child = spawn(process.env.ComSpec || 'cmd.exe', ['/c', 'start', '', url], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+    } else {
+      child = spawn(process.platform === 'darwin' ? 'open' : 'xdg-open', [url], {
+        detached: true,
+        stdio: 'ignore',
+      });
+    }
+    child.unref();
+  } catch {}
+}
+
 function hasCommand(bin) {
   try {
     return spawnSync('sh', ['-c', `command -v ${JSON.stringify(bin)}`], { stdio: 'ignore' }).status === 0;
@@ -435,6 +456,7 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude --status           server, models and account
   qclaude --serve            server only, foreground
   qclaude --window           keeps the server in its own terminal window
+  qclaude --no-browser       does not open the dashboard
   qclaude --stop             stops the server
 
   qclaude account            lists the accounts
@@ -525,12 +547,16 @@ if (args[0] === '--serve') {
   child.on('exit', (code) => process.exit(code ?? 0));
 } else {
   const wantWindow = args.includes('--window');
-  const claudeArgs = args.filter((a) => a !== '--window' && a !== '--no-window');
+  const noBrowser = args.includes('--no-browser');
+  const claudeArgs = args.filter((a) => !['--window', '--no-window', '--no-browser'].includes(a));
 
   const claudeBin = await ensureClaude();
   const child = await startServer({ window: wantWindow });
 
-  if (claudeArgs.length === 0) console.log(`qclaude: opening claude in ${process.cwd()}`);
+  if (claudeArgs.length === 0) {
+    console.log(`qclaude: opening claude in ${process.cwd()}`);
+    if (!noBrowser) openDashboard();
+  }
   if (child) console.log(`qclaude: bridge started at 127.0.0.1:${PORT} (log: ${LOG})`);
 
   const stop = () => {

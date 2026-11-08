@@ -190,7 +190,7 @@ Write-Host '  Qoder-Claude installed.' -ForegroundColor Green
 Write-Host ''
 Write-Host '  Start with: qclaude' -ForegroundColor Cyan
 Write-Host ''
-Write-Host '  qclaude starts the bridge, opens claude, and stops the bridge when claude exits.'
+Write-Host '  qclaude starts the bridge, opens the dashboard, then opens claude, and stops the bridge when claude exits.'
 Write-Host ''
 Write-Host "  bridge    : $InstallDir"
 Write-Host "  port      : $Port"
