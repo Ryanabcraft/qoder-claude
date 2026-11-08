@@ -86,7 +86,7 @@ export function workerConfig(body = {}, system = '') {
   let effort = body.output_config && body.output_config.effort;
   if (!effort) effort = process.env.QODER_REASONING_EFFORT;
   if (effort) effort = String(effort).toLowerCase();
-  const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 0) || undefined;
+  const contextWindow = Number(body.context_window || process.env.QODER_CONTEXT_WINDOW || 1000000) || undefined;
   const requestedTokens = Number(body.max_tokens);
   const maxTokens = requestedTokens > 0
     ? requestedTokens

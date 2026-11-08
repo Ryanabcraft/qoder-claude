@@ -200,14 +200,33 @@ lists the Qoder lineup directly instead of Opus/Sonnet/Haiku:
 "modelPicker": {
   "replaceBuiltInOptions": true,
   "options": [
-    { "model": "Auto", "label": "Qoder · Auto", "description": "Auto via Qoder CLI" },
-    { "model": "Qwen3.8-Max", "label": "Qoder · Qwen3.8-Max", "description": "Qwen3.8-Max via Qoder CLI" }
+    {
+      "model": "Auto",
+      "label": "Qoder · Auto",
+      "description": "Auto via Qoder CLI",
+      "behavesAs": "claude-opus-4-8"
+    }
   ]
 }
 ```
 
 `modelPicker` requires Claude Code v2.1.243+ and only takes effect in user settings,
 `--settings`, or managed settings — project settings ignore it.
+
+### 1M context
+
+A Qoder model ID is unknown to Claude Code, which then assumes a 200K window and compacts
+early. Two things fix that, both written by the installer:
+
+| setting | effect |
+|---|---|
+| `"behavesAs": "claude-opus-4-8"` on every picker row | the client applies that model's profile (1M window) while still sending the Qoder ID upstream |
+| `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000` | fallback ceiling, used when the row is not honoured |
+| `CLAUDE_CODE_DISABLE_1M_CONTEXT=0` | keeps the 1M path enabled |
+
+On the Qoder side every request carries `context_window: 1000000` by default — the CLI gets
+`--context-window 1000000` and the direct transport puts the same value in the payload.
+Override with `QODER_CONTEXT_WINDOW` (e.g. `200000`) or per request with `context_window`.
 
 ## Updating
 
