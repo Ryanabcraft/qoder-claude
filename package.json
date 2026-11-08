@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.10.12",
+  "version": "1.10.13",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/accounts.test.js test/claudeSettings.test.js test/cliPath.test.js test/direct.test.js test/exaSetup.test.js test/models.test.js test/prompt.test.js test/selfUpdate.test.js test/server.test.js test/sessions.test.js test/stall.test.js test/uninstall.test.js"
+    "test": "node --test test/accounts.test.js test/claudeSettings.test.js test/cliPath.test.js test/direct.test.js test/exaSetup.test.js test/models.test.js test/prompt.test.js test/releaseNotes.test.js test/selfUpdate.test.js test/server.test.js test/sessions.test.js test/stall.test.js test/uninstall.test.js"
   },
   "author": "Ryanabcraft",
   "license": "MIT",
@@ -27,6 +27,7 @@
     "scripts",
     "vendor",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE",
     "install.cmd",
     "install.ps1",

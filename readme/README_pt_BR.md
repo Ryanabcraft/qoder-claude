@@ -36,7 +36,8 @@ qclaude
 ```
 
 Sobe a bridge, abre o dashboard em <http://127.0.0.1:8787/ui> e abre o Claude Code. Fechar o
-Claude — `/exit`, Ctrl+C ou fechar o terminal — encerra a bridge.
+Claude — `/exit`, Ctrl+C ou fechar o terminal — encerra a bridge. Ao atualizar, ele mostra as
+notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 
 | comando | o que faz |
 |---|---|

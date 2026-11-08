@@ -36,7 +36,8 @@ qclaude
 
 That starts the bridge, opens the dashboard at <http://127.0.0.1:8787/ui>, and opens Claude Code.
 Closing Claude — `/exit`, Ctrl+C or closing the terminal — stops the bridge. On open, `qclaude`
-checks for a new version and asks before updating; a declined version is not asked again.
+checks for a new version and asks before updating; a declined version is not asked again. After an
+update it prints the changelog notes for the new version, capped at 10 lines with `...` when longer.
 
 | command | what it does |
 |---|---|

@@ -21,6 +21,7 @@ import { ensureExa, EXA_URL, claudeConfigPath } from '../src/exaSetup.js';
 import { ensureWebTools, settingsPath } from '../src/claudeSettings.js';
 import { backupAccounts, filterPathEntries, installRoots, stripBridgeSettings } from '../src/uninstall.js';
 import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
+import { showReleaseNotes } from '../src/releaseNotes.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -692,8 +693,11 @@ if (args[0] === 'update') {
   const before = localVersion(ROOT);
   console.log(`current: ${before}`);
   try {
-    if (await applyUpdate(ROOT)) console.log(`updated to ${localVersion(ROOT)}`);
-    else process.exitCode = 1;
+    if (await applyUpdate(ROOT)) {
+      const after = localVersion(ROOT);
+      console.log(`updated to ${after}`);
+      showReleaseNotes(ROOT, before, after);
+    } else process.exitCode = 1;
   } catch (e) {
     console.error(`qclaude: update failed (${e.message})`);
     process.exit(1);
@@ -866,7 +870,9 @@ if (args[0] === '--serve') {
         console.log('updating qclaude...');
         try {
           if (await applyUpdate(ROOT)) {
-            console.log(`updated to ${localVersion(ROOT)}`);
+            const after = localVersion(ROOT);
+            console.log(`updated to ${after}`);
+            showReleaseNotes(ROOT, u.local, after);
             stopBridge(null);
             await wait(700);
             const child = spawn(process.execPath, [path.join(ROOT, 'bin', 'qclaude.js'), ...claudeArgs, '--no-update'], { stdio: 'inherit' });

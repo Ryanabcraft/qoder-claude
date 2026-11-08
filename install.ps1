@@ -162,7 +162,7 @@ if ($SkipLogin) {
 Step "Copying the bridge to $InstallDir"
 if ($SourceDir -ne $InstallDir) {
   if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null }
-  foreach ($item in @('src', 'scripts', 'bin', 'vendor', 'package.json', 'README.md', 'SETUP.md', 'LICENSE', 'CONTRIBUTING.md', 'start.cmd', 'stop.cmd', 'update.cmd', 'enable-here.cmd', 'start.sh', 'stop.sh', 'update.sh', 'install.cmd', '.gitignore')) {
+  foreach ($item in @('src', 'scripts', 'bin', 'vendor', 'package.json', 'README.md', 'CHANGELOG.md', 'SETUP.md', 'LICENSE', 'CONTRIBUTING.md', 'start.cmd', 'stop.cmd', 'update.cmd', 'enable-here.cmd', 'start.sh', 'stop.sh', 'update.sh', 'install.cmd', '.gitignore')) {
     $from = Join-Path $SourceDir $item
     if (Test-Path $from) {
       $dest = Join-Path $InstallDir $item
