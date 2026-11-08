@@ -2,6 +2,27 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const DEFAULT_CLI_VERSION = '1.1.84';
+
+export function cliVersion(cli = resolveCli()) {
+  if (process.env.QODER_CLI_VERSION) return process.env.QODER_CLI_VERSION;
+  const entry = cli.prefix[0];
+  if (!entry) return DEFAULT_CLI_VERSION;
+  let dir = path.dirname(entry);
+  for (let i = 0; i < 4; i++) {
+    const pkg = path.join(dir, 'package.json');
+    if (fs.existsSync(pkg)) {
+      try {
+        const version = String(JSON.parse(fs.readFileSync(pkg, 'utf8')).version || '');
+        if (/^\d+\.\d+\.\d+/.test(version)) return version;
+      } catch {}
+      break;
+    }
+    dir = path.dirname(dir);
+  }
+  return DEFAULT_CLI_VERSION;
+}
+
 export function resolveCli() {
   const explicit = process.env.QODER_CLI_BIN;
   if (explicit) {

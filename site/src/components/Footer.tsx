@@ -10,7 +10,10 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-mono text-sm text-foreground">qoder-claude</p>
+            <p className="font-mono text-sm text-foreground">
+              qoder-claude{' '}
+              <span className="text-muted-foreground/70">v{__APP_VERSION__}</span>
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Made by{' '}
               <a

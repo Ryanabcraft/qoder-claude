@@ -76,7 +76,7 @@ perdida pausam aquela conta e a mesma requisição roda na próxima.
 
 - **1–2 s por turno** no caminho direto; ~2 s no primeiro request após o start.
 - Chamada de ferramenta custa um round-trip extra (3–5 s). Busca web leva 4–15 s.
-- Turnos com imagem rodam no motor 1.1.80 embutido, levam ~13 s e não são streamados. Turnos de
+- Turnos com imagem rodam num motor de imagem embutido, levam ~13 s e não são streamados. Turnos de
   texto não mudam.
 - O histórico inteiro vai em cada request. 1M de contexto torna isso viável, não gratuito.
 - Recusas do provedor passam intactas.
