@@ -217,3 +217,6 @@ printf '  logs      : %s/bridge.log\n' "$INSTALL_DIR"
 printf '  stop      : %s/stop.sh\n' "$INSTALL_DIR"
 printf '  update    : %s/update.sh\n' "$INSTALL_DIR"
 printf '\n  open a new terminal first so qclaude is on PATH.\n\n'
+if [ -d "$HOME/.local/share/qoder-bridge" ] && [ "$HOME/.local/share/qoder-bridge" != "$INSTALL_DIR" ]; then
+  printf '  older install found: %s (check `command -v qclaude`, then delete it)\n\n' "$HOME/.local/share/qoder-bridge"
+fi

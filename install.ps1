@@ -176,14 +176,19 @@ $shim = "@echo off`r`nnode `"$binDir\qclaude.js`" %*`r`n"
 Set-Content -Path (Join-Path $binDir 'qclaude.cmd') -Value $shim -Encoding ascii
 $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 if (-not $userPath) { $userPath = '' }
-if ($userPath -split ';' -notcontains $binDir) {
-  $newPath = if ($userPath.TrimEnd(';')) { $userPath.TrimEnd(';') + ';' + $binDir } else { $binDir }
+$legacyBin = Join-Path $env:LOCALAPPDATA 'qoder-bridge\bin'
+$entries = @($userPath -split ';' | Where-Object { $_ -and ($_ -notlike '*\qoder-bridge\bin') })
+if ($entries -notcontains $binDir) { $entries += $binDir }
+$newPath = ($entries -join ';')
+if ($newPath -ne $userPath) {
   [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
   Ok "user PATH updated with $binDir"
+  if ($userPath -like "*$legacyBin*") { Warn 'removed the old qoder-bridge\bin from PATH' }
 } else {
   Ok "qclaude was already on PATH"
 }
-if (-not (($env:Path -split ';') -contains $binDir)) { $env:Path = $env:Path + ';' + $binDir }
+$env:Path = ((@($env:Path -split ';' | Where-Object { $_ -and ($_ -notlike '*\qoder-bridge\bin') }) -join ';'))
+if (-not (($env:Path -split ';') -contains $binDir)) { $env:Path = $binDir + ';' + $env:Path }
 
 if (-not $SkipVision) {
   Step 'Installing the vision engine (images)'
@@ -220,5 +225,11 @@ Write-Host '  statusline: Qoder > <model> inside claude'
 Write-Host ''
 Write-Host '  Open a new terminal first so qclaude is on PATH.' -ForegroundColor DarkGray
 Write-Host ''
+$legacyDir = Join-Path $env:LOCALAPPDATA 'qoder-bridge'
+if ((Test-Path $legacyDir) -and ($legacyDir -ne $InstallDir)) {
+  Write-Host "  older install found: $legacyDir" -ForegroundColor DarkGray
+  Write-Host '  check which one wins with: where qclaude  (then delete the old folder)' -ForegroundColor DarkGray
+  Write-Host ''
+}
 Write-Host '  open a new terminal and run: qclaude' -ForegroundColor Cyan
 Write-Host ''
