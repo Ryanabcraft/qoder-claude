@@ -183,6 +183,18 @@ h1, h2, h3, p { margin: 0; }
 }
 .icon-btn:hover { color: var(--ink); border-color: var(--line-2); }
 .icon-btn svg { width: 16px; height: 16px; }
+.lang-pick {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px;
+  padding: 0 9px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card); color: var(--muted);
+}
+.lang-pick .nav-ico { width: 15px; height: 15px; flex-basis: 15px; }
+.lang-pick .nav-ico svg { width: 15px; height: 15px; }
+.lang-pick select {
+  border: 0; outline: none; background: transparent; color: var(--ink);
+  font: 500 11.5px Inter, system-ui, sans-serif; cursor: pointer; max-width: 116px;
+}
+.lang-field { max-width: 260px; margin-bottom: 12px; }
 
 .banner {
   margin: 12px 26px 0;
@@ -447,6 +459,9 @@ input:disabled, select:disabled { opacity: .55; }
   .heatmap { gap: 2px; }
 }
 @media (max-width: 460px) {
+  .lang-pick .nav-ico { display: none; }
+  .lang-pick { padding: 0 7px; }
+  .lang-pick select { max-width: 92px; }
   .kpi-grid { grid-template-columns: 1fr; }
   .donut { width: 160px; height: 160px; }
   .head-actions { width: 100%; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.0
+
+- Dashboard language picker in the top bar and Settings → General, with English, Portuguese (BR), Spanish, French and German.
+- Translations apply in place, including dynamic tables, charts and toasts; the choice persists in `localStorage`.
+- Numbers and timestamps follow the selected locale.
+
 ## 1.12.1
 
 - Landing site restyled to match the docs: light/dark theme, two-column hero with the logo, action buttons, feature cards and a theme toggle.
