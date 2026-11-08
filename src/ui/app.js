@@ -2,8 +2,17 @@ const $ = (s) => document.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
 
 const KEY_STORE = 'bridge_api_key';
-const urlKey = new URLSearchParams(location.search).get('key');
+const query = new URLSearchParams(location.search);
+const hash = location.hash.startsWith('#') ? new URLSearchParams(location.hash.slice(1)) : new URLSearchParams();
+const urlKey = query.get('key') || hash.get('key');
 if (urlKey) sessionStorage.setItem(KEY_STORE, urlKey);
+if (urlKey) {
+  query.delete('key');
+  hash.delete('key');
+  const search = query.toString() ? `?${query}` : '';
+  const fragment = hash.toString() ? `#${hash}` : '';
+  history.replaceState(null, '', `${location.pathname}${search}${fragment}`);
+}
 const bridgeKey = () => sessionStorage.getItem(KEY_STORE) || '';
 let askedKey = false;
 
