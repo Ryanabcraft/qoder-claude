@@ -306,6 +306,7 @@ $('#rot-toggle').addEventListener('change', async (e) => {
 });
 
 let loginTimer = null;
+let loginToken = 0;
 
 async function startLogin(name) {
   const box = $('#login-box');
@@ -314,13 +315,19 @@ async function startLogin(name) {
   box.classList.remove('hidden');
   link.textContent = 'waiting for the login URL…';
   link.removeAttribute('href');
+  delete link.dataset.opened;
   st.textContent = '';
+
+  const token = ++loginToken;
+  if (loginTimer) { clearTimeout(loginTimer); loginTimer = null; }
 
   const { id } = await api('accounts', { method: 'POST', body: JSON.stringify({ name }) });
 
   const poll = async () => {
+    if (token !== loginToken) return;
     try {
       const j = await api('login/' + id);
+      if (token !== loginToken) return;
       if (j.url) {
         link.textContent = j.url;
         link.href = j.url;
@@ -331,7 +338,6 @@ async function startLogin(name) {
         }
       }
       if (j.done) {
-        clearInterval(loginTimer);
         loginTimer = null;
         if (j.ok) {
           st.textContent = 'connected.';
@@ -342,24 +348,29 @@ async function startLogin(name) {
         }
         return;
       }
-      setTimeout(poll, 1500);
+      loginTimer = setTimeout(poll, 1500);
     } catch (e) {
       st.textContent = e.message;
+      loginTimer = setTimeout(poll, 3000);
     }
   };
-  poll();
+  loginTimer = setTimeout(poll, 400);
 }
 
 $('#form-add').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = $('#new-account').value.trim();
   if (!name) return;
+  const btn = e.target.querySelector('button[type=submit]');
+  if (btn) btn.disabled = true;
   try {
     await startLogin(name);
     $('#new-account').value = '';
   } catch (err) {
     $('#login-box').classList.remove('hidden');
     $('#login-state').textContent = err.message;
+  } finally {
+    if (btn) btn.disabled = false;
   }
 });
 
