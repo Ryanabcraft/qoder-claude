@@ -54,7 +54,8 @@ checks for a new version and asks before updating; a declined version is not ask
 - `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `Agent` and MCP servers — executed by Claude
   Code, unchanged.
 - `WebSearch` / `WebFetch` — deferred tools get a schema; the installer adds the Exa MCP in the
-  user scope and search is routed through it (`QODER_NO_EXA=1` skips that step).
+  user scope, allowlists the web tools so auto mode does not block them, and routes search through
+  Exa (`QODER_NO_EXA=1` skips that step).
 - Screenshots — paste an image and the model reads it (`qclaude vision install`).
 - `/model`, effort slider, thinking budget, 1M context — the installer wires all of it.
 - `Qoder · <model>` statusline.

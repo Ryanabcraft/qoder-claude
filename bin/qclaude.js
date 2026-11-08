@@ -17,6 +17,7 @@ import {
 } from '../src/accounts.js';
 import { installVision, visionCliPath, visionVersion } from '../src/vision.js';
 import { ensureExa } from '../src/exaSetup.js';
+import { ensureWebTools } from '../src/claudeSettings.js';
 import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -651,6 +652,7 @@ if (args[0] === '--serve') {
   const exa = ensureExa({ bin: claudeBin });
   if (exa.added) console.log('qclaude: exa MCP configured (web search)');
   else if (exa.error) console.warn(`qclaude: exa MCP not configured (${exa.error}); web search may be unavailable.`);
+  if (ensureWebTools()) console.log('qclaude: web tool permissions updated');
   const child = await startServer({ window: wantWindow });
 
   if (claudeArgs.length === 0) {
