@@ -472,6 +472,8 @@ the CLI refreshes the store, then switch back.
 | `QODER_CONTEXT_WINDOW` | from request | context window |
 | `QODER_MAX_OUTPUT_TOKENS` | from request | fallback cap used only when the request sends no `max_tokens` |
 | `QODER_CLI_BIN` | auto-detected | path to `qodercli.js` |
+| `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | decoded size cap per image |
+| `BRIDGE_IMAGE_MAX_COUNT` | `50` | images kept per request |
 | `BRIDGE_LOG` | on | `0` silences access log |
 | `BRIDGE_DUMP` | empty | file path for the last request |
 
@@ -525,6 +527,10 @@ calls a tool costs one extra round-trip (typically 3–5 s); a web search throug
   that MCP is configured, otherwise the model only has `WebFetch`.
 - Background daemon tools (`Cron*`, `Monitor`) are deferred and not proxied — they stay on the
   Claude Code side.
+- **Image input does not work yet.** The bridge forwards screenshots and image reads (OpenAI
+  `image_url` on the direct path, Anthropic image blocks on the CLI path), but the Qoder
+  endpoint drops them: the model answers without seeing the picture. The plumbing is in place
+  and gated, so it starts working the day the backend accepts attachments.
 - Provider-side policy refusals pass through unchanged.
 
 ## Contributing
