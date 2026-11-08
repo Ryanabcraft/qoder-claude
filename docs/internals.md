@@ -1,7 +1,9 @@
 # Internals
 
 Everything below the surface: transports, sessions, configuration, accounts in detail and the
-wire format. The [README](../README.md) covers install and daily use.
+wire format. The user-facing documentation lives at
+https://ryanabcraft.github.io/qoder-claude/docs/ (install, usage, CLI, troubleshooting); the
+[README](../README.md) is the short entry point.
 
 ## Transports
 

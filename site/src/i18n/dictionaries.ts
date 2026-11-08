@@ -1,7 +1,7 @@
 export type Dict = {
   langName: string;
   langCode: string;
-  nav: { how: string; limits: string; github: string };
+  nav: { how: string; limits: string; docs: string; github: string };
   hero: {
     badge: string;
     h1a: string;
@@ -31,14 +31,14 @@ export type Dict = {
     fullA: string;
     fullB: string;
   };
-  footer: { readme: string; mit: string; contributing: string; source: string; disclaimer: string };
+  footer: { readme: string; docs: string; mit: string; contributing: string; source: string; disclaimer: string };
   menu: { label: string; choose: string };
 };
 
 export const en: Dict = {
   langName: 'English',
   langCode: 'EN',
-  nav: { how: 'how it works', limits: 'limits', github: 'GitHub' },
+  nav: { how: 'how it works', limits: 'limits', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · zero runtime dependencies',
     h1a: 'The terminal stays.',
@@ -111,6 +111,7 @@ export const en: Dict = {
   },
   footer: {
     readme: 'README',
+    docs: 'Docs',
     mit: 'MIT',
     contributing: 'Contributing',
     source: 'Source',
@@ -123,7 +124,7 @@ export const en: Dict = {
 export const pt: Dict = {
   langName: 'Português (BR)',
   langCode: 'PT',
-  nav: { how: 'como funciona', limits: 'limites', github: 'GitHub' },
+  nav: { how: 'como funciona', limits: 'limites', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'código aberto · MIT · zero dependências de runtime',
     h1a: 'O terminal fica.',
@@ -196,6 +197,7 @@ export const pt: Dict = {
   },
   footer: {
     readme: 'README',
+    docs: 'Docs',
     mit: 'MIT',
     contributing: 'Contribuir',
     source: 'Código',
@@ -208,7 +210,7 @@ export const pt: Dict = {
 export const es: Dict = {
   langName: 'Español',
   langCode: 'ES',
-  nav: { how: 'cómo funciona', limits: 'límites', github: 'GitHub' },
+  nav: { how: 'cómo funciona', limits: 'límites', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'código abierto · MIT · sin dependencias de ejecución',
     h1a: 'La terminal se queda.',
@@ -281,6 +283,7 @@ export const es: Dict = {
   },
   footer: {
     readme: 'README',
+    docs: 'Docs',
     mit: 'MIT',
     contributing: 'Contribuir',
     source: 'Código',
@@ -293,7 +296,7 @@ export const es: Dict = {
 export const fr: Dict = {
   langName: 'Français',
   langCode: 'FR',
-  nav: { how: 'fonctionnement', limits: 'limites', github: 'GitHub' },
+  nav: { how: 'fonctionnement', limits: 'limites', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · aucune dépendance à l’exécution',
     h1a: 'Le terminal reste.',
@@ -366,6 +369,7 @@ export const fr: Dict = {
   },
   footer: {
     readme: 'README',
+    docs: 'Docs',
     mit: 'MIT',
     contributing: 'Contribuer',
     source: 'Code',
@@ -378,7 +382,7 @@ export const fr: Dict = {
 export const de: Dict = {
   langName: 'Deutsch',
   langCode: 'DE',
-  nav: { how: 'funktionsweise', limits: 'grenzen', github: 'GitHub' },
+  nav: { how: 'funktionsweise', limits: 'grenzen', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · keine Laufzeitabhängigkeiten',
     h1a: 'Das Terminal bleibt.',
@@ -451,6 +455,7 @@ export const de: Dict = {
   },
   footer: {
     readme: 'README',
+    docs: 'Docs',
     mit: 'MIT',
     contributing: 'Mitwirken',
     source: 'Quellcode',

@@ -115,7 +115,8 @@ perdida pausam aquela conta e a mesma requisição roda na próxima.
 
 ## Docs
 
-- Atualizar: `update.cmd` (Windows) ou `update.sh` (macOS/Linux) — atualiza no lugar
+- **Site de docs:** https://ryanabcraft.github.io/qoder-claude/docs/pt-BR/ — instalação, uso, CLI,
+  configuração, problemas, segurança e contribuição (inglês e pt-BR)
 - [SETUP_pt_BR.md](SETUP_pt_BR.md) — instalação do zero, passos manuais
-- [docs/internals.md](../docs/internals.md) — transportes, sessões, configuração, endpoints (em inglês)
+- [docs/internals.md](../docs/internals.md) — notas profundas de implementação (em inglês)
 - [README EN](../README.md) · [Contribuindo](../CONTRIBUTING.md) · [MIT](../LICENSE)

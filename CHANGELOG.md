@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.0
+
+- Added a VitePress documentation site at /qoder-claude/docs/ with English and pt-BR tracks, local search, sidebar and the mint theme.
+- Landing site, dashboard Help and README now point to the docs instead of the landing page.
+- The Pages workflow builds the landing site and the docs into one artifact.
+
 ## 1.11.1
 
 - Added the qoder-claude logo to the dashboard, site, README and favicon.
