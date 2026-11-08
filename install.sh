@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# qoder-bridge installer for Linux and macOS
+# qoder-claude installer for Linux and macOS
 set -eu
 
 REPO="Ryanabcraft/qoder-claude"
 BRANCH="main"
 PORT="${BRIDGE_PORT:-8787}"
-INSTALL_DIR="${QODER_BRIDGE_HOME:-$HOME/.local/share/qoder-bridge}"
+INSTALL_DIR="${QODER_CLAUDE_HOME:-${QODER_BRIDGE_HOME:-$HOME/.local/share/qoder-claude}}"
 NODE_LOCAL="$HOME/.local/node"
 PROJECT_ONLY=0
 NODE_BIN=""
@@ -39,7 +39,7 @@ die()  { printf '\n    \033[31mx\033[0m   %s\n' "$1"; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 claude_ok() { have claude && claude --version >/dev/null 2>&1; }
 
-TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-bridge)
+TMP=$(mktemp -d 2>/dev/null || mktemp -d -t qoder-claude)
 trap 'rm -rf "$TMP"' EXIT
 
 node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }

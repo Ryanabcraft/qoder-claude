@@ -13,7 +13,7 @@ of the design.
 
 ```bash
 git clone https://github.com/Ryanabcraft/qoder-claude.git
-cd qoder-bridge
+cd qoder-claude
 node src/server.js
 ```
 

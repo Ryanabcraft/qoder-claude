@@ -205,7 +205,7 @@ Without the installer, after `qodercli login` and `node src/server.js`, add to
   },
   "statusLine": {
     "type": "command",
-    "command": "node \"C:\\\\path\\\\to\\\\qoder-bridge\\\\scripts\\\\statusline.js\""
+    "command": "node \"C:\\\\path\\\\to\\\\qoder-claude\\\\scripts\\\\statusline.js\""
   }
 }
 ```

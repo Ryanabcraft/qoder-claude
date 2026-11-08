@@ -17,7 +17,7 @@ if [ -f "$PIDFILE" ]; then
 fi
 
 if command -v pkill >/dev/null 2>&1; then
-  pkill -f "node .*qoder-bridge/src/server.js" 2>/dev/null && echo "stopped" || echo "nothing to stop"
+  pkill -f "node .*/qoder-(bridge|claude)/src/server.js" 2>/dev/null && echo "stopped" || echo "nothing to stop"
 else
   echo "no pidfile and no pkill; nothing to stop"
 fi

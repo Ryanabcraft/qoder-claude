@@ -8,7 +8,7 @@ mantém suas ferramentas, prompts e atalhos, e manda o tráfego do modelo para o
 **Made by:** [Ryanabcraft](https://github.com/Ryanabcraft)
 
 ```
-Claude Code  →  qoder-bridge  →  api1.qoder.sh
+Claude Code  →  qoder-claude  →  api1.qoder.sh
 ```
 
 ## Instalação

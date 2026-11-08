@@ -1,7 +1,7 @@
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-  [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'qoder-bridge'),
+  [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'qoder-claude'),
   [string]$ProjectDir = (Get-Location).Path,
   [switch]$ProjectOnly,
   [switch]$SkipDeps,
@@ -26,7 +26,7 @@ function Have($cmd) { $null -ne (Get-Command $cmd -ErrorAction SilentlyContinue)
 $SourceDir = $PSScriptRoot
 if (-not $SourceDir -or -not (Test-Path (Join-Path $SourceDir 'src\server.js'))) {
   Step 'Downloading the bridge'
-  $zip = Join-Path $env:TEMP 'qoder-bridge.zip'
+  $zip = Join-Path $env:TEMP 'qoder-claude.zip'
   $stage = Join-Path $env:TEMP ('qb-' + [guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $stage -Force | Out-Null
   try {

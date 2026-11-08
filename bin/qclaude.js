@@ -116,7 +116,7 @@ function openServerWindow() {
 
   try {
     if (process.platform === 'win32') {
-      spawn(`start "qoder-bridge" cmd /k "${script}"`, {
+      spawn(`start "qoder-claude" cmd /k "${script}"`, {
         cwd: ROOT,
         shell: true,
         detached: true,
@@ -328,7 +328,7 @@ async function stopServer() {
       shell: true,
     });
   } else {
-    spawn('sh', ['-c', `pkill -f "node .*qoder-bridge/src/server.js" || true`], { stdio: 'ignore' });
+    spawn('sh', ['-c', `pkill -f "node .*/qoder-(bridge|claude)/src/server.js" || true`], { stdio: 'ignore' });
   }
   await wait(800);
   console.log((await isUp()) ? 'qclaude: could not stop it.' : 'qclaude: server stopped.');
