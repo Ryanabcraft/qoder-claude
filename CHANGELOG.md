@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.21
+
+- Dashboard GIF re-encoded with a generated 256-color palette, removing the fixed-palette dithering.
+
 ## 1.10.20
 
 - The README dashboard preview is a 3-frame GIF (overview, accounts, models) instead of a static PNG.
