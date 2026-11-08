@@ -103,11 +103,18 @@ const TOOL_ALIASES = { web_search: 'WebSearch', web_fetch: 'WebFetch' };
 
 // Deferred tools (WebSearch, WebFetch, MCP) are not in the request's tool list, so
 // filtering by that list would swallow a real call. Only the alias needs fixing.
-function alignToolCalls(tc) {
+function alignToolCalls(tc, { preferExa = false } = {}) {
   if (!tc) return null;
   return {
     ...tc,
-    calls: tc.calls.map((c) => ({ ...c, name: TOOL_ALIASES[c.name.toLowerCase()] || c.name })),
+    calls: tc.calls.map((c) => {
+      const name = TOOL_ALIASES[c.name.toLowerCase()] || c.name;
+      if (preferExa && name === 'WebSearch') {
+        const query = c.input?.query || c.input?.q || '';
+        return { name: 'mcp__exa__web_search_exa', input: query ? { query } : c.input || {} };
+      }
+      return { ...c, name };
+    }),
   };
 }
 
@@ -160,6 +167,7 @@ async function handleMessages(req, res, body) {
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
   const built = buildPrompt(body);
+  const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
   const inTokens = estimate(built.prompt + built.system);
@@ -185,7 +193,7 @@ async function handleMessages(req, res, body) {
       return send(res, status, errorBody(out.error, status));
     }
     const rawCalls = wantsTools ? extractToolCalls(out.text) : null;
-    const tc = rawCalls ? alignToolCalls(rawCalls) : null;
+    const tc = rawCalls ? alignToolCalls(rawCalls, { preferExa }) : null;
     const content = [];
     if (tc) {
       if (tc.before) content.push({ type: 'text', text: tc.before });
@@ -327,7 +335,7 @@ async function handleMessages(req, res, body) {
   const full = out.text || '';
   const parsed = wantsTools ? extractToolCalls(full) : null;
   if (parsed) log('  model tool calls: ' + parsed.calls.map((c) => c.name).join(', '));
-  const tc = alignToolCalls(parsed);
+  const tc = alignToolCalls(parsed, { preferExa });
 
   if (tc) {
     if (tc.before && !emitted) emitText(tc.before);
