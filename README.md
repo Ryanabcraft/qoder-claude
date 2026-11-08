@@ -85,8 +85,8 @@ Quota is per account. With more than one, the bridge fails over automatically: a
 
 - **1–2 s per turn** on the direct path; ~2 s on the first request after start.
 - A tool call costs an extra round-trip (3–5 s). A web search takes 4–15 s.
-- Vision turns run on a bundled image engine, take ~13 s and are not streamed. Text turns are
-  untouched.
+- Vision turns run on a bundled image engine, take ~13 s and are not streamed. Only the newest
+  image is re-sent; later text turns stay on the direct path.
 - The full history goes on every request. 1M context makes that viable, not free.
 - Provider-side refusals pass through unchanged.
 

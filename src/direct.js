@@ -68,21 +68,23 @@ export function buildPayload(body, model, contextWindow, opts = {}) {
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
 
+  const all = Array.isArray(body.messages) ? body.messages : [];
+  const lastUser = all.reduce((index, m, i) => ((m.role || 'user') !== 'assistant' ? i : index), -1);
   let counter = 1;
   let renderedText = '';
-  for (const m of Array.isArray(body.messages) ? body.messages : []) {
+  all.forEach((m, index) => {
     const role = m.role === 'assistant' ? 'assistant' : 'user';
     const rendered = renderMessageContent(m.content, {
       start: counter,
-      allowImages: role === 'user',
+      allowImages: role === 'user' && index === lastUser,
       log: process.env.BRIDGE_LOG === '0' ? undefined : (line) => console.log(line),
     });
     counter = rendered.next;
     renderedText += rendered.text + '\n';
-    if (!rendered.text && !rendered.images.length) continue;
+    if (!rendered.text && !rendered.images.length) return;
     const content = rendered.images.length ? openAIContent(rendered.text, rendered.images) : rendered.text;
     messages.push({ role, content });
-  }
+  });
 
   const payload = { messages, model: String(model).toLowerCase(), agent_id: AGENT_ID };
   const maxTokens = Number(body.max_tokens);
