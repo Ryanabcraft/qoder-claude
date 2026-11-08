@@ -32,9 +32,11 @@ The Qoder inference endpoint encrypts and signs each request body (`Authorizatio
 
 The official CLI already emits Anthropic-shaped events with
 `--output-format stream-json --include-partial-messages`. The bridge builds the prompt, reads
-those events and forwards them. The agent's system prompt is passed to the model **verbatim** —
-nothing is appended to it. The tool list travels in its own section of the turn, so the model
-keeps Claude Code's rules and still knows which tools exist.
+those events and forwards them. The agent's system prompt is passed through with two deliberate
+edits: the `x-anthropic-billing-header` line is dropped, and when the superpowers `SessionStart`
+block is present a short override is appended so the model answers instead of only announcing a
+skill. The tool list travels in its own section of the turn, so the model keeps Claude Code's
+rules and still knows which tools exist.
 
 Tool calls are negotiated in text and the bridge accepts either shape the model produces:
 
