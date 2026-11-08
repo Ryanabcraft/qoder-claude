@@ -1,13 +1,13 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title qoder-bridge
+title qoder-claude
 if not defined BRIDGE_PORT set "BRIDGE_PORT=8787"
 set "BRIDGE_LOG_FILE=%~dp0bridge.log"
 
 echo.
 echo  ==================================================
-echo   qoder-bridge - Qoder models inside Claude Code
+echo   qoder-claude - Qoder models inside Claude Code
 echo  ==================================================
 echo   port  : %BRIDGE_PORT%
 echo   url   : http://127.0.0.1:%BRIDGE_PORT%

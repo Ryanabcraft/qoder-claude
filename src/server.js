@@ -332,7 +332,7 @@ async function handleMessages(req, res, body) {
       return send(res, status, errorBody(out.error, status));
     }
     stopText();
-    write('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `qoder-bridge: ${out.error}` } });
+    write('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `qoder-claude: ${out.error}` } });
     write('content_block_stop', { type: 'content_block_stop', index: 0 });
     write('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 6 } });
     write('message_stop', { type: 'message_stop' });
@@ -387,7 +387,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && (path === '/health' || path === '/')) {
-    return send(res, 200, { ok: true, service: 'qoder-bridge', port: PORT });
+    return send(res, 200, { ok: true, service: 'qoder-claude', port: PORT });
   }
 
   if (!authorized(req)) {
@@ -468,7 +468,7 @@ if (PARENT_PID > 0) {
 server.requestTimeout = 0;
 server.headersTimeout = 0;
 server.listen(PORT, HOST, () => {
-  log(`qoder-bridge on http://${HOST}:${PORT}`);
+  log(`qoder-claude on http://${HOST}:${PORT}`);
   log(`claude:  ANTHROPIC_BASE_URL=http://${HOST}:${PORT}`);
   log(`dashboard: http://${HOST}:${PORT}/ui`);
   log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');

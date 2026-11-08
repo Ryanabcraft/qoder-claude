@@ -6,7 +6,7 @@ export BRIDGE_PORT="$PORT"
 export BRIDGE_LOG_FILE="$DIR/bridge.log"
 
 printf '\n  ==================================================\n'
-printf '   qoder-bridge - Qoder models inside Claude Code\n'
+printf '   qoder-claude - Qoder models inside Claude Code\n'
 printf '  ==================================================\n'
 printf '   port  : %s\n' "$PORT"
 printf '   url   : http://127.0.0.1:%s\n' "$PORT"

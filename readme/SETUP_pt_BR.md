@@ -54,7 +54,7 @@ git config --global init.defaultBranch main
 ## 4. Versionar o projeto
 
 ```powershell
-cd qoder-bridge
+cd qoder-claude
 git init -b main
 git status --short
 git add .

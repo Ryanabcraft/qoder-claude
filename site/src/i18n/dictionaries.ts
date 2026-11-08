@@ -51,7 +51,7 @@ export const en: Dict = {
     copied: 'copied',
     flow: [
       { name: 'Claude Code', note: 'tools, prompt, effort' },
-      { name: 'qoder-bridge', note: 'stateless HTTP + SSE' },
+      { name: 'qoder-claude', note: 'stateless HTTP + SSE' },
       { name: 'qoder WASM', note: 'local signing' },
       { name: 'api1.qoder.sh', note: 'signed request' },
     ],
@@ -137,7 +137,7 @@ export const pt: Dict = {
     copied: 'copiado',
     flow: [
       { name: 'Claude Code', note: 'ferramentas, prompt, esforço' },
-      { name: 'qoder-bridge', note: 'HTTP + SSE sem estado' },
+      { name: 'qoder-claude', note: 'HTTP + SSE sem estado' },
       { name: 'qoder WASM', note: 'assinatura local' },
       { name: 'api1.qoder.sh', note: 'request assinado' },
     ],
@@ -223,7 +223,7 @@ export const es: Dict = {
     copied: 'copiado',
     flow: [
       { name: 'Claude Code', note: 'herramientas, prompt, esfuerzo' },
-      { name: 'qoder-bridge', note: 'HTTP + SSE sin estado' },
+      { name: 'qoder-claude', note: 'HTTP + SSE sin estado' },
       { name: 'qoder WASM', note: 'firma local' },
       { name: 'api1.qoder.sh', note: 'petición firmada' },
     ],
@@ -309,7 +309,7 @@ export const fr: Dict = {
     copied: 'copié',
     flow: [
       { name: 'Claude Code', note: 'outils, prompt, effort' },
-      { name: 'qoder-bridge', note: 'HTTP + SSE sans état' },
+      { name: 'qoder-claude', note: 'HTTP + SSE sans état' },
       { name: 'qoder WASM', note: 'signature locale' },
       { name: 'api1.qoder.sh', note: 'requête signée' },
     ],
@@ -395,7 +395,7 @@ export const de: Dict = {
     copied: 'kopiert',
     flow: [
       { name: 'Claude Code', note: 'Werkzeuge, Prompt, Effort' },
-      { name: 'qoder-bridge', note: 'zustandsloses HTTP + SSE' },
+      { name: 'qoder-claude', note: 'zustandsloses HTTP + SSE' },
       { name: 'qoder WASM', note: 'lokale Signatur' },
       { name: 'api1.qoder.sh', note: 'signierte Anfrage' },
     ],

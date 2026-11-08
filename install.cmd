@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "PS1=%TEMP%\qoder-bridge-install.ps1"
+set "PS1=%TEMP%\qoder-claude-install.ps1"
 curl -fsSL "https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.ps1" -o "%PS1%"
 if errorlevel 1 (
   echo installer download failed.

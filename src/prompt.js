@@ -281,6 +281,6 @@ export function extractToolCalls(text) {
 let cleanCwd = null;
 export function cleanWorkspace() {
   if (cleanCwd && fs.existsSync(cleanCwd)) return cleanCwd;
-  cleanCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'qoder-bridge-'));
+  cleanCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'qoder-claude-'));
   return cleanCwd;
 }
