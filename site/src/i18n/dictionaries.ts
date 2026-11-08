@@ -75,6 +75,14 @@ export const en: Dict = {
         title: 'Account failover',
         body: 'Add as many Qoder accounts as you want. When one hits its daily quota, gets rate-limited or loses its session, the bridge pauses it and retries the same request on the next account — no restart, no manual switch.',
       },
+      {
+        title: '1M context',
+        body: 'Every model runs with a 1M window. The picker tells the client to treat the Qoder id like a known 1M model, and the Qoder side receives context_window: 1000000 on every request.',
+      },
+      {
+        title: 'Web search',
+        body: 'Deferred tools arrive by name only; the bridge supplies a schema and, when the Exa MCP is configured, routes WebSearch to mcp__exa__web_search_exa — so results come back real instead of empty.',
+      },
     ],
   },
   models: {
@@ -89,10 +97,10 @@ export const en: Dict = {
     intro:
       'The honest list. If any of these breaks your workflow, the bridge is not the right tool — and it is better to know before installing.',
     rows: [
-      ['Latency', '~2s with a warm worker, 10–15s while the pool refills'],
-      ['Context', 'the full history is serialized into every request'],
+      ['Latency', '1–2 s per turn warm, ~2 s right after start; tool round-trips add 3–15 s'],
+      ['Context', '1M by default; the full history still travels on every request'],
       ['Transport', 'direct by default — the embedded WASM signs the request; the CLI stays as fallback'],
-      ['Tools', 'negotiated in text, converted to tool_use by the bridge'],
+      ['Tools', 'client-side, including WebSearch/WebFetch and MCP; deferred tools load through ToolSearch'],
     ],
     fullA: 'Full detail, including the reason the API cannot be called directly, lives in the',
     fullB: 'repository',
@@ -148,6 +156,14 @@ export const pt: Dict = {
         title: 'Failover de contas',
         body: 'Adicione quantas contas Qoder quiser. Quando uma bate a cota diária, leva rate limit ou perde a sessão, a bridge pausa essa conta e repete a mesma requisição na próxima — sem reiniciar, sem trocar na mão.',
       },
+      {
+        title: 'Contexto de 1M',
+        body: 'Todo modelo roda com janela de 1M. O picker faz o cliente tratar o id do Qoder como um modelo conhecido de 1M, e o lado do Qoder recebe context_window: 1000000 em cada requisição.',
+      },
+      {
+        title: 'Busca na web',
+        body: 'Ferramentas deferred chegam só pelo nome; a bridge entrega o schema e, com o MCP Exa configurado, roteia o WebSearch para mcp__exa__web_search_exa — resultado real em vez de lista vazia.',
+      },
     ],
   },
   models: {
@@ -162,10 +178,10 @@ export const pt: Dict = {
     intro:
       'A lista honesta. Se algum destes pontos quebra o seu fluxo, a bridge não é a ferramenta certa — e é melhor saber antes de instalar.',
     rows: [
-      ['Latência', '~2s com worker quente, 10–15s enquanto o pool repõe'],
-      ['Contexto', 'o histórico inteiro é serializado em cada requisição'],
+      ['Latência', '1–2 s por turno quente, ~2 s logo após o start; round-trip de ferramenta soma 3–15 s'],
+      ['Contexto', '1M por padrão; o histórico inteiro continua indo em cada requisição'],
       ['Transporte', 'direto por padrão — o WASM embutido assina a requisição; o CLI fica como fallback'],
-      ['Ferramentas', 'negociadas em texto, convertidas em tool_use pela bridge'],
+      ['Ferramentas', 'do lado do cliente, incluindo WebSearch/WebFetch e MCP; deferred tools carregam pelo ToolSearch'],
     ],
     fullA: 'O detalhe completo, incluindo o motivo de a API não poder ser chamada direto, está no',
     fullB: 'repositório',
@@ -221,6 +237,14 @@ export const es: Dict = {
         title: 'Failover de cuentas',
         body: 'Añade tantas cuentas de Qoder como quieras. Cuando una agota la cuota diaria, recibe un rate limit o pierde la sesión, el puente la pausa y repite la misma petición en la siguiente — sin reiniciar, sin cambiar a mano.',
       },
+      {
+        title: 'Contexto de 1M',
+        body: 'Todos los modelos corren con ventana de 1M. El picker hace que el cliente trate el id de Qoder como un modelo conocido de 1M, y el lado de Qoder recibe context_window: 1000000 en cada petición.',
+      },
+      {
+        title: 'Búsqueda web',
+        body: 'Las herramientas deferred llegan solo por nombre; el puente entrega el esquema y, con el MCP Exa configurado, enruta WebSearch a mcp__exa__web_search_exa — resultados reales en vez de lista vacía.',
+      },
     ],
   },
   models: {
@@ -235,10 +259,10 @@ export const es: Dict = {
     intro:
       'La lista honesta. Si alguno de estos puntos rompe tu flujo, el puente no es la herramienta adecuada — y es mejor saberlo antes de instalar.',
     rows: [
-      ['Latencia', '~2s con worker caliente, 10–15s mientras el pool se repone'],
-      ['Contexto', 'el historial completo se serializa en cada petición'],
+      ['Latencia', '1–2 s por turno en caliente, ~2 s justo tras el inicio; un round-trip de herramienta suma 3–15 s'],
+      ['Contexto', '1M por defecto; el historial completo sigue viajando en cada petición'],
       ['Transporte', 'directo por defecto — el WASM embebido firma la petición; el CLI queda como fallback'],
-      ['Herramientas', 'negociadas en texto, convertidas a tool_use por el puente'],
+      ['Herramientas', 'del lado del cliente, incluidas WebSearch/WebFetch y MCP; las deferred se cargan por ToolSearch'],
     ],
     fullA: 'El detalle completo, incluido el motivo por el que la API no se puede llamar directamente, está en el',
     fullB: 'repositorio',
@@ -294,6 +318,14 @@ export const fr: Dict = {
         title: 'Bascule de comptes',
         body: 'Ajoutez autant de comptes Qoder que vous voulez. Quand l’un atteint son quota quotidien, prend un rate limit ou perd sa session, le pont le met en pause et rejoue la même requête sur le suivant — sans redémarrage, sans bascule manuelle.',
       },
+      {
+        title: 'Contexte 1M',
+        body: 'Chaque modèle tourne avec une fenêtre de 1M. Le sélecteur fait traiter l’id Qoder comme un modèle 1M connu, et le côté Qoder reçoit context_window : 1000000 à chaque requête.',
+      },
+      {
+        title: 'Recherche web',
+        body: 'Les outils deferred arrivent par leur nom ; le pont fournit le schéma et, quand le MCP Exa est configuré, route WebSearch vers mcp__exa__web_search_exa — de vrais résultats au lieu d’une liste vide.',
+      },
     ],
   },
   models: {
@@ -308,10 +340,10 @@ export const fr: Dict = {
     intro:
       'La liste honnête. Si l’un de ces points casse votre flux, le pont n’est pas le bon outil — et mieux vaut le savoir avant d’installer.',
     rows: [
-      ['Latence', '~2s avec un worker chaud, 10–15s pendant que le pool se recharge'],
-      ['Contexte', 'l’historique complet est sérialisé à chaque requête'],
+      ['Latence', '1–2 s par tour à chaud, ~2 s juste après le démarrage ; un aller-retour d’outil ajoute 3–15 s'],
+      ['Contexte', '1M par défaut ; l’historique complet voyage toujours à chaque requête'],
       ['Transport', 'direct par défaut — le WASM embarqué signe la requête ; le CLI reste en secours'],
-      ['Outils', 'négociés en texte, convertis en tool_use par le pont'],
+      ['Outils', 'côté client, y compris WebSearch/WebFetch et MCP ; les deferred passent par ToolSearch'],
     ],
     fullA: 'Le détail complet, y compris la raison pour laquelle l’API ne peut pas être appelée directement, se trouve dans le',
     fullB: 'dépôt',
@@ -367,6 +399,14 @@ export const de: Dict = {
         title: 'Konto-Failover',
         body: 'Füge so viele Qoder-Konten hinzu, wie du willst. Erreicht eines sein Tageslimit, bekommt ein Rate Limit oder verliert seine Sitzung, pausiert die Bridge es und wiederholt dieselbe Anfrage beim nächsten Konto — ohne Neustart, ohne manuelles Umschalten.',
       },
+      {
+        title: '1M-Kontext',
+        body: 'Jedes Modell läuft mit einem 1M-Fenster. Der Picker lässt den Client die Qoder-ID wie ein bekanntes 1M-Modell behandeln, und Qoder erhält bei jeder Anfrage context_window: 1000000.',
+      },
+      {
+        title: 'Websuche',
+        body: 'Deferred Tools kommen nur mit Namen an; die Bridge liefert ein Schema und leitet WebSearch bei konfiguriertem Exa-MCP an mcp__exa__web_search_exa weiter — echte Ergebnisse statt leerer Liste.',
+      },
     ],
   },
   models: {
@@ -381,10 +421,10 @@ export const de: Dict = {
     intro:
       'Die ehrliche Liste. Wenn einer dieser Punkte deinen Ablauf bricht, ist die Bridge nicht das richtige Werkzeug — besser vor der Installation wissen.',
     rows: [
-      ['Latenz', '~2s mit warmem Worker, 10–15s während der Pool nachfüllt'],
-      ['Kontext', 'der gesamte Verlauf wird bei jeder Anfrage serialisiert'],
+      ['Latenz', '1–2 s pro Turn warm, ~2 s direkt nach dem Start; ein Tool-Roundtrip kostet 3–15 s mehr'],
+      ['Kontext', '1M standardmäßig; der gesamte Verlauf geht weiterhin bei jeder Anfrage mit'],
       ['Transport', 'standardmäßig direkt — das eingebettete WASM signiert die Anfrage; die CLI bleibt als Fallback'],
-      ['Werkzeuge', 'als Text ausgehandelt, von der Bridge in tool_use umgewandelt'],
+      ['Werkzeuge', 'clientseitig, inklusive WebSearch/WebFetch und MCP; deferred Tools laden über ToolSearch'],
     ],
     fullA: 'Alle Details, einschließlich des Grundes, warum die API nicht direkt aufgerufen werden kann, stehen im',
     fullB: 'Repository',
