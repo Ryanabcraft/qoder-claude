@@ -1,210 +1,175 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>qoder-claude · dashboard</title>
+    <title>qoder-claude · console</title>
     <link rel="icon" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/ui/style.css" />
   </head>
   <body>
     <div class="app">
-      <aside class="side">
-        <div class="logo">
-          <span class="logo-mark">Q</span>
-          <span class="logo-text">qoder-claude</span>
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <span class="brand-mark">Q</span>
+          <span class="brand-copy"><strong>qoder-claude</strong><span id="brand-version">v—</span></span>
+          <button class="icon-btn collapse-btn" id="collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
         </div>
-
-        <nav class="side-nav">
-          <button class="side-item active" data-pane="overview">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
-            <span>Dashboard</span>
-          </button>
-          <button class="side-item" data-pane="accounts">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-            <span>Accounts</span>
-          </button>
-          <button class="side-item" data-pane="models">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-            <span>Models</span>
-          </button>
-          <button class="side-item" data-pane="test">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            <span>Test</span>
-          </button>
-          <button class="side-item" data-pane="logs">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
-            <span>Logs</span>
-          </button>
+        <nav class="nav" id="nav">
+          <div class="nav-group">Main</div>
+          <button class="nav-item active" data-page="home"><span class="nav-ico" data-icon="home"></span><span class="nav-label">Home</span></button>
+          <button class="nav-item" data-page="endpoint"><span class="nav-ico" data-icon="plug"></span><span class="nav-label">Endpoint</span></button>
+          <div class="nav-group">Routing</div>
+          <button class="nav-item" data-page="accounts"><span class="nav-ico" data-icon="users"></span><span class="nav-label">Accounts</span><span class="nav-badge" id="nav-accounts">0</span></button>
+          <button class="nav-item" data-page="routing"><span class="nav-ico" data-icon="route"></span><span class="nav-label">Routing</span></button>
+          <div class="nav-group">Insights</div>
+          <button class="nav-item" data-page="analytics"><span class="nav-ico" data-icon="chart"></span><span class="nav-label">Analytics</span></button>
+          <button class="nav-item" data-page="usage"><span class="nav-ico" data-icon="list"></span><span class="nav-label">Usage &amp; Logs</span></button>
+          <button class="nav-item" data-page="health"><span class="nav-ico" data-icon="heart"></span><span class="nav-label">Health</span></button>
+          <div class="nav-group">System</div>
+          <button class="nav-item" data-page="models"><span class="nav-ico" data-icon="layers"></span><span class="nav-label">Models</span></button>
+          <button class="nav-item" data-page="settings"><span class="nav-ico" data-icon="settings"></span><span class="nav-label">Settings</span></button>
+          <div class="nav-group">Help</div>
+          <a class="nav-item link" href="https://ryanabcraft.github.io/qoder-claude/" target="_blank" rel="noreferrer"><span class="nav-ico" data-icon="book"></span><span class="nav-label">Docs</span></a>
+          <a class="nav-item link" href="https://github.com/Ryanabcraft/qoder-claude" target="_blank" rel="noreferrer"><span class="nav-ico" data-icon="github"></span><span class="nav-label">GitHub</span></a>
         </nav>
-
-        <div class="side-foot">
-          <span class="status-dot" id="side-dot"></span>
-          <span id="side-status">checking…</span>
+        <div class="sidebar-foot">
+          <div class="side-status"><span class="dot" id="side-dot"></span><span id="side-status">connecting…</span></div>
+          <button class="btn danger block" id="btn-stop">Stop server</button>
         </div>
       </aside>
 
-      <div class="content">
-        <header class="bar">
-          <div>
-            <h1 id="pane-title">Dashboard</h1>
-            <p class="muted" id="pane-sub">local control panel</p>
-          </div>
-          <div class="bar-right">
-            <label class="search">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-              <input id="search" placeholder="Search" autocomplete="off" />
-            </label>
-            <div class="avatar" id="avatar">R</div>
+      <div class="shell">
+        <header class="topbar">
+          <button class="icon-btn menu-btn" id="menu-btn" aria-label="Open navigation"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+          <div class="crumb"><span>qoder-claude</span><i>/</i><strong id="crumb-page">Home</strong></div>
+          <div class="top-actions">
+            <label class="search"><span class="nav-ico" data-icon="search"></span><input id="search" placeholder="Search this page" autocomplete="off" /></label>
+            <button class="icon-btn" id="theme-btn" title="Theme" aria-label="Toggle theme"><span data-icon="sun"></span></button>
+            <a class="icon-btn" href="https://github.com/Ryanabcraft/qoder-claude" target="_blank" rel="noreferrer" title="GitHub"><span data-icon="github"></span></a>
+            <span class="live"><span class="dot" id="live-dot"></span><span id="live-label">live</span></span>
           </div>
         </header>
 
+        <div class="banner hidden" id="restart-banner"><strong>Restart required.</strong><span id="restart-text">Port, host, API key, transport, pool and log changes apply when the bridge starts again.</span><button class="btn ghost small" id="btn-restart-help">How</button></div>
+
         <main>
-          <section id="pane-overview" class="pane active">
-            <div class="kpis" id="kpis"></div>
-
-            <div class="split">
-              <div class="card">
-                <div class="card-head">
-                  <div>
-                    <h2>Daily requests</h2>
-                    <p class="muted small">last 30 minutes</p>
-                  </div>
-                  <div class="legend">
-                    <span><i class="dot blue"></i> requests</span>
-                    <span><i class="dot cyan"></i> avg ms</span>
-                  </div>
-                </div>
-                <div class="chart" id="chart"></div>
-              </div>
-
-              <div class="card donut-card">
-                <h2>Success rate</h2>
-                <div class="donut" id="donut">
-                  <svg viewBox="0 0 120 120">
-                    <defs>
-                      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stop-color="#ec4899" />
-                        <stop offset="1" stop-color="#22d3ee" />
-                      </linearGradient>
-                    </defs>
-                    <circle cx="60" cy="60" r="48" class="donut-bg" />
-                    <circle cx="60" cy="60" r="48" class="donut-fg" id="donut-ring" />
-                  </svg>
-                  <div class="donut-label">
-                    <span class="muted small">success</span>
-                    <strong id="donut-value">—</strong>
-                  </div>
-                </div>
-                <p class="muted small" id="donut-sub">no requests yet</p>
-              </div>
+          <section class="page active" id="page-home">
+            <div class="page-head"><div><h1>Home</h1><p>Bridge overview and live traffic.</p></div><div class="head-actions"><button class="btn ghost small" id="home-refresh">Refresh</button><button class="btn primary small" id="home-test">Send test</button></div></div>
+            <div class="status-banner" id="home-status"><span class="dot"></span><span>checking…</span></div>
+            <div class="kpi-grid" id="home-kpis"></div>
+            <div class="grid-2">
+              <div class="card"><div class="card-head"><div><h2>Requests</h2><p>last 30 minutes</p></div><span class="pill" id="home-range-pill">30m</span></div><div class="chart" id="home-chart"></div></div>
+              <div class="card donut-card"><div class="card-head"><div><h2>Success rate</h2><p>completed requests</p></div></div><div class="donut" id="home-donut"></div><div class="muted small" id="home-donut-sub">no requests yet</div></div>
             </div>
-
-            <div class="card">
-              <div class="card-head">
-                <h2>Recent requests</h2>
-                <button class="btn ghost" id="btn-refresh">Refresh</button>
-              </div>
-              <div class="table-wrap"><table class="table">
-                <thead>
-                  <tr><th>Time</th><th>Model</th><th>Account</th><th>Status</th><th class="right">First token</th><th class="right">Latency</th></tr>
-                </thead>
-                <tbody id="recent"></tbody>
-              </table></div>
+            <div class="grid-2 reverse">
+              <div class="card"><div class="card-head"><div><h2>Recent requests</h2><p>newest first</p></div><button class="btn ghost small" id="home-recent-refresh">Refresh</button></div><div class="table-wrap"><table class="table" id="home-recent"></table></div></div>
+              <div class="card"><div class="card-head"><div><h2>Active route</h2><p>current account and transport</p></div></div><div id="home-route" class="route-card"></div></div>
             </div>
           </section>
 
-          <section id="pane-accounts" class="pane">
-            <div class="card rot-card">
-              <div class="card-head">
-                <div>
-                  <h2>Automatic failover</h2>
-                  <p class="muted small">
-                    When an account hits its quota, gets rate-limited or loses its session, the bridge
-                    pauses it and retries the same request on the next account.
-                  </p>
-                </div>
-                <label class="switch">
-                  <input type="checkbox" id="rot-toggle" />
-                  <span class="track"><span class="knob"></span></span>
-                  <span class="switch-label" id="rot-label">off</span>
-                </label>
-              </div>
-              <div class="rot-strip" id="rot-strip"></div>
+          <section class="page" id="page-endpoint">
+            <div class="page-head"><div><h1>Endpoint</h1><p>Point Claude Code at this bridge.</p></div></div>
+            <div class="card"><div class="card-head"><div><h2>API endpoint</h2><p id="endpoint-host">local server</p></div><span class="pill ok" id="endpoint-key-state">no key</span></div><div class="copy-row"><code id="endpoint-url">http://127.0.0.1:8787</code><button class="btn ghost small" data-copy="#endpoint-url">Copy</button></div><div class="muted small">Use this as ANTHROPIC_BASE_URL. The token can be any value when the bridge has no API key.</div></div>
+            <div class="grid-2">
+              <div class="card"><div class="card-head"><div><h2>Claude Code settings</h2><p>snippet for ~/.claude/settings.json</p></div><button class="btn ghost small" data-copy="#claude-snippet">Copy</button></div><pre class="pre" id="claude-snippet">—</pre></div>
+              <div class="card"><div class="card-head"><div><h2>Test endpoint</h2><p>one tiny round-trip</p></div></div><div class="field-row"><input id="endpoint-test-prompt" value="say exactly: ok" /><button class="btn primary" id="endpoint-test">Send</button></div><pre class="pre" id="endpoint-test-out">—</pre></div>
             </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Accounts</h2>
-                  <p class="muted small">Each account has its own config directory. Quota is per account.</p>
-                </div>
-                <form id="form-add" class="inline">
-                  <input id="new-account" placeholder="name this account (e.g. work)" autocomplete="off" aria-label="account name" required />
-                  <button class="btn primary" type="submit" title="create the profile and open the Qoder login">Add account</button>
-                </form>
-              </div>
-
-              <div id="login-box" class="login hidden">
-                <p class="muted small">Finish the sign-in in your browser:</p>
-                <a id="login-url" class="login-url" target="_blank" rel="noreferrer"></a>
-                <p id="login-state" class="muted small"></p>
-              </div>
-
-              <div class="table-wrap"><table class="table">
-                <thead><tr><th>Account</th><th>Location</th><th>State</th><th class="right">Actions</th></tr></thead>
-                <tbody id="account-list"></tbody>
-              </table></div>
-            </div>
+            <div class="card"><div class="card-head"><div><h2>Available endpoints</h2><p>Anthropic-compatible surface</p></div></div><div class="table-wrap"><table class="table" id="endpoint-table"></table></div></div>
           </section>
 
-          <section id="pane-models" class="pane">
-            <div class="card">
-              <div class="card-head">
-                <div><h2>Models</h2><p class="muted small">read from the CLI cache</p></div>
-                <span class="pill" id="models-count"></span>
-              </div>
-              <ul id="model-list" class="chips"></ul>
-            </div>
+          <section class="page" id="page-accounts">
+            <div class="page-head"><div><h1>Accounts</h1><p>Qoder profiles and failover.</p></div><div class="head-actions"><button class="btn ghost small" id="accounts-test">Test active</button><button class="btn primary small" id="account-add">Add account</button></div></div>
+            <div class="card"><div class="card-head"><div><h2>Automatic failover</h2><p>Quota, 403, 429 and lost sessions rotate to the next account.</p></div><label class="switch"><input type="checkbox" id="rot-toggle" /><span class="track"><span class="knob"></span></span><span id="rot-label">off</span></label></div><div class="strip" id="rot-strip"></div></div>
+            <div class="account-grid" id="account-cards"></div>
+            <div class="card hidden" id="login-box"><div class="card-head"><div><h2>Finish sign-in</h2><p>Open the URL below and approve the device.</p></div></div><a class="login-url" id="login-url" target="_blank" rel="noreferrer"></a><p class="muted small" id="login-state"></p></div>
           </section>
 
-          <section id="pane-test" class="pane">
-            <div class="card">
-              <div class="card-head">
-                <div><h2>Test a request</h2><p class="muted small">round-trip through the active transport</p></div>
-              </div>
-              <div class="inline wide">
-                <input id="test-prompt" value="say exactly: ok" />
-                <button id="btn-test" class="btn primary">Send</button>
-              </div>
-              <pre id="test-out" class="pre">—</pre>
+          <section class="page" id="page-routing">
+            <div class="page-head"><div><h1>Routing</h1><p>Failover policy, timeouts and account order.</p></div></div>
+            <div class="grid-2">
+              <div class="card"><div class="card-head"><div><h2>Policy</h2><p>Applies to the next requests.</p></div></div><div class="form-grid">
+                <label>Max attempts<input type="number" id="routing-max-attempts" min="0" max="20" /></label>
+                <label>Model retries<input type="number" id="routing-retries" min="0" max="10" /></label>
+                <label>Request timeout (ms)<input type="number" id="routing-request-timeout" min="5000" step="1000" /></label>
+                <label>Stall timeout (ms)<input type="number" id="routing-stall" min="5000" step="1000" /></label>
+                <label>Transport<select id="routing-transport"><option value="auto">auto</option><option value="direct">direct</option><option value="cli">cli</option></select></label>
+                <label>Pool size<input type="number" id="routing-pool-size" min="1" max="16" /></label>
+              </div><div class="form-foot"><span class="muted small">Transport and pool size need a restart.</span><button class="btn primary" id="routing-save">Save</button></div></div>
+              <div class="card"><div class="card-head"><div><h2>Route order</h2><p>Active account first, then this order.</p></div></div><ul class="route-order" id="route-order"></ul></div>
             </div>
+            <div class="card"><div class="card-head"><div><h2>Cooldowns</h2><p>How the bridge classifies upstream failures.</p></div></div><div class="table-wrap"><table class="table" id="cooldown-table"></table></div></div>
           </section>
 
-          <section id="pane-logs" class="pane">
-            <div class="card">
-              <div class="card-head">
-                <div><h2>Logs</h2><p class="muted small">last 200 lines</p></div>
-                <button id="btn-logs" class="btn ghost">Reload</button>
-              </div>
-              <pre id="log-out" class="pre tall">—</pre>
+          <section class="page" id="page-analytics">
+            <div class="page-head"><div><h1>Analytics</h1><p>Requests, latency and token estimates.</p></div><div class="segmented" id="analytics-range"><button data-range="30m">30m</button><button data-range="24h">24h</button><button data-range="7d">7d</button></div></div>
+            <div class="kpi-grid" id="analytics-kpis"></div>
+            <div class="grid-2"><div class="card"><div class="card-head"><div><h2>Requests &amp; latency</h2><p id="analytics-chart-sub">last 30 minutes</p></div></div><div class="chart" id="analytics-chart"></div></div><div class="card"><div class="card-head"><div><h2>Tokens</h2><p>estimated input and output</p></div></div><div class="chart" id="token-chart"></div></div></div>
+            <div class="grid-2"><div class="card"><div class="card-head"><div><h2>Activity</h2><p>requests by hour, last 7 days</p></div></div><div class="heatmap" id="heatmap"></div></div><div class="card"><div class="card-head"><div><h2>Top models</h2><p>by requests</p></div></div><div class="table-wrap"><table class="table" id="top-models"></table></div></div></div>
+            <div class="card"><div class="card-head"><div><h2>Top accounts</h2><p>by requests</p></div></div><div class="table-wrap"><table class="table" id="top-accounts"></table></div></div>
+          </section>
+
+          <section class="page" id="page-usage">
+            <div class="page-head"><div><h1>Usage &amp; Logs</h1><p>Request log and bridge output.</p></div><div class="head-actions"><button class="btn ghost small" id="usage-refresh">Refresh</button><button class="btn ghost small" id="usage-download">Download</button></div></div>
+            <div class="card"><div class="filters"><select id="usage-status"><option value="">all status</option><option value="ok">success</option><option value="err">errors</option></select><select id="usage-model"><option value="">all models</option></select><select id="usage-account"><option value="">all accounts</option></select><select id="usage-transport"><option value="">all transports</option><option value="direct">direct</option><option value="cli">cli</option></select><span class="muted small" id="usage-count">0 shown</span></div><div class="table-wrap"><table class="table" id="usage-table"></table></div></div>
+            <div class="card"><div class="card-head"><div><h2>Bridge log</h2><p>last 200 lines</p></div><div class="head-actions"><label class="mini-check"><input type="checkbox" id="log-auto" /> auto</label><button class="btn ghost small" id="log-refresh">Reload</button><button class="btn ghost small" id="log-download">Download</button></div></div><div class="copy-row"><input id="log-filter" placeholder="filter log lines" /></div><pre class="pre tall" id="log-out">—</pre></div>
+          </section>
+
+          <section class="page" id="page-health">
+            <div class="page-head"><div><h1>Health</h1><p>Process, memory and transport state.</p></div><button class="btn ghost small" id="health-refresh">Refresh</button></div>
+            <div class="status-banner" id="health-status"><span class="dot"></span><span>checking…</span></div>
+            <div class="kpi-grid" id="health-kpis"></div>
+            <div class="grid-2"><div class="card"><div class="card-head"><div><h2>Process</h2><p>Node runtime</p></div></div><div class="kv" id="health-process"></div></div><div class="card"><div class="card-head"><div><h2>Paths</h2><p>local files only</p></div></div><div class="kv" id="health-paths"></div></div></div>
+            <div class="card"><div class="card-head"><div><h2>Last error</h2><p>most recent failed request</p></div></div><div id="health-last-error" class="muted">none</div></div>
+          </section>
+
+          <section class="page" id="page-models">
+            <div class="page-head"><div><h1>Models</h1><p>Live list from the Qoder CLI cache.</p></div><div class="head-actions"><span class="pill" id="models-count">0</span><button class="btn ghost small" id="models-refresh">Refresh</button></div></div>
+            <div class="card"><div class="model-grid" id="models-grid"></div></div>
+            <div class="card"><div class="card-head"><div><h2>Default model</h2><p>Read from the Claude settings file.</p></div><button class="btn ghost small" id="models-open-settings">Change in Settings</button></div><div class="kv" id="models-default"></div></div>
+          </section>
+
+          <section class="page" id="page-settings">
+            <div class="page-head"><div><h1>Settings</h1><p>Bridge runtime and Claude Code defaults.</p></div></div>
+            <div class="tabs" id="settings-tabs"><button data-tab="general" class="active">General</button><button data-tab="ai">AI</button><button data-tab="security">Security</button><button data-tab="routing">Routing</button><button data-tab="resilience">Resilience</button><button data-tab="advanced">Advanced</button></div>
+            <div class="tab-panel active" data-panel="general">
+              <div class="card"><div class="card-head"><div><h2>Interface</h2><p>Theme is stored in this browser.</p></div></div><div class="segmented" id="theme-seg"><button data-theme-choice="dark">Dark</button><button data-theme-choice="light">Light</button><button data-theme-choice="system">System</button></div></div>
+              <div class="card"><div class="card-head"><div><h2>Server</h2><p>Port and host require a restart.</p></div></div><div class="form-grid"><label>Port<input type="number" id="cfg-port" min="1" max="65535" /></label><label>Host<input id="cfg-host" /></label><label class="check-row"><input type="checkbox" id="cfg-log" /> Access log</label><label class="check-row"><input type="checkbox" id="cfg-pool" /> Worker pool</label></div><div class="form-foot"><span class="muted small" id="cfg-path"></span><button class="btn primary" data-save="general">Save</button></div></div>
+            </div>
+            <div class="tab-panel" data-panel="ai">
+              <div class="card"><div class="card-head"><div><h2>Claude Code</h2><p>Writes the user settings file with a backup.</p></div></div><div class="form-grid"><label>Default model<select id="claude-model"></select></label><label class="check-row"><input type="checkbox" id="claude-1m" /> 1M context</label></div><div class="form-foot"><span class="muted small" id="claude-path"></span><button class="btn primary" data-save="claude">Save</button></div></div>
+              <div class="card"><div class="card-head"><div><h2>Bridge defaults</h2><p>Used when the request does not send its own value.</p></div></div><div class="form-grid"><label>Context window<input type="number" id="cfg-context" min="100000" max="2000000" step="1000" /></label><label>Thinking<select id="cfg-thinking"><option value="">from request</option><option value="auto">auto</option><option value="adaptive">adaptive</option><option value="enabled">enabled</option><option value="disabled">disabled</option></select></label><label>Thinking budget<input type="number" id="cfg-thinking-budget" min="0" max="200000" step="1000" /></label><label>Effort<select id="cfg-effort"><option value="">from request</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option></select></label><label>Max output tokens<input type="number" id="cfg-max-output" min="0" max="200000" step="1000" /></label></div><div class="form-foot"><span class="muted small">Applied to new requests.</span><button class="btn primary" data-save="ai">Save</button></div></div>
+            </div>
+            <div class="tab-panel" data-panel="security">
+              <div class="card"><div class="card-head"><div><h2>Dashboard API key</h2><p id="key-state">not required</p></div></div><div class="field-row"><input id="cfg-key" type="password" placeholder="new API key (leave blank to keep)" autocomplete="new-password" /><button class="btn ghost" id="key-clear">Clear</button></div><div class="muted small">Changing the key requires a restart and a new dashboard login.</div><div class="form-foot"><button class="btn primary" data-save="security">Save key</button></div></div>
+              <div class="card"><div class="card-head"><div><h2>Web tools</h2><p>Exa MCP and the Claude allowlist.</p></div><button class="btn ghost small" id="web-tools-apply">Apply</button></div><div class="kv" id="web-tools-state"></div></div>
+            </div>
+            <div class="tab-panel" data-panel="routing">
+              <div class="card"><div class="card-head"><div><h2>Transport</h2><p>Direct is the default; CLI is the fallback.</p></div></div><div class="form-grid"><label>Transport<select id="cfg-transport"><option value="auto">auto</option><option value="direct">direct</option><option value="cli">cli</option></select></label><label>Pool size<input type="number" id="cfg-pool-size" min="1" max="16" /></label><label>Max attempts<input type="number" id="cfg-max-attempts" min="0" max="20" /></label><label>Model retries<input type="number" id="cfg-retries" min="0" max="10" /></label></div><div class="form-foot"><span class="muted small">Transport and pool size need a restart.</span><button class="btn primary" data-save="routing">Save</button></div></div>
+            </div>
+            <div class="tab-panel" data-panel="resilience">
+              <div class="card"><div class="card-head"><div><h2>Timeouts</h2><p>Requests and upstream silence.</p></div></div><div class="form-grid"><label>Request timeout (ms)<input type="number" id="cfg-request-timeout" min="5000" max="3600000" step="1000" /></label><label>Stall timeout (ms)<input type="number" id="cfg-stall" min="5000" max="3600000" step="1000" /></label></div><div class="form-foot"><span class="muted small">Applied to new requests.</span><button class="btn primary" data-save="resilience">Save</button></div></div>
+            </div>
+            <div class="tab-panel" data-panel="advanced">
+              <div class="card"><div class="card-head"><div><h2>Config file</h2><p>Local JSON, gitignored.</p></div><button class="btn ghost small" id="cfg-download">Download</button></div><div class="kv" id="advanced-info"></div></div>
+              <div class="card"><div class="card-head"><div><h2>Runtime files</h2><p>Config, metrics and log paths.</p></div></div><div class="kv" id="advanced-paths"></div></div>
             </div>
           </section>
         </main>
-
-        <footer class="foot">
-          <span class="muted small" id="foot-account">—</span>
-          <button class="btn ghost danger" id="btn-stop">Stop server</button>
-        </footer>
       </div>
     </div>
 
+    <div class="toasts" id="toasts"></div>
+    <div class="modal-backdrop hidden" id="modal">
+      <div class="modal">
+        <div class="modal-head"><h2 id="modal-title">Confirm</h2><button class="icon-btn" id="modal-close" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-foot"><button class="btn ghost" id="modal-cancel">Cancel</button><button class="btn primary" id="modal-confirm">Confirm</button></div>
+      </div>
+    </div>
     <script src="/ui/app.js"></script>
   </body>
 </html>

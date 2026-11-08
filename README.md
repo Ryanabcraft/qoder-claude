@@ -66,6 +66,9 @@ accounts copy; `--remove-exa` removes the Exa MCP when its URL is the qoder-clau
 
 ![qoder-claude dashboard](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif)
 
+Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models and Settings. Settings
+write `bridge.config.json` and the Claude user settings with backups; analytics keep 7 days.
+
 ## What works
 
 - `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `Agent` and MCP servers — executed by Claude

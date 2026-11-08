@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import '../src/config.js';
 import { spawn, spawnSync } from 'node:child_process';
 import readline from 'node:readline/promises';
 import os from 'node:os';

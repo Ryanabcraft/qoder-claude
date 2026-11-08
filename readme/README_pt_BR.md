@@ -66,6 +66,9 @@ pula o backup das contas; `--remove-exa` remove o MCP Exa quando a URL é a do q
 
 ![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif)
 
+Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models e Settings. Os settings
+escrevem `bridge.config.json` e o settings do Claude com backup; o analytics guarda 7 dias.
+
 ## O que funciona
 
 - `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `Agent` e servidores MCP — executados pelo

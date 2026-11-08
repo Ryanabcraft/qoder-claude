@@ -417,6 +417,10 @@ export async function runCompletion({ body, cfg, signal, onEvent }) {
   return { ...out, sessionHit: from > 0, from, sessionKey: key };
 }
 
+export function poolStatus() {
+  return { enabled: USE_POOL, size: POOL_SIZE, ready: pool?.ready.length || 0, starting: pool?.starting || 0 };
+}
+
 export function shutdownPool() {
   shutdownSessions();
   if (pool) {
