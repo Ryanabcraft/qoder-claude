@@ -99,6 +99,18 @@ function stripToolBlocks(text) {
   return out.replace(/\s+$/, '');
 }
 
+const TOOL_ALIASES = { web_search: 'WebSearch', web_fetch: 'WebFetch' };
+
+// Deferred tools (WebSearch, WebFetch, MCP) are not in the request's tool list, so
+// filtering by that list would swallow a real call. Only the alias needs fixing.
+function alignToolCalls(tc) {
+  if (!tc) return null;
+  return {
+    ...tc,
+    calls: tc.calls.map((c) => ({ ...c, name: TOOL_ALIASES[c.name.toLowerCase()] || c.name })),
+  };
+}
+
 function cfgForAccount(cfg, account) {
   const rest = cfg.key.split('|').slice(1).join('|');
   return { ...cfg, account: account.name, configDir: account.dir, key: `${account.name}|${rest}` };
@@ -172,7 +184,8 @@ async function handleMessages(req, res, body) {
       const status = errorStatus(out.error);
       return send(res, status, errorBody(out.error, status));
     }
-    const tc = wantsTools ? extractToolCalls(out.text) : null;
+    const rawCalls = wantsTools ? extractToolCalls(out.text) : null;
+    const tc = rawCalls ? alignToolCalls(rawCalls) : null;
     const content = [];
     if (tc) {
       if (tc.before) content.push({ type: 'text', text: tc.before });
@@ -312,12 +325,9 @@ async function handleMessages(req, res, body) {
   if (!headersSent) startStream();
 
   const full = out.text || '';
-  let tc = wantsTools ? extractToolCalls(full) : null;
-  if (tc) {
-    const valid = new Set(body.tools.map((t) => t.name));
-    tc = { ...tc, calls: tc.calls.filter((c) => valid.has(c.name)) };
-    if (!tc.calls.length) tc = null;
-  }
+  const parsed = wantsTools ? extractToolCalls(full) : null;
+  if (parsed) log('  model tool calls: ' + parsed.calls.map((c) => c.name).join(', '));
+  const tc = alignToolCalls(parsed);
 
   if (tc) {
     if (tc.before && !emitted) emitText(tc.before);
