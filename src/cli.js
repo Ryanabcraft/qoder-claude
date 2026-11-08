@@ -95,6 +95,7 @@ export function workerConfig(body = {}, system = '') {
       : undefined;
   const account = activeAccount();
   const hasTools = Array.isArray(body.tools) && body.tools.length > 0;
+  const toolsKey = hasTools ? createHash('sha1').update(JSON.stringify(body.tools)).digest('hex').slice(0, 12) : '';
   const systemKey = system ? createHash('sha1').update(system).digest('hex').slice(0, 12) : '';
   const key = [
     account.name,
@@ -104,7 +105,7 @@ export function workerConfig(body = {}, system = '') {
     effort || '',
     contextWindow || '',
     maxTokens || '',
-    hasTools ? 'tools' : 'notools',
+    toolsKey || 'notools',
     systemKey,
   ].join('|');
   return { model, thinking, thinkingBudget, effort, contextWindow, maxTokens, system, hasTools, account: account.name, configDir: account.dir, key };
@@ -247,10 +248,16 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
     let finalMessage = null;
     let resultMsg = null;
     let settled = false;
+    let hardStop = null;
+    const onClose = () => done();
+    const onExit = () => done();
 
     const done = () => {
       if (settled) return;
       settled = true;
+      clearTimeout(hardStop);
+      worker.proc.removeListener('close', onClose);
+      worker.proc.removeListener('exit', onExit);
       off();
       signal?.removeEventListener('abort', onAbort);
       const finalText = (finalMessage?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('') || text;
@@ -281,9 +288,9 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
         done();
       }
     });
-    worker.proc.once('close', done);
-    worker.proc.once('exit', done);
-    const hardStop = setTimeout(() => { worker.kill(); done(); }, Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000));
+    worker.proc.once('close', onClose);
+    worker.proc.once('exit', onExit);
+    hardStop = setTimeout(() => { worker.kill(); done(); }, Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000));
     hardStop.unref?.();
     worker.send(prompt, blocks);
   });
@@ -294,16 +301,25 @@ function runDirect(cfg, { prompt, blocks, signal, onEvent }) {
     cwd: cleanWorkspace(), env: CHILD_ENV, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
   });
   return new Promise((resolve) => {
-    let buf = '', text = '', finalMessage = null, resultMsg = null, settled = false;
+    let buf = '', text = '', finalMessage = null, resultMsg = null, settled = false, timer = null;
     const done = () => {
       if (settled) return;
       settled = true;
+      clearTimeout(timer);
       const finalText = (finalMessage?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('') || text;
-      resolve({ text: finalText, usage: resultMsg?.usage || {}, error: resultMsg?.is_error ? errorText(resultMsg) : null });
+      resolve({
+        text: finalText,
+        stopReason: finalMessage?.stop_reason || resultMsg?.stop_reason || 'end_turn',
+        usage: resultMsg?.usage || {},
+        error: resultMsg?.is_error ? errorText(resultMsg) : null,
+      });
     };
+    timer = setTimeout(() => { try { proc.kill(); } catch {}; done(); }, Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000));
+    timer.unref?.();
     signal?.addEventListener('abort', () => { try { proc.kill(); } catch {} }, { once: true });
     proc.stdin.on('error', () => {});
-    proc.stdin.end(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: prompt }] } }) + '\n');
+    const content = Array.isArray(blocks) && blocks.length ? blocks : [{ type: 'text', text: prompt }];
+    proc.stdin.end(JSON.stringify({ type: 'user', message: { role: 'user', content } }) + '\n');
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', (d) => {
       buf += d;

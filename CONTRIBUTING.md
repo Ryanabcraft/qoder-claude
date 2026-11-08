@@ -59,6 +59,7 @@ curl -sN http://127.0.0.1:8787/v1/messages \
 ## Verify
 
 ```bash
+npm test                        # unit and route tests
 node --check src/<changed>.js
 bash -n install.sh update.sh start.sh stop.sh
 node scripts/bench.mjs          # latency, needs a running server

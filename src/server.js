@@ -121,6 +121,15 @@ function alignToolCalls(tc, { preferExa = false } = {}) {
   };
 }
 
+function stopReason(value, hasToolCalls) {
+  if (hasToolCalls) return 'tool_use';
+  const reason = String(value || '').toLowerCase();
+  if (reason === 'max_tokens' || reason === 'length') return 'max_tokens';
+  if (reason === 'tool_use' || reason === 'tool_calls') return 'tool_use';
+  if (reason === 'stop_sequence') return 'stop_sequence';
+  return 'end_turn';
+}
+
 function cfgForAccount(cfg, account) {
   const rest = cfg.key.split('|').slice(1).join('|');
   return { ...cfg, account: account.name, configDir: account.dir, key: `${account.name}|${rest}` };
@@ -186,7 +195,9 @@ async function handleMessages(req, res, body) {
   res.once('finish', () => record({ model: cfg.model, status: res.statusCode, ms: Date.now() - started, transport: TRANSPORT, account: usedAccount }));
 
   const ac = new AbortController();
-  req.on('close', () => ac.abort());
+  res.on('close', () => {
+    if (!res.writableEnded) ac.abort();
+  });
 
   if (!stream) {
     let out;
@@ -219,7 +230,7 @@ async function handleMessages(req, res, body) {
       role: 'assistant',
       model,
       content,
-      stop_reason: tc ? 'tool_use' : 'end_turn',
+      stop_reason: stopReason(out.stopReason, Boolean(tc)),
       stop_sequence: null,
       usage: { input_tokens: inTokens, output_tokens: estimate(out.text) },
     });
@@ -368,7 +379,7 @@ async function handleMessages(req, res, body) {
     stopText();
     write('message_delta', {
       type: 'message_delta',
-      delta: { stop_reason: 'end_turn', stop_sequence: null },
+      delta: { stop_reason: stopReason(out.stopReason, false), stop_sequence: null },
       usage: { output_tokens: estimate(full) },
     });
   }

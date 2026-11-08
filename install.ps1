@@ -50,11 +50,17 @@ function Install-Winget($id, $cmdName) {
 
 Step 'Checking dependencies'
 
-if (-not (Have 'node')) {
-  if ($SkipDeps) { Die 'Node.js is missing (run without -SkipDeps).' }
-  Install-Winget 'OpenJS.NodeJS.LTS' 'Node.js'
+$nodeMajor = 0
+if (Have 'node') {
+  try { $nodeMajor = [int]((& node -p "process.versions.node.split('.')[0]") 2>$null) } catch { $nodeMajor = 0 }
 }
-if (Have 'node') { Ok "node $(& node --version)" } else { Die 'node is still missing. Reopen the terminal.' }
+if ($nodeMajor -lt 20) {
+  if ($SkipDeps) { Die "Node.js 20+ is required (found $(if (Have 'node') { & node --version } else { 'nothing' }))." }
+  if (Have 'node') { Warn "node $(& node --version) is older than 20; installing the current LTS" }
+  Install-Winget 'OpenJS.NodeJS.LTS' 'Node.js'
+  try { $nodeMajor = [int]((& node -p "process.versions.node.split('.')[0]") 2>$null) } catch { $nodeMajor = 0 }
+}
+if ($nodeMajor -ge 20) { Ok "node $(& node --version)" } else { Die 'Node.js 20+ is still missing. Reopen the terminal and run again.' }
 
 if (-not (Have 'qodercli')) {
   Step 'Installing Qoder CLI'
