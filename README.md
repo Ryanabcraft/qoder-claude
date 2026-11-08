@@ -1,5 +1,9 @@
 # qoder-claude
 
+[![unix install](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml/badge.svg)](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml)
+[![version](https://img.shields.io/github/package-json/v/Ryanabcraft/qoder-claude)](https://github.com/Ryanabcraft/qoder-claude/blob/main/package.json)
+[![license](https://img.shields.io/github/license/Ryanabcraft/qoder-claude)](LICENSE)
+
 Run **Claude Code** on **Qoder** models. A local Anthropic-compatible API that keeps your tools,
 prompts and shortcuts, and sends the model traffic to your Qoder plan.
 
@@ -57,6 +61,10 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 cleans only the Claude settings the installer wrote, and keeps your MCP servers and
 `permissions.allow`. `--project <dir>` also cleans a project-only install; `--no-backup` skips the
 accounts copy; `--remove-exa` removes the Exa MCP when its URL is the qoder-claude one.
+
+## Dashboard
+
+![qoder-claude dashboard](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.png)
 
 ## What works
 

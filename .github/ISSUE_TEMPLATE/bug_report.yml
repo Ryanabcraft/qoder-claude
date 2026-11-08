@@ -1,0 +1,58 @@
+name: Bug report
+description: Something broke in qclaude
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Remove tokens, API keys and personal paths from logs before pasting.
+  - type: input
+    id: version
+    attributes:
+      label: qclaude version
+      description: Output of `qclaude --status`
+      placeholder: "1.10.18"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "Windows 11 / macOS 15 / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: "Auto / DeepSeek-Flash / Qwen3.8-Flash"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the exact error and whether it happens every time.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. run `qclaude`
+        2. send a message with ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant lines from bridge.log. Remove tokens and keys.
+      render: shell

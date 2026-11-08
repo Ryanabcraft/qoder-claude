@@ -1,5 +1,9 @@
 # qoder-claude (Português)
 
+[![unix install](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml/badge.svg)](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml)
+[![version](https://img.shields.io/github/package-json/v/Ryanabcraft/qoder-claude)](https://github.com/Ryanabcraft/qoder-claude/blob/main/package.json)
+[![license](https://img.shields.io/github/license/Ryanabcraft/qoder-claude)](LICENSE)
+
 Rode o **Claude Code** nos modelos do **Qoder**. Uma API local compatível com a Anthropic que
 mantém suas ferramentas, prompts e atalhos, e manda o tráfego do modelo para o seu plano Qoder.
 
@@ -57,6 +61,10 @@ O `qclaude uninstall` faz backup das contas em `~/.qoder-claude-accounts-<hora>`
 limpa só os settings que o instalador escreveu e mantém seus servidores MCP e
 `permissions.allow`. `--project <dir>` limpa também uma instalação project-only; `--no-backup`
 pula o backup das contas; `--remove-exa` remove o MCP Exa quando a URL é a do qoder-claude.
+
+## Dashboard
+
+![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.png)
 
 ## O que funciona
 
