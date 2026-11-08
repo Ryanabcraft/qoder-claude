@@ -148,8 +148,11 @@ the Qoder side every request carries `context_window: 1000000`; override with
 - Before returning that error, the bridge tries the next account in the pool.
 - Rate limit (`429`) → 429 `rate_limit_error`.
 - Timeouts and connection resets → 503 `overloaded_error`.
+- If the upstream sends no data for `BRIDGE_STALL_MS` (default 90 s), the attempt is aborted and
+  treated as a timeout, so rotation happens immediately instead of waiting the full cutoff.
 - The CLI runs with `--max-model-request-retries 0`; override with `BRIDGE_MODEL_RETRIES`.
 - Stream responses carry a `: ping` keepalive every 12 s.
+- Every completed request logs `transport`, `ttft` (time to first token) and `total`.
 
 ## Configuration
 
@@ -158,12 +161,15 @@ the Qoder side every request carries `context_window: 1000000`; override with
 | `BRIDGE_PORT` | `8787` | listen port |
 | `BRIDGE_HOST` | `127.0.0.1` | bind address |
 | `BRIDGE_API_KEY` | empty | require `x-api-key` or `Bearer` |
-| `BRIDGE_POOL_SIZE` | `2` | warm workers |
+| `BRIDGE_POOL_SIZE` | `2` | max pooled CLI workers, one kept warm |
 | `BRIDGE_SESSION_TTL_MS` | `900000` | idle session lifetime |
 | `BRIDGE_SESSION_MAX` | `4` | concurrent sessions kept warm |
 | `BRIDGE_MODEL_RETRIES` | `0` | retries inside the CLI |
 | `BRIDGE_POOL` | on | `0` disables the pool |
 | `BRIDGE_REQUEST_TIMEOUT_MS` | `300000` | per-request cutoff |
+| `BRIDGE_STALL_MS` | `90000` | abort an attempt after this much upstream silence |
+| `QODER_MODELS_TTL_MS` | `600000` | model list cache lifetime |
+| `BRIDGE_MODELS_REFRESH` | on | `0` disables the background model-list refresh |
 | `QODER_MODEL` | `Auto` | fixed model |
 | `QODER_THINKING` | from request | `enabled`, `adaptive`, `disabled` |
 | `QODER_THINKING_BUDGET` | from request | thinking tokens |

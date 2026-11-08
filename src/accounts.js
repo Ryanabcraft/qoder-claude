@@ -95,7 +95,7 @@ const COOLDOWNS = [
   [/(billing|daily count|quota|exceeded|limit reached|insufficient|\b403\b)/i, 30 * 60 * 1000],
   [/(unauthori[sz]ed|401|not logged in|invalid token|expired)/i, 10 * 60 * 1000],
   [/(rate.?limit|429|too many)/i, 60 * 1000],
-  [/(timeout|ECONNRESET|ECONNREFUSED|ENOTFOUND|socket)/i, 30 * 1000],
+  [/(timeout|stall|ECONNRESET|ECONNREFUSED|ENOTFOUND|socket)/i, 30 * 1000],
 ];
 
 export function cooldownFor(message) {

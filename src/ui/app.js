@@ -198,7 +198,7 @@ function renderRecent() {
   if (!rows.length) {
     const tr = el('tr');
     const td = el('td', 'muted', 'no requests yet');
-    td.colSpan = 5;
+    td.colSpan = 6;
     tr.append(td);
     body.append(tr);
     return;
@@ -211,6 +211,7 @@ function renderRecent() {
       el('td', '', r.model),
       el('td', 'mono', r.account || '-'),
       el('td'),
+      el('td', 'right mono', r.ttft ? `${r.ttft} ms` : '—'),
       el('td', 'right mono', `${r.ms} ms`),
     );
     const badge = el('span', 'badge ' + (r.status >= 200 && r.status < 300 ? 'ok' : 'err'), String(r.status));

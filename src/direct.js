@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { renderMessageContent, systemToText } from './prompt.js';
 import { openAIContent } from './images.js';
+import { createStallTimer, stallMs } from './stall.js';
 
 const require = createRequire(import.meta.url);
 const auth = require('../vendor/qoder-auth.cjs');
@@ -122,21 +123,47 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
   const headers = Object.fromEntries(req.headers);
 
+  const timeout = Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000);
+  const limit = stallMs();
+  const stallError = `stalled: no upstream data for ${limit}ms`;
+  const ctrl = new AbortController();
+  let stalled = false;
+  const stall = createStallTimer(limit, () => {
+    stalled = true;
+    try { ctrl.abort(); } catch {}
+  });
+  const onAbort = () => { try { ctrl.abort(); } catch {} };
+  if (signal) {
+    if (signal.aborted) onAbort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  }
+  const cleanup = () => {
+    stall.clear();
+    signal?.removeEventListener?.('abort', onAbort);
+  };
+
   let res;
   try {
-    const timeout = Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000);
-    const signals = [AbortSignal.timeout(timeout)];
-    if (signal) signals.push(signal);
-    res = await fetch(req.url, { method: 'POST', headers, body: req.body, signal: AbortSignal.any(signals) });
+    stall.arm();
+    res = await fetch(req.url, {
+      method: 'POST',
+      headers,
+      body: req.body,
+      signal: AbortSignal.any([AbortSignal.timeout(timeout), ctrl.signal]),
+    });
+    stall.arm();
   } catch (e) {
-    if (e.name === 'AbortError') return { text: '', usage: {}, error: null };
-    if (e.name === 'TimeoutError') {
-      return { text: '', usage: {}, error: `timeout after ${process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000}ms` };
+    cleanup();
+    if (stalled) return { text: '', usage: {}, error: stallError };
+    if (signal?.aborted) return { text: '', usage: {}, error: null };
+    if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+      return { text: '', usage: {}, error: `timeout after ${timeout}ms` };
     }
     return { text: '', usage: {}, error: String(e.message || e) };
   }
 
   if (!res.ok) {
+    cleanup();
     const text = await res.text().catch(() => '');
     return { text: '', usage: {}, error: `upstream ${res.status}: ${text.slice(0, 300)}` };
   }
@@ -179,18 +206,28 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   };
 
   const reader = res.body.getReader();
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    let nl;
-    while ((nl = buf.indexOf('\n')) !== -1) {
-      const line = buf.slice(0, nl);
-      buf = buf.slice(nl + 1);
-      handleLine(line);
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      stall.arm();
+      buf += decoder.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, nl);
+        buf = buf.slice(nl + 1);
+        handleLine(line);
+      }
     }
+    if (buf.trim()) handleLine(buf);
+  } catch (e) {
+    if (stalled) return { text, usage, error: stallError };
+    if (signal?.aborted) return { text, usage, error: null };
+    if (e.name === 'AbortError') return { text, usage, error: `timeout after ${timeout}ms` };
+    throw e;
+  } finally {
+    cleanup();
   }
-  if (buf.trim()) handleLine(buf);
 
   if (calls.size) {
     const list = [...calls.values()]
