@@ -45,8 +45,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Unit tests
-        run: npm test
+      - name: Unit tests and coverage
+        run: npm run coverage
 
       - name: Stage the source without .git
         shell: bash

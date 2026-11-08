@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.18
+
+- README badges for CI, version and license, plus a dashboard screenshot.
+- Issue forms for bug reports and feature requests, and a Contributor Covenant code of conduct.
+- CI now enforces line/branch/function coverage thresholds and prints the coverage table.
+
 ## 1.10.17
 
 - Fixed image turns when Claude Code sends the image and the text in separate user messages: every image after the last assistant message belongs to the current turn.

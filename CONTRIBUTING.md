@@ -30,6 +30,9 @@ curl -sN http://127.0.0.1:8787/v1/messages \
 `BRIDGE_DUMP=/tmp/last.json` captures the last incoming request.
 `BRIDGE_DEBUG_STDERR=1` mirrors the worker's stderr.
 
+`npm test` runs the suite. `npm run coverage` runs the same tests with line, branch and function
+thresholds (60/55/45), which is what CI enforces.
+
 ## Layout
 
 | file | responsibility |
