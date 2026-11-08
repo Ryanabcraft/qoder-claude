@@ -153,9 +153,16 @@ claude --model Qwen3.8-Max               # any model from GET /v1/models
 
 Inside a session, `/model Qwen3.8-Max` switches at the next request.
 
-Nothing is capped by default: the bridge does not send `--max-output-tokens`,
-`--thinking` or `--context-window` unless you ask for it. The Qoder CLI uses the model's
-native limits. Optional overrides, when you actually want them:
+Nothing is capped by the bridge: `max_tokens` and `context_window` come from the request, and
+when the request is silent the model's native limits apply. The one default is the context
+window at 1M, because every current Qoder frontier model offers it.
+
+Built-in tools — `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `WebFetch`, `WebSearch` — and
+MCP servers all run on the Claude Code side; the bridge only carries the `tool_use` blocks.
+`WebSearch` and `WebFetch` are *deferred*: they need one approval and load through `ToolSearch`,
+then behave as usual.
+
+Optional overrides, when you actually want them:
 
 ```bash
 # server side

@@ -150,8 +150,15 @@ claude --model Qwen3.8-Max               # qualquer modelo de GET /v1/models
 
 Dentro da sessão, `/model Qwen3.8-Max` troca no próximo request.
 
-Nada é limitado por padrão: o bridge não envia `--max-output-tokens`, `--thinking` nem
-`--context-window` a menos que você peça. O Qoder CLI usa os limites nativos do modelo.
+Nada é limitado pela bridge: `max_tokens` e `context_window` vêm do request e, quando ele não
+diz nada, valem os limites nativos do modelo. O único padrão é a janela de contexto em 1M,
+porque todo modelo frontier atual do Qoder oferece isso.
+
+Ferramentas nativas — `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `WebFetch`, `WebSearch` —
+e servidores MCP rodam do lado do Claude Code; a bridge só carrega os blocos `tool_use`.
+`WebSearch` e `WebFetch` são *deferred*: pedem uma aprovação e são carregadas pelo `ToolSearch`,
+depois funcionam normalmente.
+
 Overrides opcionais, quando você realmente quiser:
 
 ```bash
