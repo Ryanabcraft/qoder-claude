@@ -360,7 +360,13 @@ async function startLogin(name) {
 $('#form-add').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = $('#new-account').value.trim();
-  if (!name) return;
+  if (!name) {
+    const box = $('#login-box');
+    box.classList.remove('hidden');
+    $('#login-state').textContent = 'type a name for the new account first, e.g. work or personal';
+    $('#new-account').focus();
+    return;
+  }
   const btn = e.target.querySelector('button[type=submit]');
   if (btn) btn.disabled = true;
   try {
@@ -372,6 +378,11 @@ $('#form-add').addEventListener('submit', async (e) => {
   } finally {
     if (btn) btn.disabled = false;
   }
+});
+
+$('#new-account').addEventListener('input', () => {
+  const st = $('#login-state');
+  if (st.textContent.startsWith('type a name')) st.textContent = '';
 });
 
 /* models */
