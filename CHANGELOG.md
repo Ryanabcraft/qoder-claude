@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.1
+
+- GitHub Actions announces new versions to the community Discord `#releases` channel through a webhook, using the changelog entry for the released version.
+
 ## 1.15.0
 
 - Daily 100-credit reward: reads Qoder's campaign per account, shows Claimable/Claimed/Not available with window and expiry.
