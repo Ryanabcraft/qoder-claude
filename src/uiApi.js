@@ -49,6 +49,14 @@ function readBody(req) {
 }
 
 function startLogin(name) {
+  for (const [key, job] of loginJobs) {
+    if (job.name === name && !job.done) {
+      job.done = true;
+      job.ok = false;
+      try { job.proc.kill(); } catch {}
+      loginJobs.delete(key);
+    }
+  }
   const cli = resolveCli();
   const dir = path.join(ACCOUNTS_ROOT, name);
   fs.mkdirSync(dir, { recursive: true });
@@ -59,7 +67,7 @@ function startLogin(name) {
   });
 
   const id = randomUUID();
-  const job = { id, name, url: '', done: false, ok: false, log: '' };
+  const job = { id, name, url: '', done: false, ok: false, log: '', proc };
   loginJobs.set(id, job);
 
   let buf = '';
