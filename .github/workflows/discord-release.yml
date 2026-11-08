@@ -1,0 +1,33 @@
+name: Discord release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'CHANGELOG.md'
+      - 'scripts/discord-release.mjs'
+      - '.github/workflows/discord-release.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Announce release
+        run: node scripts/discord-release.mjs
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
