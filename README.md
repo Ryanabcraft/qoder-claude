@@ -64,15 +64,16 @@ The installer:
 4. installs the bridge to `%LOCALAPPDATA%\qoder-bridge` or `~/.local/share/qoder-bridge`
 5. writes the **global** `~/.claude/settings.json` (backup kept as `.bak`) with URL, token,
    `modelPicker` and statusline
-6. prints `Start with: qclaude`
+6. downloads the 1.1.80 vision engine (~34 MB) so pasted screenshots work immediately
+7. prints `Start with: qclaude`
 
 The installer does not leave a server running. `qclaude` starts the bridge on demand, opens
 Claude Code, and stops the bridge when Claude exits. `qclaude --window` keeps the server in its
 own terminal window; `qclaude --serve` runs it in the foreground.
 
 Flags for `install.sh`: `--project-only` (configure only the current directory), `--dir <path>`,
-`--skip-claude`, `--skip-login` and `--source <dir>` (install from a local checkout).
-For `install.ps1`: `-ProjectOnly`, `-SkipDeps`, `-InstallDir <path>`. `update.cmd` / `update.sh`
+`--skip-claude`, `--skip-login`, `--skip-vision` and `--source <dir>` (install from a local checkout).
+For `install.ps1`: `-ProjectOnly`, `-SkipDeps`, `-SkipVision`, `-InstallDir <path>`. `update.cmd` / `update.sh`
 upgrade in place and stop any old server.
 
 The install directory keeps the historical name `qoder-bridge` so existing installs keep

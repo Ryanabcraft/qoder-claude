@@ -5,6 +5,7 @@ param(
   [string]$ProjectDir = (Get-Location).Path,
   [switch]$ProjectOnly,
   [switch]$SkipDeps,
+  [switch]$SkipVision,
   [switch]$NoStart
 )
 
@@ -174,6 +175,16 @@ if ($userPath -split ';' -notcontains $binDir) {
   Ok "qclaude was already on PATH"
 }
 if (-not (($env:Path -split ';') -contains $binDir)) { $env:Path = $env:Path + ';' + $binDir }
+
+if (-not $SkipVision) {
+  Step 'Installing the vision engine (images)'
+  try {
+    & node (Join-Path $InstallDir 'bin\qclaude.js') vision install
+    if ($LASTEXITCODE -eq 0) { Ok 'image support ready' } else { Warn 'vision engine not installed; run later with: qclaude vision install' }
+  } catch {
+    Warn 'vision engine not installed; run later with: qclaude vision install'
+  }
+}
 
 Step 'Configuring Claude Code'
 $targets = @()

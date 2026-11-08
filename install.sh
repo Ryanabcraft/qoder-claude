@@ -11,6 +11,7 @@ PROJECT_ONLY=0
 NODE_BIN=""
 SKIP_CLAUDE=0
 SKIP_LOGIN=0
+SKIP_VISION=0
 SOURCE_DIR=""
 
 while [ $# -gt 0 ]; do
@@ -19,10 +20,11 @@ while [ $# -gt 0 ]; do
     --project-only) PROJECT_ONLY=1 ;;
     --skip-claude) SKIP_CLAUDE=1 ;;
     --skip-login) SKIP_LOGIN=1 ;;
+    --skip-vision) SKIP_VISION=1 ;;
     --dir) shift; INSTALL_DIR="$1" ;;
     --source) shift; SOURCE_DIR="$1" ;;
     -h|--help)
-      echo "usage: install.sh [--project-only] [--skip-claude] [--skip-login] [--dir <path>] [--source <dir>]"
+      echo "usage: install.sh [--project-only] [--skip-claude] [--skip-login] [--skip-vision] [--dir <path>] [--source <dir>]"
       exit 0 ;;
     *) echo "unknown flag: $1"; exit 1 ;;
   esac
@@ -195,6 +197,15 @@ if [ "$PROJECT_ONLY" -eq 1 ]; then
   QODER_CLAUDE_TARGET="$(pwd)" "$NODE_BIN" "$INSTALL_DIR/scripts/enable-here.js"
 else
   QODER_CLAUDE_TARGET="$HOME" "$NODE_BIN" "$INSTALL_DIR/scripts/enable-here.js"
+fi
+
+if [ "$SKIP_VISION" -eq 0 ]; then
+  step "Installing the vision engine (images)"
+  if "$NODE_BIN" "$INSTALL_DIR/bin/qclaude.js" vision install; then
+    ok "image support ready"
+  else
+    warn "vision engine not installed; run later with: qclaude vision install"
+  fi
 fi
 
 printf '\n  \033[32mQoder-Claude installed.\033[0m\n\n'
