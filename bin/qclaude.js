@@ -445,6 +445,10 @@ if (args[0] === 'account') {
 if (args[0] === 'vision') {
   if (args[1] === 'install') {
     try {
+      if (visionCliPath() && args[2] !== '--force') {
+        console.log(`vision: already installed (${visionVersion()})`);
+        process.exit(0);
+      }
       installVision((line) => console.log(line));
       console.log('vision enabled: run qclaude again and paste an image.');
     } catch (e) {

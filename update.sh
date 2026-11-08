@@ -61,6 +61,7 @@ rm -rf "$STAGE"
 
 echo "[3/4] rewriting settings and model picker..."
 QODER_CLAUDE_TARGET="$HOME" node "$DIR/scripts/enable-here.js"
+node "$DIR/bin/qclaude.js" vision install || echo "    vision engine not installed; run: qclaude vision install"
 
 echo "[4/4] stopping the old server..."
 "$DIR/stop.sh" >/dev/null 2>&1 || true
