@@ -45,6 +45,8 @@ Claude — `/exit`, Ctrl+C ou fechar o terminal — encerra a bridge.
 | `qclaude --status` | servidor, conta e modelos |
 | `qclaude --no-browser` | sem a aba do dashboard |
 | `qclaude --serve` | só o servidor, em primeiro plano |
+| `qclaude update` | verifica e instala a versão mais nova |
+| `qclaude --no-update` | pula a checagem de atualização |
 | `qclaude --stop` | derruba o servidor |
 
 ## O que funciona

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
+import readline from 'node:readline/promises';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,7 @@ import {
   useAccount,
 } from '../src/accounts.js';
 import { installVision, visionCliPath, visionVersion } from '../src/vision.js';
+import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -438,6 +440,29 @@ async function accountCommand(sub, name) {
   return 1;
 }
 
+async function ask(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(question);
+    return /^y(es)?$/i.test(answer.trim());
+  } finally {
+    rl.close();
+  }
+}
+
+if (args[0] === 'update') {
+  const before = localVersion(ROOT);
+  console.log(`current: ${before}`);
+  try {
+    if (await applyUpdate(ROOT)) console.log(`updated to ${localVersion(ROOT)}`);
+    else process.exitCode = 1;
+  } catch (e) {
+    console.error(`qclaude: update failed (${e.message})`);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 if (args[0] === 'account') {
   process.exit(await accountCommand(args[1], args[2]));
 }
@@ -493,6 +518,8 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude --serve            server only, foreground
   qclaude --window           keeps the server in its own terminal window
   qclaude --no-browser       does not open the dashboard
+  qclaude --no-update        skips the update check
+  qclaude update             checks and installs the latest version
   qclaude --stop             stops the server
 
   qclaude account            lists the accounts
@@ -587,7 +614,33 @@ if (args[0] === '--serve') {
 } else {
   const wantWindow = args.includes('--window');
   const noBrowser = args.includes('--no-browser');
-  const claudeArgs = args.filter((a) => !['--window', '--no-window', '--no-browser'].includes(a));
+  const noUpdate = args.includes('--no-update') || process.env.QODER_NO_UPDATE === '1';
+  const claudeArgs = args.filter((a) => !['--window', '--no-window', '--no-browser', '--no-update'].includes(a));
+
+  if (!noUpdate && process.stdin.isTTY && !fs.existsSync(path.join(ROOT, '.git'))) {
+    const u = await checkUpdate(ROOT);
+    if (u.hasUpdate && skippedVersion(ROOT) !== u.remote) {
+      const yes = await ask(`qclaude ${u.local} -> ${u.remote} is available. Update now? [y/N] `);
+      if (yes) {
+        console.log('updating qclaude...');
+        try {
+          if (await applyUpdate(ROOT)) {
+            console.log(`updated to ${localVersion(ROOT)}`);
+            stopBridge(null);
+            await wait(700);
+            const child = spawn(process.execPath, [path.join(ROOT, 'bin', 'qclaude.js'), ...claudeArgs, '--no-update'], { stdio: 'inherit' });
+            const code = await new Promise((resolve) => child.on('close', resolve));
+            process.exit(code ?? 0);
+          }
+          console.warn('qclaude: update failed; using the current version.');
+        } catch (e) {
+          console.warn(`qclaude: update failed (${e.message}); using the current version.`);
+        }
+      } else {
+        skipVersion(ROOT, u.remote);
+      }
+    }
+  }
 
   const claudeBin = await ensureClaude();
   const child = await startServer({ window: wantWindow });
