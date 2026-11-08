@@ -21,6 +21,10 @@ address bar.
 Dark, light and system themes are available. The layout collapses the sidebar to an icon rail under
 1100 px and to a drawer under 760 px.
 
+The top bar has a language picker (also in Settings → General) covering English, Portuguese (BR),
+Spanish, French and German. The choice is stored in `localStorage`, so it survives reloads; the
+dashboard re-renders in place without a page reload.
+
 ## Settings
 
 Settings write two files, both with backups:

@@ -104,6 +104,7 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
 
   if (p === '/ui' || p === '/ui/') return sendFile(res, path.join(UI_DIR, 'index.html'), 'text/html; charset=utf-8'), true;
   if (p === '/ui/app.js') return sendFile(res, path.join(UI_DIR, 'app.js'), 'text/javascript; charset=utf-8'), true;
+  if (p === '/ui/i18n.js') return sendFile(res, path.join(UI_DIR, 'i18n.js'), 'text/javascript; charset=utf-8'), true;
   if (p === '/favicon.svg') return sendFile(res, path.join(UI_DIR, 'favicon.svg'), 'image/svg+xml'), true;
   if (p === '/ui/logo.png') return sendFile(res, path.join(UI_DIR, 'logo.png'), 'image/png'), true;
   if (p === '/ui/style.css') return sendFile(res, path.join(UI_DIR, 'style.css'), 'text/css; charset=utf-8'), true;

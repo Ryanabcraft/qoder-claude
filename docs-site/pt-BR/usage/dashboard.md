@@ -19,6 +19,10 @@ chave no fragmento da URL; a página guarda em `sessionStorage` e limpa a barra 
 
 Temas dark, light e system. O layout vira rail de ícones abaixo de 1100 px e drawer abaixo de 760 px.
 
+A barra superior tem um seletor de idioma (também em Settings → General) com inglês, português (BR),
+espanhol, francês e alemão. A escolha fica em `localStorage`, sobrevive a recarregamentos e o
+dashboard é traduzido no lugar, sem recarregar a página.
+
 ## Settings
 
 Os settings escrevem dois arquivos, ambos com backup:

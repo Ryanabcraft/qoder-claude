@@ -48,6 +48,7 @@
           <div class="crumb"><span>qoder-claude</span><i>/</i><strong id="crumb-page">Home</strong></div>
           <div class="top-actions">
             <label class="search"><span class="nav-ico" data-icon="search"></span><input id="search" placeholder="Search this page" autocomplete="off" /></label>
+            <label class="lang-pick"><span class="nav-ico" data-icon="globe"></span><select id="lang-select" aria-label="Language"></select></label>
             <button class="icon-btn" id="theme-btn" title="Theme" aria-label="Toggle theme"><span data-icon="sun"></span></button>
             <a class="icon-btn" href="https://github.com/Ryanabcraft/qoder-claude" target="_blank" rel="noreferrer" title="GitHub"><span data-icon="github"></span></a>
             <span class="live"><span class="dot" id="live-dot"></span><span id="live-label">live</span></span>
@@ -114,7 +115,7 @@
 
           <section class="page" id="page-usage">
             <div class="page-head"><div><h1>Usage &amp; Logs</h1><p>Request log and bridge output.</p></div><div class="head-actions"><button class="btn ghost small" id="usage-refresh">Refresh</button><button class="btn ghost small" id="usage-download">Download</button></div></div>
-            <div class="card"><div class="filters"><select id="usage-status"><option value="">all status</option><option value="ok">success</option><option value="err">errors</option></select><select id="usage-model"><option value="">all models</option></select><select id="usage-account"><option value="">all accounts</option></select><select id="usage-transport"><option value="">all transports</option><option value="direct">direct</option><option value="cli">cli</option></select><span class="muted small" id="usage-count">0 shown</span></div><div class="table-wrap"><table class="table" id="usage-table"></table></div></div>
+            <div class="card"><div class="filters"><select id="usage-status"><option value="">all status</option><option value="ok">success</option><option value="err">errors</option></select><select id="usage-model"><option value="">all models</option></select><select id="usage-account"><option value="">all accounts</option></select><select id="usage-transport"><option value="">all transports</option><option value="direct">direct</option><option value="cli">cli</option></select><span class="muted small" id="usage-count"></span></div><div class="table-wrap"><table class="table" id="usage-table"></table></div></div>
             <div class="card"><div class="card-head"><div><h2>Bridge log</h2><p>last 200 lines</p></div><div class="head-actions"><label class="mini-check"><input type="checkbox" id="log-auto" /> auto</label><button class="btn ghost small" id="log-refresh">Reload</button><button class="btn ghost small" id="log-download">Download</button></div></div><div class="copy-row"><input id="log-filter" placeholder="filter log lines" /></div><pre class="pre tall" id="log-out">—</pre></div>
           </section>
 
@@ -136,7 +137,7 @@
             <div class="page-head"><div><h1>Settings</h1><p>Bridge runtime and Claude Code defaults.</p></div></div>
             <div class="tabs" id="settings-tabs"><button data-tab="general" class="active">General</button><button data-tab="ai">AI</button><button data-tab="security">Security</button><button data-tab="routing">Routing</button><button data-tab="resilience">Resilience</button><button data-tab="advanced">Advanced</button></div>
             <div class="tab-panel active" data-panel="general">
-              <div class="card"><div class="card-head"><div><h2>Interface</h2><p>Theme is stored in this browser.</p></div></div><div class="segmented" id="theme-seg"><button data-theme-choice="dark">Dark</button><button data-theme-choice="light">Light</button><button data-theme-choice="system">System</button></div></div>
+              <div class="card"><div class="card-head"><div><h2>Interface</h2><p>Theme is stored in this browser.</p></div></div><div class="form-grid lang-field"><label>Language<select id="settings-lang"></select></label></div><div class="segmented" id="theme-seg"><button data-theme-choice="dark">Dark</button><button data-theme-choice="light">Light</button><button data-theme-choice="system">System</button></div></div>
               <div class="card"><div class="card-head"><div><h2>Server</h2><p>Port and host require a restart.</p></div></div><div class="form-grid"><label>Port<input type="number" id="cfg-port" min="1" max="65535" /></label><label>Host<input id="cfg-host" /></label><label class="check-row"><input type="checkbox" id="cfg-log" /> Access log</label><label class="check-row"><input type="checkbox" id="cfg-pool" /> Worker pool</label></div><div class="form-foot"><span class="muted small" id="cfg-path"></span><button class="btn primary" data-save="general">Save</button></div></div>
             </div>
             <div class="tab-panel" data-panel="ai">
@@ -170,6 +171,7 @@
         <div class="modal-foot"><button class="btn ghost" id="modal-cancel">Cancel</button><button class="btn primary" id="modal-confirm">Confirm</button></div>
       </div>
     </div>
+    <script src="/ui/i18n.js"></script>
     <script src="/ui/app.js"></script>
   </body>
 </html>

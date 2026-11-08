@@ -6,6 +6,8 @@ const el = (tag, cls, text) => {
   if (text !== undefined) n.textContent = text;
   return n;
 };
+const t = (text, vars) => (window.t ? window.t(text, vars) : text);
+const locale = () => window.i18n?.locale?.() || 'en-US';
 
 const ICONS = {
   home: '<path d="M4 10l8-6 8 6v9a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/>',
@@ -20,6 +22,7 @@ const ICONS = {
   book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/>',
   github: '<path d="M9 19c-4 1.2-4-2.2-6-2.7M15 21v-3.4a3 3 0 0 0-.8-2.3c2.7-.3 5.5-1.3 5.5-6a4.7 4.7 0 0 0-1.3-3.2 4.4 4.4 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6.2 0C6.3 2.6 5.3 2.9 5.3 2.9a4.4 4.4 0 0 0-.1 3.2A4.7 4.7 0 0 0 4 9.3c0 4.6 2.8 5.6 5.5 6a3 3 0 0 0-.8 2.3V21"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
@@ -102,7 +105,7 @@ async function api(path, opts = {}) {
   let res = await call();
   if (res.status === 401 && !askedKey) {
     askedKey = true;
-    const key = window.prompt('API key (BRIDGE_API_KEY) to open the dashboard:') || '';
+    const key = window.prompt(t('API key (BRIDGE_API_KEY) to open the dashboard:')) || '';
     if (key) {
       sessionStorage.setItem(KEY_STORE, key);
       res = await call();
@@ -116,7 +119,7 @@ async function api(path, opts = {}) {
 }
 
 function fmtInt(n) {
-  return Number(n || 0).toLocaleString('en-US');
+  return Number(n || 0).toLocaleString(locale());
 }
 function fmtMs(n) {
   const v = Number(n || 0);
@@ -136,8 +139,8 @@ function fmtDuration(seconds) {
   if (s < 86400) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
   return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`;
 }
-function timeOf(t) {
-  return new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+function timeOf(value) {
+  return new Date(value).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 function pct(n) { return `${Math.round(Number(n) || 0)}%`; }
 
@@ -365,7 +368,7 @@ function heatmap(box, series) {
     const ratio = count / max;
     const level = count === 0 ? '' : ratio > 0.75 ? 'l4' : ratio > 0.5 ? 'l3' : ratio > 0.25 ? 'l2' : 'l1';
     const cell = el('span', `hm-cell ${level}`);
-    cell.title = `${point.label}: ${count} request${count === 1 ? '' : 's'}`;
+    cell.title = t(count === 1 ? '{label}: {count} request' : '{label}: {count} requests', { label: point.label, count });
     grid.append(cell);
   });
   box.append(grid);
@@ -410,8 +413,8 @@ function emptyTable(table, cols, text = 'no data yet') {
 
 function renderRecent(table, rows) {
   const cols = [
-    { label: 'Time' }, { label: 'Model' }, { label: 'Account' }, { label: 'Status' },
-    { label: 'Tokens', right: true }, { label: 'TTFT', right: true }, { label: 'Latency', right: true },
+    { label: t('Time') }, { label: t('Model') }, { label: t('Account') }, { label: t('Status') },
+    { label: t('Tokens'), right: true }, { label: 'TTFT', right: true }, { label: t('Latency'), right: true },
   ];
   const filtered = (rows || []).filter((row) => {
     const needle = state.search.trim().toLowerCase();
@@ -454,10 +457,11 @@ function renderUsage() {
     return true;
   });
   const cols = [
-    { label: 'Time' }, { label: 'Model' }, { label: 'Account' }, { label: 'Transport' },
-    { label: 'Status' }, { label: 'In', right: true }, { label: 'Out', right: true },
-    { label: 'TTFT', right: true }, { label: 'Latency', right: true },
+    { label: t('Time') }, { label: t('Model') }, { label: t('Account') }, { label: t('Transport') },
+    { label: t('Status') }, { label: t('In'), right: true }, { label: t('Out'), right: true },
+    { label: 'TTFT', right: true }, { label: t('Latency'), right: true },
   ];
+  $('#usage-count').textContent = t('{count} shown', { count: rows.length });
   if (!rows.length) return emptyTable(table, cols, 'no requests match');
   table.textContent = '';
   const thead = el('thead');
@@ -482,13 +486,12 @@ function renderUsage() {
     tbody.append(line);
   }
   table.append(thead, tbody);
-  $('#usage-count').textContent = `${rows.length} shown`;
 }
 
 function renderTop(table, rows, nameLabel) {
   const cols = [
-    { label: nameLabel }, { label: 'Requests', right: true }, { label: 'Errors', right: true },
-    { label: 'Avg', right: true }, { label: 'Tokens', right: true },
+    { label: nameLabel }, { label: t('Requests'), right: true }, { label: t('Errors'), right: true },
+    { label: t('Avg'), right: true }, { label: t('Tokens'), right: true },
   ];
   if (!rows?.length) return emptyTable(table, cols, 'no data yet');
   table.textContent = '';
@@ -519,17 +522,17 @@ async function loadHome() {
   const m = state.metrics;
   const status = state.status;
   kpis($('#home-kpis'), [
-    { label: 'Requests', value: fmtInt(m.total), sub: `${m.ok} ok · ${m.err} errors`, icon: 'bolt' },
-    { label: 'Success', value: pct(m.success), sub: `${fmtInt(m.total)} completed`, icon: 'check' },
-    { label: 'Avg latency', value: fmtMs(m.avgMs), sub: `p95 ${fmtMs(m.p95)}`, icon: 'clock' },
-    { label: 'Tokens', value: fmtInt(m.tokensIn + m.tokensOut), sub: `${fmtInt(m.tokensIn)} in · ${fmtInt(m.tokensOut)} out`, icon: 'chart' },
-    { label: 'Accounts', value: fmtInt(state.accounts?.rotation?.accounts?.length || 0), sub: status?.rotation?.on ? `failover on · ${status.rotation.count} in pool` : 'failover off', icon: 'users' },
-    { label: 'Models', value: fmtInt(status?.models || state.models.length), sub: `transport ${status?.transport || '—'}`, icon: 'layers' },
-    { label: 'Sessions', value: fmtInt(status?.sessions || 0), sub: status?.pool?.enabled ? `pool ${status.pool.ready}/${status.pool.size}` : 'direct transport', icon: 'activity' },
-    { label: 'Uptime', value: fmtDuration(status?.uptime || 0), sub: `pid ${status?.pid || '—'}`, icon: 'heart' },
+    { label: t('Requests'), value: fmtInt(m.total), sub: t('{ok} ok · {err} errors', { ok: m.ok, err: m.err }), icon: 'bolt' },
+    { label: t('Success'), value: pct(m.success), sub: t('{total} completed', { total: fmtInt(m.total) }), icon: 'check' },
+    { label: t('Avg latency'), value: fmtMs(m.avgMs), sub: t('p95 {ms}', { ms: fmtMs(m.p95) }), icon: 'clock' },
+    { label: t('Tokens'), value: fmtInt(m.tokensIn + m.tokensOut), sub: t('{in} in · {out} out', { in: fmtInt(m.tokensIn), out: fmtInt(m.tokensOut) }), icon: 'chart' },
+    { label: t('Accounts'), value: fmtInt(state.accounts?.rotation?.accounts?.length || 0), sub: status?.rotation?.on ? t('failover on · {count} in pool', { count: status.rotation.count }) : t('failover off'), icon: 'users' },
+    { label: t('Models'), value: fmtInt(status?.models || state.models.length), sub: t('transport {transport}', { transport: status?.transport || '—' }), icon: 'layers' },
+    { label: t('Sessions'), value: fmtInt(status?.sessions || 0), sub: status?.pool?.enabled ? t('pool {ready}/{size}', { ready: status.pool.ready, size: status.pool.size }) : t('direct transport'), icon: 'activity' },
+    { label: t('Uptime'), value: fmtDuration(status?.uptime || 0), sub: t('pid {pid}', { pid: status?.pid || '—' }), icon: 'heart' },
   ]);
   lineChart($('#home-chart'), m.series);
-  donut($('#home-donut'), m.success, `${fmtInt(m.total)} request${m.total === 1 ? '' : 's'}`);
+  donut($('#home-donut'), m.success, t(m.total === 1 ? '{total} request' : '{total} requests', { total: fmtInt(m.total) }));
   renderRecent($('#home-recent'), m.recent);
   const route = $('#home-route');
   route.textContent = '';
@@ -538,7 +541,7 @@ async function loadHome() {
     ['Transport', status?.transport || '—'],
     ['Endpoint', status ? `${status.host}:${status.port}` : '—'],
     ['Version', status?.version ? `v${status.version}` : '—'],
-    ['Last error', m.lastError ? `${m.lastError.status} · ${new Date(m.lastError.t).toLocaleTimeString()}` : 'none'],
+    ['Last error', m.lastError ? `${m.lastError.status} · ${new Date(m.lastError.t).toLocaleTimeString(locale())}` : 'none'],
   ];
   for (const [key, value] of lines) {
     const row = el('div', 'route-line');
@@ -555,7 +558,7 @@ async function loadEndpoint() {
   const host = !status.host || status.host === '0.0.0.0' ? '127.0.0.1' : status.host;
   const url = `http://${host}:${status.port || 8787}`;
   $('#endpoint-url').textContent = url;
-  $('#endpoint-host').textContent = `${status.host || '127.0.0.1'} · local server`;
+  $('#endpoint-host').textContent = `${status.host || '127.0.0.1'} · ${t('local server')}`;
   $('#endpoint-key-state').textContent = status.apiKeySet ? 'key required' : 'no key';
   $('#endpoint-key-state').className = `pill ${status.apiKeySet ? 'warn' : 'ok'}`;
   const snippet = {
@@ -616,7 +619,7 @@ function renderAccounts() {
     const title = el('div', 'a-title');
     title.append(el('strong', '', account.label || account.name), el('span', '', account.dir || '~/.qoder'));
     name.append(avatar, title);
-    head.append(name, el('span', `pill ${account.active ? 'accent' : account.coolingLeft ? 'warn' : 'ok'}`, account.active ? 'active' : account.coolingLeft ? `paused ${fmtDuration(account.coolingLeft)}` : 'ready'));
+    head.append(name, el('span', `pill ${account.active ? 'accent' : account.coolingLeft ? 'warn' : 'ok'}`, account.active ? 'active' : account.coolingLeft ? t('paused {time}', { time: fmtDuration(account.coolingLeft) }) : 'ready'));
     card.append(head);
     const meta = el('div', 'a-meta');
     meta.append(el('span', 'pill', account.enabled ? 'enabled' : 'disabled'));
@@ -638,7 +641,7 @@ function renderAccounts() {
     actions.append(toggle);
     if (account.name !== 'default') {
       const remove = el('button', 'btn small danger', 'Remove');
-      remove.addEventListener('click', () => confirmModal('Remove account', `Remove ${account.label || account.name} and its config directory?`, async () => {
+      remove.addEventListener('click', () => confirmModal('Remove account', t('Remove {name} and its config directory?', { name: account.label || account.name }), async () => {
         try { await api(`accounts/${encodeURIComponent(account.name)}`, { method: 'DELETE' }); closeModal(); toast('Account removed', 'ok'); await loadAccounts(); } catch (e) { toast(e.message, 'err'); }
       }, 'Remove'));
       actions.append(remove);
@@ -732,14 +735,14 @@ function renderAnalytics() {
   const m = state.metrics || {};
   const topModel = m.topModels?.[0]?.name || '—';
   kpis($('#analytics-kpis'), [
-    { label: 'Requests', value: fmtInt(m.total), sub: `${m.ok} ok · ${m.err} err`, icon: 'bolt' },
-    { label: 'Success', value: pct(m.success), sub: 'completed', icon: 'check' },
-    { label: 'P50', value: fmtMs(m.p50), sub: 'latency', icon: 'clock' },
-    { label: 'P95', value: fmtMs(m.p95), sub: 'latency', icon: 'activity' },
-    { label: 'TTFT p50', value: m.ttftP50 ? fmtMs(m.ttftP50) : '—', sub: 'first token', icon: 'play' },
-    { label: 'Tokens in', value: fmtInt(m.tokensIn), sub: 'estimated', icon: 'chart' },
-    { label: 'Tokens out', value: fmtInt(m.tokensOut), sub: 'estimated', icon: 'chart' },
-    { label: 'Top model', value: topModel, sub: 'by requests', icon: 'layers' },
+    { label: t('Requests'), value: fmtInt(m.total), sub: t('{ok} ok · {err} err', { ok: m.ok, err: m.err }), icon: 'bolt' },
+    { label: t('Success'), value: pct(m.success), sub: t('completed'), icon: 'check' },
+    { label: t('P50'), value: fmtMs(m.p50), sub: t('latency'), icon: 'clock' },
+    { label: t('P95'), value: fmtMs(m.p95), sub: t('latency'), icon: 'activity' },
+    { label: t('TTFT p50'), value: m.ttftP50 ? fmtMs(m.ttftP50) : '—', sub: t('first token'), icon: 'play' },
+    { label: t('Tokens in'), value: fmtInt(m.tokensIn), sub: t('estimated'), icon: 'chart' },
+    { label: t('Tokens out'), value: fmtInt(m.tokensOut), sub: t('estimated'), icon: 'chart' },
+    { label: t('Top model'), value: topModel, sub: t('by requests'), icon: 'layers' },
   ]);
   $('#analytics-chart-sub').textContent = state.range === '7d' ? 'last 7 days' : state.range === '24h' ? 'last 24 hours' : 'last 30 minutes';
   $$('#analytics-range button').forEach((b) => b.classList.toggle('active', b.dataset.range === state.range));
@@ -804,24 +807,24 @@ function renderHealth() {
   right.textContent = `${h.transport} · ${h.host}:${h.port}`;
   banner.append(right);
   kpis($('#health-kpis'), [
-    { label: 'Uptime', value: fmtDuration(h.uptime), sub: `pid ${h.pid}`, icon: 'clock' },
-    { label: 'RSS', value: fmtBytes(h.memory.rss), sub: `heap ${fmtBytes(h.memory.heapUsed)}`, icon: 'cpu' },
-    { label: 'Sessions', value: fmtInt(h.sessions), sub: h.pool.enabled ? `pool ${h.pool.ready}/${h.pool.size}` : 'direct', icon: 'activity' },
-    { label: 'Version', value: `v${h.version}`, sub: h.node, icon: 'layers' },
+    { label: t('Uptime'), value: fmtDuration(h.uptime), sub: t('pid {pid}', { pid: h.pid }), icon: 'clock' },
+    { label: 'RSS', value: fmtBytes(h.memory.rss), sub: t('heap {value}', { value: fmtBytes(h.memory.heapUsed) }), icon: 'cpu' },
+    { label: t('Sessions'), value: fmtInt(h.sessions), sub: h.pool.enabled ? t('pool {ready}/{size}', { ready: h.pool.ready, size: h.pool.size }) : t('direct transport'), icon: 'activity' },
+    { label: t('Version'), value: `v${h.version}`, sub: h.node, icon: 'layers' },
   ]);
   const process = $('#health-process');
   process.textContent = '';
   for (const [key, value] of [
     ['Node', h.node], ['PID', h.pid], ['Transport', h.transport],
     ['Endpoint', `${h.host}:${h.port}`], ['Account', h.account?.label || h.account?.name || '—'],
-    ['Pool', h.pool.enabled ? `${h.pool.ready} ready / ${h.pool.size}` : 'disabled'],
+    ['Pool', h.pool.enabled ? t('{ready} ready / {size}', { ready: h.pool.ready, size: h.pool.size }) : 'disabled'],
   ]) addKv(process, key, value);
   const paths = $('#health-paths');
   paths.textContent = '';
   for (const [key, value] of [['Config', h.paths.config], ['Metrics', h.paths.metrics], ['Log', h.paths.log]]) addKv(paths, key, value);
   const last = $('#health-last-error');
   if (h.lastError) {
-    last.textContent = `${new Date(h.lastError.t).toLocaleString()} · ${h.lastError.status} · ${h.lastError.model} · ${h.lastError.account}`;
+    last.textContent = `${new Date(h.lastError.t).toLocaleString(locale())} · ${h.lastError.status} · ${h.lastError.model} · ${h.lastError.account}`;
     last.className = '';
   } else {
     last.textContent = 'none';
@@ -847,7 +850,7 @@ function renderModels() {
   grid.textContent = '';
   const needle = state.search.trim().toLowerCase();
   const list = state.models.filter((model) => !needle || model.toLowerCase().includes(needle));
-  $('#models-count').textContent = `${state.models.length} available`;
+  $('#models-count').textContent = t('{count} available', { count: state.models.length });
   for (const model of list) {
     const card = el('div', `model-card ${state.claude?.model === model ? 'current' : ''}`);
     card.append(el('span', '', model));
@@ -965,14 +968,14 @@ async function saveConfigValues(patch, label = 'Settings') {
     fillSettings();
     fillRouting();
     if (result.restartRequired?.length) showRestart(result.restartRequired);
-    toast(`${label} saved`, 'ok');
+    toast(t('{label} saved', { label: t(label) }), 'ok');
   } catch (e) { toast(e.message, 'err'); }
 }
 
 function showRestart(keys) {
   const banner = $('#restart-banner');
   banner.classList.remove('hidden');
-  $('#restart-text').textContent = `Restart required for: ${keys.join(', ')}. Close qclaude and reopen it (or restart the bridge window).`;
+  $('#restart-text').textContent = t('Restart required for: {keys}. Close qclaude and reopen it (or restart the bridge window).', { keys: keys.join(', ') });
 }
 
 function saveGeneral() {
@@ -1046,9 +1049,9 @@ async function runTest(prompt, out) {
   if (out) out.textContent = 'waiting…';
   try {
     const result = await api('test', { method: 'POST', body: JSON.stringify({ prompt, model }) });
-    const text = `status ${result.status} · ${result.ms} ms\n\n${result.text || result.error || ''}`;
+    const text = `${t('status {status} · {ms} ms', { status: result.status, ms: result.ms })}\n\n${result.text || result.error || ''}`;
     if (out) out.textContent = text;
-    else toast(result.error ? result.error : `Test ok · ${result.ms} ms`, result.error ? 'err' : 'ok');
+    else toast(result.error ? result.error : t('Test ok · {ms} ms', { ms: result.ms }), result.error ? 'err' : 'ok');
     return result;
   } catch (e) {
     if (out) out.textContent = e.message;
@@ -1091,7 +1094,7 @@ async function addAccount() {
             $('#login-url').textContent = status.url;
             $('#login-url').href = status.url;
           }
-          $('#login-state').textContent = status.done ? (status.ok ? 'Signed in.' : `Failed: ${status.log || 'login failed'}`) : 'Waiting for the browser…';
+          $('#login-state').textContent = status.done ? (status.ok ? 'Signed in.' : t('Failed: {log}', { log: status.log || 'login failed' })) : 'Waiting for the browser…';
           if (status.done) {
             clearInterval(poll);
             if (status.ok) toast('Account added', 'ok');
@@ -1153,7 +1156,7 @@ function bind() {
   $('#accounts-test').addEventListener('click', () => runTest('say exactly: ok'));
   $('#account-add').addEventListener('click', addAccount);
   $('#rot-toggle').addEventListener('change', async (e) => {
-    try { await api('rotation', { method: 'POST', body: JSON.stringify({ on: e.target.checked }) }); await loadAccounts(); toast(`Failover ${e.target.checked ? 'on' : 'off'}`, 'ok'); } catch (err) { toast(err.message, 'err'); }
+    try { await api('rotation', { method: 'POST', body: JSON.stringify({ on: e.target.checked }) }); await loadAccounts(); toast(t('Failover {state}', { state: t(e.target.checked ? 'on' : 'off') }), 'ok'); } catch (err) { toast(err.message, 'err'); }
   });
   $('#routing-save').addEventListener('click', saveRoutingPage);
   $('#usage-refresh').addEventListener('click', () => loadUsage().catch((e) => toast(e.message, 'err')));
@@ -1222,6 +1225,8 @@ function downloadUsage() {
   const lines = rows.map((r) => [new Date(r.t).toISOString(), r.model, r.account, r.transport, r.status, r.in, r.out, r.ttft, r.ms].join(','));
   downloadText('qoder-claude-usage.csv', [header, ...lines].join('\n'));
 }
+
+window.onI18nChange = () => showPage(state.page);
 
 /* init */
 async function init() {
