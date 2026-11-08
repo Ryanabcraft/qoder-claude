@@ -164,7 +164,10 @@ function spawnWorker(cfg) {
     }
   });
   proc.stderr.setEncoding('utf8');
-  proc.stderr.on('data', (d) => { errBuf = (errBuf + d).slice(-4000); });
+  proc.stderr.on('data', (d) => {
+    errBuf = (errBuf + d).slice(-4000);
+    if (process.env.BRIDGE_DEBUG_STDERR) process.stderr.write(d);
+  });
   proc.stdin.on('error', () => {});
 
   const worker = {
@@ -238,7 +241,7 @@ function getPool() {
   return pool;
 }
 
-function runOnWorker(worker, { prompt, signal, onEvent }) {
+function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
   return new Promise((resolve) => {
     let text = '';
     let finalMessage = null;
@@ -282,11 +285,11 @@ function runOnWorker(worker, { prompt, signal, onEvent }) {
     worker.proc.once('exit', done);
     const hardStop = setTimeout(() => { worker.kill(); done(); }, Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000));
     hardStop.unref?.();
-    worker.send(prompt);
+    worker.send(prompt, blocks);
   });
 }
 
-function runDirect(cfg, { prompt, signal, onEvent }) {
+function runDirect(cfg, { prompt, blocks, signal, onEvent }) {
   const proc = spawn(CLI.cmd, [...CLI.prefix, ...baseArgs(cfg)], {
     cwd: cleanWorkspace(), env: CHILD_ENV, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -323,9 +326,10 @@ function runDirect(cfg, { prompt, signal, onEvent }) {
 }
 
 export async function runCompletion({ body, cfg, signal, onEvent }) {
+  const logFn = process.env.BRIDGE_LOG === '0' ? undefined : (m) => console.log(m);
   if (!USE_POOL) {
-    const { prompt } = buildPrompt(body, 0);
-    return runDirect(cfg, { prompt, signal, onEvent });
+    const { prompt, blocks } = buildPrompt(body, 0, logFn);
+    return runDirect(cfg, { prompt, blocks, signal, onEvent });
   }
 
   const key = sessionKeyFor(body);
@@ -349,10 +353,10 @@ export async function runCompletion({ body, cfg, signal, onEvent }) {
     worker = await getPool().acquire(cfg);
   }
 
-  const { prompt } = buildPrompt(body, from);
+  const { prompt, blocks } = buildPrompt(body, from, logFn);
   let out;
   try {
-    out = await runOnWorker(worker, { prompt, signal, onEvent });
+    out = await runOnWorker(worker, { prompt, blocks, signal, onEvent });
   } catch (e) {
     dropSession(key);
     throw e;

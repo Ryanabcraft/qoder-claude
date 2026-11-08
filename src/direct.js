@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { blocksToText, systemToText } from './prompt.js';
+import { renderMessageContent, systemToText } from './prompt.js';
+import { openAIContent } from './images.js';
 
 const require = createRequire(import.meta.url);
 const auth = require('../vendor/qoder-auth.cjs');
@@ -65,10 +66,18 @@ function buildPayload(body, model, contextWindow) {
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
 
+  let counter = 1;
   for (const m of Array.isArray(body.messages) ? body.messages : []) {
     const role = m.role === 'assistant' ? 'assistant' : 'user';
-    const content = blocksToText(m.content);
-    if (content) messages.push({ role, content });
+    const rendered = renderMessageContent(m.content, {
+      start: counter,
+      allowImages: role === 'user',
+      log: process.env.BRIDGE_LOG === '0' ? undefined : (line) => console.log(line),
+    });
+    counter = rendered.next;
+    if (!rendered.text && !rendered.images.length) continue;
+    const content = rendered.images.length ? openAIContent(rendered.text, rendered.images) : rendered.text;
+    messages.push({ role, content });
   }
 
   const payload = { messages, model: String(model).toLowerCase(), agent_id: AGENT_ID };

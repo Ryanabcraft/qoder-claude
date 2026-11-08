@@ -5,7 +5,7 @@ import path from 'node:path';
 export function resolveCli() {
   const explicit = process.env.QODER_CLI_BIN;
   if (explicit) {
-    if (explicit.endsWith('.js')) return { cmd: process.execPath, prefix: [explicit] };
+    if (/\.(js|mjs|cjs)$/i.test(explicit)) return { cmd: process.execPath, prefix: [explicit] };
     return { cmd: explicit, prefix: [] };
   }
   const candidates = [

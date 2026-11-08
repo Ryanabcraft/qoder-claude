@@ -1,6 +1,7 @@
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeImage, anthropicContent, MAX_IMAGES } from './images.js';
 
 const MARK = '<tool_calls>';
 const TAG_MARK = '[[tool_use';
@@ -40,6 +41,47 @@ export function blocksToText(content) {
 
 export function systemToText(system) {
   return blocksToText(system);
+}
+
+// Same rules as blocksToText, but image blocks become a marker that the
+// transport replaces with a real attachment at the same position.
+export function renderMessageContent(content, { start = 1, allowImages = true, log } = {}) {
+  const images = [];
+  let counter = start;
+
+  const walk = (value, provenance) => {
+    if (typeof value === 'string') return value;
+    if (!Array.isArray(value)) return '';
+    return value
+      .filter((b) => b && typeof b === 'object')
+      .map((b) => {
+        if (b.type === 'text') return b.text || '';
+        if (b.type === 'thinking') return '';
+        if (b.type === 'tool_use') return `[[tool_use ${b.name} ${JSON.stringify(b.input ?? {})}]]`;
+        if (b.type === 'tool_result') {
+          const id = b.tool_use_id ? ' ' + b.tool_use_id : '';
+          return `[[tool_result${id}]] ${walk(b.content, b.tool_use_id)}`;
+        }
+        if (b.type === 'image') {
+          if (!allowImages || images.length >= MAX_IMAGES) return '[[image omitted]]';
+          const image = normalizeImage(b);
+          if (!image.ok) {
+            if (log) log(`  image dropped: ${image.reason}`);
+            return '[[image omitted]]';
+          }
+          const origin = provenance ? ` (tool_result ${provenance})` : '';
+          const marker = `[[image ${counter}: ${image.mediaType}${origin}]]`;
+          images.push({ mediaType: image.mediaType, data: image.data, marker });
+          counter += 1;
+          return marker;
+        }
+        return '';
+      })
+      .join('\n')
+      .trim();
+  };
+
+  return { text: walk(content, null), images, next: counter };
 }
 
 function shortDesc(d, max = 240) {
@@ -112,11 +154,23 @@ function withDeferred(tools, context) {
   return extra.length ? [...tools, ...extra] : tools;
 }
 
-export function buildPrompt(body, from = 0) {
+export function buildPrompt(body, from = 0, log) {
   const system = normalizeSystem(body.system);
   const all = Array.isArray(body.messages) ? body.messages : [];
   const msgs = from > 0 ? all.slice(from) : all;
-  const rendered = msgs.map((m) => blocksToText(m.content));
+
+  const images = [];
+  let counter = 1;
+  const rendered = msgs.map((m) => {
+    const out = renderMessageContent(m.content, {
+      start: counter,
+      allowImages: (m.role || 'user') !== 'assistant',
+      log,
+    });
+    counter = out.next;
+    images.push(...out.images);
+    return out.text;
+  });
   const context = `${system}\n${rendered.join('\n')}`;
 
   const parts = [];
@@ -141,7 +195,9 @@ export function buildPrompt(body, from = 0) {
       'For web search prefer mcp__exa__web_search_exa when it is available; the built-in WebSearch returns no results behind this gateway.',
     );
   }
-  return { system, prompt: parts.join('\n') };
+  const prompt = parts.join('\n');
+  const blocks = images.length ? anthropicContent(prompt, images) : null;
+  return { system, prompt, images, blocks };
 }
 
 export function toolCallMarker() {

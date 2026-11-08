@@ -10,6 +10,7 @@ try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { detectModels } from './models.js';
 import { handleUi } from './uiApi.js';
 import { record } from './metrics.js';
+import { estimateImageTokens, redactForLog } from './images.js';
 import {
   candidateAccounts,
   clearCooldown,
@@ -167,11 +168,12 @@ async function handleMessages(req, res, body) {
   const t0 = Date.now();
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
-  const built = buildPrompt(body);
+  const built = buildPrompt(body, 0, log);
   const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
-  const inTokens = estimate(built.prompt + built.system);
+  const inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
+  if (built.images.length) log(`  images ${built.images.length}`);
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const started = Date.now();
   let usedAccount = cfg.account;
@@ -397,7 +399,8 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       const body = JSON.parse(raw || '{}');
-      return send(res, 200, { input_tokens: estimate(buildPrompt(body).prompt) });
+      const built = buildPrompt(body);
+      return send(res, 200, { input_tokens: estimate(built.prompt) + estimateImageTokens(built.images) });
     } catch (e) {
       return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: e.message } });
     }
@@ -415,7 +418,7 @@ const server = http.createServer(async (req, res) => {
         const last = body.messages?.[body.messages.length - 1];
         if (last && Array.isArray(last.content)) {
           for (const b of last.content) {
-            if (b?.type === 'tool_result') log('  tool_result ' + b.tool_use_id + ' ' + (b.is_error ? 'ERROR' : 'ok') + ' ' + JSON.stringify(b.content).slice(0, 200));
+            if (b?.type === 'tool_result') log('  tool_result ' + b.tool_use_id + ' ' + (b.is_error ? 'ERROR' : 'ok') + ' ' + JSON.stringify(redactForLog(b.content)).slice(0, 200));
           }
         }
       }

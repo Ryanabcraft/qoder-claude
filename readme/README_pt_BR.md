@@ -467,6 +467,8 @@ para o CLI renovar o cofre, depois volte.
 | `QODER_CONTEXT_WINDOW` | do request | janela de contexto |
 | `QODER_MAX_OUTPUT_TOKENS` | do request | fallback usado só quando o request não manda `max_tokens` |
 | `QODER_CLI_BIN` | auto | caminho do `qodercli.js` |
+| `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | limite de tamanho decodificado por imagem |
+| `BRIDGE_IMAGE_MAX_COUNT` | `50` | imagens mantidas por request |
 | `BRIDGE_LOG` | ligado | `0` silencia o log |
 | `BRIDGE_DUMP` | vazio | arquivo do último request |
 
@@ -511,6 +513,10 @@ chama ferramenta custa um round-trip extra (3–5 s típico); busca web pelo Exa
   quando esse MCP está configurado, senão o modelo só tem `WebFetch`.
 - Ferramentas de daemon (`Cron*`, `Monitor`) são deferred e não são proxiadas — ficam do lado
   do Claude Code.
+- **Entrada de imagem ainda não funciona.** A bridge encaminha prints e leituras de imagem
+  (`image_url` no caminho direto, blocos Anthropic no CLI), mas o endpoint do Qoder descarta:
+  o modelo responde sem ver a figura. O encanamento está pronto e dormente — passa a valer no
+  dia em que o backend aceitar anexos.
 - Recusas por política do provedor passam intactas.
 
 ## Contribuição
