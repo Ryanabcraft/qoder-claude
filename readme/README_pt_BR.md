@@ -22,6 +22,8 @@ Este é o espelho do [README principal](../README.md), em inglês.
 - Quantas contas você quiser, com failover automático quando uma bate a cota
 - Ferramentas nativas, MCP, busca e leitura de página continuam funcionando — deferred tools
   ganham schema e a busca é roteada pelo Exa quando esse MCP está presente
+- Prints e leituras de imagem chegam ao modelo pelo motor de visão 1.1.80 embutido
+  (`qclaude vision install`)
 - Dashboard local com contas, métricas ao vivo e logs, aberto pelo `qclaude`
 - O `qclaude` manda no servidor: sobe junto com o Claude e cai quando ele sai
 - Modelo, orçamento de pensamento e janela de contexto selecionáveis por request
@@ -469,6 +471,8 @@ para o CLI renovar o cofre, depois volte.
 | `QODER_CLI_BIN` | auto | caminho do `qodercli.js` |
 | `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | limite de tamanho decodificado por imagem |
 | `BRIDGE_IMAGE_MAX_COUNT` | `50` | imagens mantidas por request |
+| `QODER_VISION_CLI` | 1.1.80 embutido | caminho de um CLI com suporte a imagem |
+| `QODER_VISION_VERSION` | `1.1.80` | versão baixada pelo `qclaude vision install` |
 | `BRIDGE_LOG` | ligado | `0` silencia o log |
 | `BRIDGE_DUMP` | vazio | arquivo do último request |
 
@@ -513,10 +517,9 @@ chama ferramenta custa um round-trip extra (3–5 s típico); busca web pelo Exa
   quando esse MCP está configurado, senão o modelo só tem `WebFetch`.
 - Ferramentas de daemon (`Cron*`, `Monitor`) são deferred e não são proxiadas — ficam do lado
   do Claude Code.
-- **Entrada de imagem ainda não funciona.** A bridge encaminha prints e leituras de imagem
-  (`image_url` no caminho direto, blocos Anthropic no CLI), mas o endpoint do Qoder descarta:
-  o modelo responde sem ver a figura. O encanamento está pronto e dormente — passa a valer no
-  dia em que o backend aceitar anexos.
+- **Visão exige um segundo motor.** O Qoder CLI atual (1.1.85) removeu o suporte a anexos, então
+  turnos com imagem rodam no 1.1.80, baixado uma vez por `qclaude vision install` (~34 MB).
+  Esses turnos levam ~13 s e não são streamados; turnos de texto não mudam.
 - Recusas por política do provedor passam intactas.
 
 ## Contribuição

@@ -14,3 +14,4 @@ site/dist/
 site/*.log
 accounts/
 accounts.json
+tools/

@@ -25,6 +25,8 @@ Claude Code --/v1/messages--> qoder-bridge --WASM-signed--> api1.qoder.sh
 - Any number of accounts, with automatic failover when one hits its quota
 - Built-in tools, MCP servers, web search and web fetch keep working — deferred tools get a
   schema and web search is routed through Exa when that MCP is present
+- Screenshots and image reads reach the model through the bundled 1.1.80 vision engine
+  (`qclaude vision install`)
 - Local dashboard with accounts, live metrics and logs, opened with `qclaude`
 - `qclaude` owns the server: it starts with Claude and stops when Claude exits
 - `Qoder · <model>` statusline written into Claude Code settings
@@ -474,6 +476,8 @@ the CLI refreshes the store, then switch back.
 | `QODER_CLI_BIN` | auto-detected | path to `qodercli.js` |
 | `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | decoded size cap per image |
 | `BRIDGE_IMAGE_MAX_COUNT` | `50` | images kept per request |
+| `QODER_VISION_CLI` | bundled 1.1.80 | path to an image-capable CLI |
+| `QODER_VISION_VERSION` | `1.1.80` | version fetched by `qclaude vision install` |
 | `BRIDGE_LOG` | on | `0` silences access log |
 | `BRIDGE_DUMP` | empty | file path for the last request |
 
@@ -527,10 +531,9 @@ calls a tool costs one extra round-trip (typically 3–5 s); a web search throug
   that MCP is configured, otherwise the model only has `WebFetch`.
 - Background daemon tools (`Cron*`, `Monitor`) are deferred and not proxied — they stay on the
   Claude Code side.
-- **Image input does not work yet.** The bridge forwards screenshots and image reads (OpenAI
-  `image_url` on the direct path, Anthropic image blocks on the CLI path), but the Qoder
-  endpoint drops them: the model answers without seeing the picture. The plumbing is in place
-  and gated, so it starts working the day the backend accepts attachments.
+- **Vision needs a second engine.** The current Qoder CLI (1.1.85) dropped attachment support,
+  so image turns run on 1.1.80, downloaded once by `qclaude vision install` (~34 MB). Those
+  turns take ~13 s and are not streamed; text turns are untouched.
 - Provider-side policy refusals pass through unchanged.
 
 ## Contributing

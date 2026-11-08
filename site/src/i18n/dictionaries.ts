@@ -83,6 +83,10 @@ export const en: Dict = {
         title: 'Web search',
         body: 'Deferred tools arrive by name only; the bridge supplies a schema and, when the Exa MCP is configured, routes WebSearch to mcp__exa__web_search_exa — so results come back real instead of empty.',
       },
+      {
+        title: 'Images',
+        body: 'Paste a screenshot and the model reads it. Image turns run through the bundled 1.1.80 engine, installed once with qclaude vision install.',
+      },
     ],
   },
   models: {
@@ -163,6 +167,10 @@ export const pt: Dict = {
       {
         title: 'Busca na web',
         body: 'Ferramentas deferred chegam só pelo nome; a bridge entrega o schema e, com o MCP Exa configurado, roteia o WebSearch para mcp__exa__web_search_exa — resultado real em vez de lista vazia.',
+      },
+      {
+        title: 'Imagens',
+        body: 'Cole um print e o modelo lê. Turnos com imagem rodam no motor 1.1.80 embutido, instalado uma vez com qclaude vision install.',
       },
     ],
   },
@@ -245,6 +253,10 @@ export const es: Dict = {
         title: 'Búsqueda web',
         body: 'Las herramientas deferred llegan solo por nombre; el puente entrega el esquema y, con el MCP Exa configurado, enruta WebSearch a mcp__exa__web_search_exa — resultados reales en vez de lista vacía.',
       },
+      {
+        title: 'Imágenes',
+        body: 'Pega una captura y el modelo la lee. Los turnos con imagen usan el motor 1.1.80 embebido, instalado una vez con qclaude vision install.',
+      },
     ],
   },
   models: {
@@ -326,6 +338,10 @@ export const fr: Dict = {
         title: 'Recherche web',
         body: 'Les outils deferred arrivent par leur nom ; le pont fournit le schéma et, quand le MCP Exa est configuré, route WebSearch vers mcp__exa__web_search_exa — de vrais résultats au lieu d’une liste vide.',
       },
+      {
+        title: 'Images',
+        body: 'Collez une capture et le modèle la lit. Les tours avec image passent par le moteur 1.1.80 embarqué, installé une fois avec qclaude vision install.',
+      },
     ],
   },
   models: {
@@ -406,6 +422,10 @@ export const de: Dict = {
       {
         title: 'Websuche',
         body: 'Deferred Tools kommen nur mit Namen an; die Bridge liefert ein Schema und leitet WebSearch bei konfiguriertem Exa-MCP an mcp__exa__web_search_exa weiter — echte Ergebnisse statt leerer Liste.',
+      },
+      {
+        title: 'Bilder',
+        body: 'Screenshot einfügen und das Modell liest ihn. Bild-Turns laufen über die eingebettete 1.1.80-Engine, einmalig installiert mit qclaude vision install.',
       },
     ],
   },
