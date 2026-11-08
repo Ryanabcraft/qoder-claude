@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.15
+
+- Update checks use the GitHub API first, with the raw package file as fallback, so a new release is seen without the 5-minute raw cache.
+
 ## 1.10.14
 
 - Added `qclaude notes` to print the changelog for the installed version, or for a version you pass.
