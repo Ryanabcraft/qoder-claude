@@ -7,7 +7,8 @@
 - Os requests vão só para o Qoder (`api1.qoder.sh`), para o endpoint de cota
   (`openapi.qoder.sh`) ou para o CLI local. Nada é encaminhado para outro host.
 - O token da conta só vai no header Authorization para a Qoder; o dashboard nunca o recebe e os
-  logs nunca o contêm.
+  logs nunca o contêm. O resgate de recompensa é explícito (botão ou `--claim`); o auto-claim fica
+  desligado a menos que você ative.
 - `bridge.config.json`, `metrics.jsonl` e `quota.jsonl` são arquivos locais e gitignored.
 - Claude Code, CLI do Qoder e arquivos de conta não são enviados pela bridge.
 

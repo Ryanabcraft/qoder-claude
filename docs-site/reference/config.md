@@ -28,6 +28,7 @@ Existing environment variables win over the file. Values set by the launcher (su
 | `log` | `true` | access log; restart |
 | `quota` | `true` | read real Qoder quota per account |
 | `quotaPollMs` | `300000` | quota poll interval (60s–1h) |
+| `rewardAutoClaim` | `false` | redeem the daily 100-credit campaign automatically |
 
 ## Environment variables
 
@@ -46,7 +47,9 @@ Existing environment variables win over the file. Values set by the launcher (su
 | `BRIDGE_QUOTA` | on | `0` disables quota polling |
 | `BRIDGE_QUOTA_POLL_MS` | `300000` | quota poll interval |
 | `QODER_QUOTA_ENDPOINT` | `https://openapi.qoder.sh` | quota host override |
+| `QODER_REWARD_ENDPOINT` | same as quota | reward host override |
 | `QODER_QUOTA_TOKEN` | from account | explicit bearer token (testing/CI) |
+| `BRIDGE_REWARD_AUTO` | off | `1` enables automatic daily reward claims |
 | `QODER_CONTEXT_WINDOW` | `1000000` | context window |
 | `QODER_THINKING` | from request | thinking mode |
 | `QODER_THINKING_BUDGET` | from request | thinking tokens |

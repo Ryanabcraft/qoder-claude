@@ -24,6 +24,7 @@ import { applyWebTools, readClaudePrefs, updateClaudePrefs } from './claudePrefs
 import { healthSnapshot } from './health.js';
 import { quotaSnapshot } from './quota.js';
 import { derive, history } from './quotaStore.js';
+import { claimReward, rewardsSnapshot } from './rewards.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const UI_DIR = path.join(HERE, 'ui');
@@ -183,6 +184,23 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   if (req.method === 'GET' && route === 'quota') {
     const snapshot = await quotaSnapshot({ refresh: url.searchParams.get('refresh') === '1' });
     return sendJson(res, 200, snapshot), true;
+  }
+
+  if (req.method === 'GET' && route === 'rewards') {
+    const snapshot = await rewardsSnapshot({ refresh: url.searchParams.get('refresh') === '1' });
+    return sendJson(res, 200, snapshot), true;
+  }
+
+  if (req.method === 'POST' && route === 'rewards/claim') {
+    const body = await readBody(req);
+    const name = String(body.account || '');
+    const account = rotationSnapshot().accounts.find((row) => row.name === name);
+    if (!account) return sendJson(res, 400, { error: 'unknown account' }), true;
+    const record = await rewardsSnapshot({ refresh: true });
+    const campaign = record.accounts[name]?.campaign;
+    if (!campaign?.id) return sendJson(res, 409, { error: 'no campaign available' }), true;
+    const result = await claimReward(account.dir, campaign.id, { account: name });
+    return sendJson(res, result.status === 'failed' ? 400 : 200, result), true;
   }
 
   if (req.method === 'GET' && route === 'quota/history') {

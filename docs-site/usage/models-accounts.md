@@ -35,6 +35,11 @@ The bridge reads each account's real quota from Qoder (`GET /api/v2/quota/usage`
 rate and the projected empty date. `qclaude quota` prints the same data, and `qclaude quota --json`
 is machine-readable. Quota is display-only: it never changes failover order.
 
+Qoder's daily campaign gives 100 credits per account, once per window (10:00–09:59 Singapore time),
+valid for 30 days. `qclaude rewards` lists it per account and `qclaude rewards --claim` redeems it.
+The dashboard shows a Claim button and a Settings toggle for auto-claim, which is **off by default**.
+Claims are device-scoped, so one account per machine is usually eligible.
+
 ```bash
 qclaude account list
 qclaude account add work       # browser login, creates a profile

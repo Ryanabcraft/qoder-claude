@@ -85,6 +85,7 @@
           <section class="page" id="page-accounts">
             <div class="page-head"><div><h1>Accounts</h1><p>Qoder profiles and failover.</p></div><div class="head-actions"><button class="btn ghost small" id="accounts-test">Test active</button><button class="btn primary small" id="account-add">Add account</button></div></div>
             <div class="card"><div class="card-head"><div><h2>Automatic failover</h2><p>Quota, 403, 429 and lost sessions rotate to the next account.</p></div><label class="switch"><input type="checkbox" id="rot-toggle" /><span class="track"><span class="knob"></span></span><span id="rot-label">off</span></label></div><div class="strip" id="rot-strip"></div></div>
+            <div class="card"><div class="card-head"><div><h2>Daily reward</h2><p>100 credits per account, once per window.</p></div><span class="pill" id="reward-state">—</span></div><div class="reward-rows" id="reward-rows"></div></div>
             <div class="account-grid" id="account-cards"></div>
             <div class="card hidden" id="login-box"><div class="card-head"><div><h2>Finish sign-in</h2><p>Open the URL below and approve the device.</p></div></div><a class="login-url" id="login-url" target="_blank" rel="noreferrer"></a><p class="muted small" id="login-state"></p></div>
           </section>
@@ -158,6 +159,7 @@
             <div class="tab-panel" data-panel="advanced">
               <div class="card"><div class="card-head"><div><h2>Config file</h2><p>Local JSON, gitignored.</p></div><button class="btn ghost small" id="cfg-download">Download</button></div><div class="kv" id="advanced-info"></div></div>
               <div class="card"><div class="card-head"><div><h2>Quota</h2><p>Reads Qoder credits per account.</p></div></div><div class="form-grid"><label class="check-row"><input type="checkbox" id="cfg-quota" /> Track quota</label><label>Quota poll interval (ms)<input type="number" id="cfg-quota-poll" min="60000" max="3600000" step="1000" /></label></div><div class="form-foot"><span class="muted small" id="quota-endpoint"></span><button class="btn primary" data-save="advanced">Save</button></div></div>
+              <div class="card"><div class="card-head"><div><h2>Rewards</h2><p>Qoder daily credit campaign.</p></div></div><div class="form-grid"><label class="check-row"><input type="checkbox" id="cfg-reward-auto" /> Auto-claim daily reward</label></div><div class="form-foot"><span class="muted small">Claims only when a campaign is claimable. Off by default.</span><button class="btn primary" data-save="advanced">Save</button></div></div>
               <div class="card"><div class="card-head"><div><h2>Runtime files</h2><p>Config, metrics and log paths.</p></div></div><div class="kv" id="advanced-paths"></div></div>
             </div>
           </section>

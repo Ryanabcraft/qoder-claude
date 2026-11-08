@@ -34,6 +34,11 @@ consulta a cada cinco minutos. O dashboard mostra créditos usados, restantes, p
 data prevista de esgotamento. `qclaude quota` imprime os mesmos dados e `qclaude quota --json` é
 legível por máquina. A cota é só visual: nunca muda a ordem do failover.
 
+A campanha diária da Qoder dá 100 créditos por conta, uma vez por janela (10:00–09:59 de Singapura),
+válidos por 30 dias. `qclaude rewards` lista por conta e `qclaude rewards --claim` resgata. O
+dashboard mostra o botão de resgate e um toggle de auto-claim em Settings, **desligado por padrão**.
+O resgate é limitado por dispositivo, então normalmente só uma conta por máquina é elegível.
+
 ```bash
 qclaude account list
 qclaude account add trabalho   # login no navegador, cria o perfil

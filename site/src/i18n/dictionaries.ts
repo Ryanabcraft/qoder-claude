@@ -93,7 +93,7 @@ export const en: Dict = {
       },
       {
         title: 'Real quota',
-        body: 'Every account card shows the credits Qoder actually reports: used, remaining, burn rate and the date the quota runs out. Usage rows say whether tokens are real or estimated.',
+        body: 'Every account card shows the credits Qoder actually reports: used, remaining, burn rate and the date the quota runs out. Usage rows say whether tokens are real or estimated. The daily 100-credit campaign appears there too, with a Claim button.',
       },
     ],
   },
@@ -185,7 +185,7 @@ export const pt: Dict = {
       },
       {
         title: 'Cota real',
-        body: 'Cada card de conta mostra os créditos que a Qoder realmente informa: usados, restantes, consumo e a data em que a cota acaba. As linhas de uso dizem se os tokens são reais ou estimados.',
+        body: 'Cada card de conta mostra os créditos que a Qoder realmente informa: usados, restantes, consumo e a data em que a cota acaba. As linhas de uso dizem se os tokens são reais ou estimados. A campanha diária de 100 créditos também aparece ali, com botão de resgate.',
       },
     ],
   },
@@ -277,7 +277,7 @@ export const es: Dict = {
       },
       {
         title: 'Cota real',
-        body: 'Cada tarjeta de cuenta muestra los créditos que Qoder informa de verdad: usados, restantes, consumo y la fecha en que se agota la cuota. Las filas de uso indican si los tokens son reales o estimados.',
+        body: 'Cada tarjeta de cuenta muestra los créditos que Qoder informa de verdad: usados, restantes, consumo y la fecha en que se agota la cuota. Las filas de uso indican si los tokens son reales o estimados. La campaña diaria de 100 créditos también aparece allí, con botón de reclamar.',
       },
     ],
   },
@@ -369,7 +369,7 @@ export const fr: Dict = {
       },
       {
         title: 'Quota réelle',
-        body: 'Chaque carte de compte affiche les crédits réellement rapportés par Qoder : utilisés, restants, consommation et date d’épuisement. Les lignes d’usage indiquent si les jetons sont réels ou estimés.',
+        body: 'Chaque carte de compte affiche les crédits réellement rapportés par Qoder : utilisés, restants, consommation et date d’épuisement. Les lignes d’usage indiquent si les jetons sont réels ou estimés. La campagne quotidienne de 100 crédits apparaît aussi, avec un bouton de réclamation.',
       },
     ],
   },
@@ -461,7 +461,7 @@ export const de: Dict = {
       },
       {
         title: 'Echtes Kontingent',
-        body: 'Jede Kontokarte zeigt die von Qoder gemeldeten Credits: verbraucht, verbleibend, Verbrauchsrate und das Datum, an dem das Kontingent endet. Nutzungszeilen zeigen, ob Token echt oder geschätzt sind.',
+        body: 'Jede Kontokarte zeigt die von Qoder gemeldeten Credits: verbraucht, verbleibend, Verbrauchsrate und das Datum, an dem das Kontingent endet. Nutzungszeilen zeigen, ob Token echt oder geschätzt sind. Die tägliche 100-Credit-Kampagne erscheint dort ebenfalls mit Abhol-Button.',
       },
     ],
   },

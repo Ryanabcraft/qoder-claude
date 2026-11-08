@@ -21,7 +21,22 @@ const quotaPayload = {
   userQuota: { total: 0, used: 0, remaining: 0, percentage: 0, unit: 'credits' },
   addOnQuota: { total: 200, used: 135, remaining: 65, percentage: 0.675, unit: 'credits' },
 };
+const dailyCampaign = {
+  campaignId: 'campaign-1',
+  actionType: 'CLAIM_BENEFIT',
+  claimStatus: 'CLAIMABLE',
+  startAt: 1794103200,
+  endAt: 1794189540,
+  benefit: {
+    kind: 'CREDITS',
+    amount: 100,
+    modelScope: { modelSeries: { key: 'ALL_MODELS' } },
+    validity: { mode: 'RELATIVE_DAYS', days: 30 },
+  },
+  placements: [{ type: 'USAGE', content: { en: { title: 'Claim 100 Credits Daily' } } }],
+};
 let quotaMode = 'ok';
+let claimCalls = 0;
 let mock;
 let proc;
 
@@ -32,6 +47,22 @@ test.before(async () => {
     if (quotaMode !== 'ok') {
       res.writeHead(500, { 'content-type': 'application/json' });
       return res.end('{"error":"down"}');
+    }
+    const url = new URL(req.url, 'http://mock');
+    if (url.pathname.startsWith('/sash/api/v1/me/campaigns')) {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      if (req.method === 'POST' && url.pathname.endsWith('/claim')) {
+        claimCalls += 1;
+        return res.end(JSON.stringify({ status: 'CLAIMED', benefit: { amount: 100 } }));
+      }
+      if (url.pathname.endsWith('/reward')) {
+        return res.end(JSON.stringify({
+          status: 'CLAIMED',
+          claimedAt: '2026-11-08T04:00:47Z',
+          expiresAt: '2026-12-08T04:00:47Z',
+        }));
+      }
+      return res.end(JSON.stringify({ campaigns: [dailyCampaign] }));
     }
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify(quotaPayload));
@@ -49,6 +80,7 @@ test.before(async () => {
       BRIDGE_MODELS_REFRESH: '0',
       BRIDGE_QUOTA: '0',
       QODER_QUOTA_ENDPOINT: `http://127.0.0.1:${quotaPort}`,
+      QODER_REWARD_ENDPOINT: `http://127.0.0.1:${quotaPort}`,
       QODER_QUOTA_TOKEN: 'test-token',
     },
     stdio: 'ignore',
@@ -146,6 +178,31 @@ test('quota route serves the last good sample when the upstream fails', async ()
   assert.equal(body.summary.stale, true);
   assert.equal(body.summary.reason, 'http_500');
   quotaMode = 'ok';
+});
+
+test('rewards route exposes the daily campaign without the token', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/rewards`, { headers: { 'x-api-key': KEY } });
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  assert.equal(text.includes('test-token'), false);
+  const body = JSON.parse(text);
+  assert.equal(body.summary.status, 'claimable');
+  assert.equal(body.summary.campaign.amount, 100);
+  assert.equal(body.summary.campaign.id, 'campaign-1');
+  assert.equal(body.autoClaim, false);
+});
+
+test('rewards claim is an explicit POST and confirms the result', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/rewards/claim`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': KEY },
+    body: JSON.stringify({ account: 'default' }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.status, 'claimed');
+  assert.equal(claimCalls, 1);
+  assert.ok(body.expiresAt > body.claimedAt);
 });
 
 test('count_tokens answers without a backend', async () => {

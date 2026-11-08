@@ -69,6 +69,7 @@ const state = {
   metrics: null,
   heat: null,
   quota: null,
+  rewards: null,
   logs: '',
   range: '30m',
   search: '',
@@ -668,15 +669,79 @@ async function loadEndpoint() {
 }
 
 async function loadAccounts() {
-  const [accounts, quota] = await Promise.all([api('accounts'), api('quota').catch(() => null)]);
+  const [accounts, quota, rewards] = await Promise.all([
+    api('accounts'),
+    api('quota').catch(() => null),
+    api('rewards').catch(() => null),
+  ]);
   state.accounts = accounts;
   if (quota) state.quota = quota;
+  if (rewards) state.rewards = rewards;
   renderAccounts();
+}
+
+function renderRewards() {
+  const box = $('#reward-rows');
+  if (!box) return;
+  box.textContent = '';
+  const rows = Object.values(state.rewards?.accounts || {});
+  const claimable = rows.filter((row) => row.status === 'claimable').length;
+  const claimed = rows.filter((row) => row.status === 'claimed').length;
+  const pill = $('#reward-state');
+  if (pill) {
+    pill.textContent = claimable
+      ? t('{count} rewards available', { count: claimable })
+      : claimed ? t('Claimed') : t('No reward available');
+    pill.className = `pill ${claimable ? 'accent' : claimed ? 'ok' : ''}`;
+  }
+  if (!rows.length) {
+    box.append(el('div', 'muted small', t('No reward available')));
+    return;
+  }
+  for (const row of rows) {
+    const line = el('div', 'reward-row');
+    const grow = el('div', 'grow');
+    grow.append(el('strong', '', `${row.label || row.name}${row.active ? ` · ${t('current')}` : ''}`));
+    let detail = t('No reward available');
+    if (row.status === 'claimable') {
+      detail = `${row.campaign.amount} ${t('credits')} · ${t('Ends {date}', { date: forecastDate(row.campaign.endAt) })}`;
+    } else if (row.status === 'claimed') {
+      const expires = row.campaign.expiresAt ? t('Expires {date}', { date: forecastDate(row.campaign.expiresAt) }) : t('Already claimed today');
+      detail = `${row.campaign.amount} ${t('credits')} · ${expires}`;
+    } else if (row.status === 'no-auth') {
+      detail = t('No account signed in');
+    } else if (row.status !== 'none') {
+      detail = t('Unavailable');
+    }
+    grow.append(el('span', '', detail));
+    line.append(grow);
+    if (row.status === 'claimable') {
+      const button = el('button', 'btn primary small', t('Claim 100 credits'));
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          const result = await api('rewards/claim', { method: 'POST', body: JSON.stringify({ account: row.name }) });
+          toast(result.status === 'claimed' ? t('Reward claimed') : t('Already claimed today'), 'ok');
+          await loadAccounts();
+        } catch (e) {
+          toast(e.message, 'err');
+          button.disabled = false;
+        }
+      });
+      line.append(button);
+    } else if (row.status === 'claimed') {
+      line.append(el('span', 'pill ok', t('Claimed')));
+    } else {
+      line.append(el('span', 'pill', t('Not available')));
+    }
+    box.append(line);
+  }
 }
 
 function renderAccounts() {
   const data = state.accounts;
   if (!data) return;
+  renderRewards();
   const rot = data.rotation;
   $('#rot-toggle').checked = Boolean(rot.on);
   $('#rot-label').textContent = rot.on ? 'on' : 'off';
@@ -718,7 +783,7 @@ function renderAccounts() {
       fill.style.width = `${quota.status === 'ok' ? Math.min(100, quota.percent) : 0}%`;
       bar.append(fill);
       box.append(bar);
-      box.append(el('div', 'muted small', quotaCell(quota)));
+      box.append(el('div', 'muted small', quota.status === 'exceeded' ? `0 ${t('credits')}` : quotaCell(quota)));
       if (quota.status === 'ok') {
         const detail = [`${quota.plan || '—'}`, `${t('Updated {when} ago', { when: ago(quota.fetchedAt) })}`];
         if (quota.burnPerDay) detail.push(t('{rate} credits/day', { rate: fmtCredits(quota.burnPerDay) }));
@@ -1045,6 +1110,7 @@ function fillSettings() {
     setField('#cfg-stall', cfg.stallMs, locked.stallMs);
     setField('#cfg-quota', cfg.quota, locked.quota);
     setField('#cfg-quota-poll', cfg.quotaPollMs, locked.quotaPollMs);
+    setField('#cfg-reward-auto', cfg.rewardAutoClaim, locked.rewardAutoClaim);
     if ($('#quota-endpoint')) $('#quota-endpoint').textContent = cfg.quotaEndpoint || '';
     $('#cfg-path').textContent = state.status?.configPath || state.health?.paths?.config || '';
     $('#key-state').textContent = cfg.apiKeySet ? 'set · restart to change' : 'not required';
@@ -1129,7 +1195,7 @@ function saveResilience() {
 }
 function saveAdvanced() {
   return saveConfigValues({
-    quota: val('#cfg-quota'), quotaPollMs: val('#cfg-quota-poll'),
+    quota: val('#cfg-quota'), quotaPollMs: val('#cfg-quota-poll'), rewardAutoClaim: val('#cfg-reward-auto'),
   }, 'Quota');
 }
 function saveRoutingPage() {

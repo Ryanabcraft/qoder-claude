@@ -56,6 +56,8 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 | `qclaude notes [version]` | prints the changelog for this install |
 | `qclaude quota` | credits used/left, burn rate and forecast |
 | `qclaude quota --json` | machine-readable quota snapshot |
+| `qclaude rewards` | shows the daily 100-credit campaign |
+| `qclaude rewards --claim` | claims it manually (never automatic by default) |
 | `qclaude uninstall` | removes the app, launcher and settings (asks first) |
 | `qclaude uninstall --dry-run` | lists what would be removed |
 | `qclaude --no-update` | skips the update check |
@@ -103,6 +105,12 @@ Quota is per account. With more than one, the bridge fails over automatically: a
 `qclaude quota` reads Qoder's quota endpoint per account and prints credits used, remaining, plan,
 burn rate and the projected empty date. The dashboard shows the same data as a meter on each
 account card, a Credits KPI on Home and a forecast card in Analytics.
+
+Qoder also runs a daily campaign: 100 credits per account, once per window (10:00–09:59 Singapore
+time), valid for 30 days. `qclaude rewards` shows the campaign per account and
+`qclaude rewards --claim` redeems it. The dashboard has the same list with a Claim button; auto-claim
+is a Settings toggle, **off by default**, and only fires when a campaign is claimable. Qoder limits
+claims by device identity, so usually one account per machine is eligible.
 
 Real `usage` from Qoder (input/output/cache tokens and credits) is forwarded to Claude Code and
 stored in `metrics.jsonl`; when the upstream omits it, the bridge falls back to estimates and marks

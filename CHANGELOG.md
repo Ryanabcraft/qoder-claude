@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.0
+
+- Daily 100-credit reward: reads Qoder's campaign per account, shows Claimable/Claimed/Not available with window and expiry.
+- Manual claim from the dashboard Accounts card or `qclaude rewards [name] --claim`; idempotent, confirms `already` and the real expiry.
+- Optional auto-claim toggle in Settings → Advanced, off by default; device-scoped limits mean one account per machine is usually eligible.
+- `qclaude rewards [--json]` and `/ui/api/rewards` expose the same data; tokens never reach the browser or logs.
+
 ## 1.14.1
 
 - Zero-total Qoder plans now report "quota exceeded" (or unavailable) instead of a misleading `0/0 credits · EXCEEDED` meter.

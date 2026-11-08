@@ -218,6 +218,12 @@ used for burn rate and the empty-date forecast. `GET /api/v2/quota/usage` on
 every five minutes, and degrade to `unavailable`/stale without touching requests. The bearer token
 is decrypted locally and never logged or exposed.
 
+Rewards use `GET /sash/api/v1/me/campaigns`, `GET .../{id}/reward` and an idempotent
+`POST .../{id}/claim` on the same host. Only `CLAIM_BENEFIT` credit campaigns with an ALL_MODELS
+scope and a daily title/window are considered. Auto-claim is a config flag, off by default; a
+repeated claim returns `already`, and device-scoped limits mean only one account per machine is
+usually eligible.
+
 ## Endpoints
 
 | method | route | purpose |
@@ -231,6 +237,8 @@ is decrypted locally and never logged or exposed.
 | GET | `/ui/api/metrics?range=30m\|24h\|7d` | request analytics |
 | GET | `/ui/api/quota` | credits per account, burn and forecast |
 | GET | `/ui/api/quota/history` | quota samples and derived stats |
+| GET | `/ui/api/rewards` | daily campaign state per account |
+| POST | `/ui/api/rewards/claim` | claim one account's daily campaign |
 | GET/PUT | `/ui/api/claude` | Claude settings (model, 1M) |
 | POST | `/ui/api/web-tools` | re-apply Exa and the allowlist |
 
