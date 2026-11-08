@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.1
+
+- Zero-total Qoder plans now report "quota exceeded" (or unavailable) instead of a misleading `0/0 credits · EXCEEDED` meter.
+
 ## 1.14.0
 
 - Real Qoder usage: prompt/completion/cache tokens and credits from the upstream now replace local estimates in responses and `metrics.jsonl`.

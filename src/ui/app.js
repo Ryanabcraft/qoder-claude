@@ -150,14 +150,16 @@ function fmtCredits(n) {
 }
 function quotaState(record) {
   if (!record) return { cls: '', label: '—' };
-  if (record.status !== 'ok') return { cls: 'warn', label: record.status };
-  if (record.exceeded) return { cls: 'err', label: t('Quota exceeded') };
+  if (record.status === 'exceeded' || record.exceeded) return { cls: 'err', label: t('Quota exceeded') };
+  if (record.status === 'no-auth') return { cls: 'warn', label: t('No account signed in') };
+  if (record.status !== 'ok') return { cls: 'warn', label: t('Unavailable') };
   if (record.percent >= 95) return { cls: 'err', label: t('Critical') };
   if (record.percent >= 80) return { cls: 'warn', label: t('Low quota') };
   return { cls: 'ok', label: t('Ready') };
 }
 function quotaCell(record) {
   if (!record) return '—';
+  if (record.status === 'exceeded') return t('Quota exceeded');
   if (record.status !== 'ok') return record.status === 'no-auth' ? t('No account signed in') : t('Unavailable');
   return `${pct(record.percent)} · ${fmtCredits(record.used)}/${fmtCredits(record.total)}`;
 }
@@ -600,7 +602,7 @@ async function loadHome() {
     { label: t('Success'), value: pct(m.success), sub: t('{total} completed', { total: fmtInt(m.total) }), icon: 'check' },
     { label: t('Avg latency'), value: fmtMs(m.avgMs), sub: t('p95 {ms}', { ms: fmtMs(m.p95) }), icon: 'clock' },
     { label: t('Tokens'), value: fmtInt(m.tokensIn + m.tokensOut), sub: t('{in} in · {out} out', { in: fmtInt(m.tokensIn), out: fmtInt(m.tokensOut) }), icon: 'chart' },
-    { label: t('Credits'), value: quota?.status === 'ok' ? pct(quota.percent) : '—', sub: quota?.status === 'ok' ? t('{used}/{total} credits · {remaining} left', { used: fmtCredits(quota.used), total: fmtCredits(quota.total), remaining: fmtCredits(quota.remaining) }) : t(quota?.status === 'no-auth' ? 'No account signed in' : 'Unavailable'), icon: 'key' },
+    { label: t('Credits'), value: quota?.status === 'ok' ? pct(quota.percent) : '—', sub: quota?.status === 'ok' ? t('{used}/{total} credits · {remaining} left', { used: fmtCredits(quota.used), total: fmtCredits(quota.total), remaining: fmtCredits(quota.remaining) }) : t(quota?.status === 'no-auth' ? 'No account signed in' : quota?.status === 'exceeded' ? 'Quota exceeded' : 'Unavailable'), icon: 'key' },
     { label: t('Accounts'), value: fmtInt(state.accounts?.rotation?.accounts?.length || 0), sub: status?.rotation?.on ? t('failover on · {count} in pool', { count: status.rotation.count }) : t('failover off'), icon: 'users' },
     { label: t('Models'), value: fmtInt(status?.models || state.models.length), sub: t('transport {transport}', { transport: status?.transport || '—' }), icon: 'layers' },
     { label: t('Sessions'), value: fmtInt(status?.sessions || 0), sub: status?.pool?.enabled ? t('pool {ready}/{size}', { ready: status.pool.ready, size: status.pool.size }) : t('direct transport'), icon: 'activity' },
@@ -860,7 +862,7 @@ function renderAnalytics() {
   if (!quota) {
     quotaBox.append(el('div', 'muted small', t('Unavailable')));
   } else if (quota.status !== 'ok') {
-    quotaBox.append(el('div', 'muted small', t(quota.status === 'no-auth' ? 'No account signed in' : 'Unavailable')));
+    quotaBox.append(el('div', 'muted small', t(quota.status === 'no-auth' ? 'No account signed in' : quota.status === 'exceeded' ? 'Quota exceeded' : 'Unavailable')));
   } else {
     addKv(quotaBox, t('Quota'), quotaCell(quota));
     addKv(quotaBox, t('Remaining'), `${fmtCredits(quota.remaining)} ${unitLabel(quota.unit)}`);

@@ -56,6 +56,26 @@ export function normalizeQuota(raw, now = Date.now()) {
 
   const total = active.total;
   const used = Math.max(0, active.used);
+  const upgradeUrl = safeUrl(source.upgradeUrl);
+  const detailUrl = safeUrl(addOn && addOn.detailUrl) || safeUrl(plan && plan.detailUrl);
+  if (total <= 0) {
+    const blocked = Boolean(source.isQuotaExceeded);
+    return {
+      status: blocked ? 'exceeded' : 'unavailable',
+      plan: String(source.userType || ''),
+      unit: active.unit || String(source.usageType || 'credits'),
+      total: 0, used, remaining: 0,
+      percent: blocked ? 100 : 0,
+      exceeded: blocked,
+      expiresAt: null,
+      fetchedAt: now,
+      stale: false,
+      reason: blocked ? 'no-credits' : 'no-quota',
+      upgradeUrl,
+      detailUrl,
+      breakdown: { plan, addOn },
+    };
+  }
   let percent = total > 0 ? (used / total) * 100 : active.percentage;
   if (!Number.isFinite(percent) && Number.isFinite(Number(source.totalUsagePercentage))) {
     percent = Number(source.totalUsagePercentage) * 100;
@@ -78,8 +98,8 @@ export function normalizeQuota(raw, now = Date.now()) {
     fetchedAt: now,
     stale: false,
     reason: '',
-    upgradeUrl: safeUrl(source.upgradeUrl),
-    detailUrl: safeUrl(addOn && addOn.detailUrl) || safeUrl(plan && plan.detailUrl),
+    upgradeUrl,
+    detailUrl,
     breakdown: { plan, addOn },
   };
 }
