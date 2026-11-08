@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectModels } from '../src/models.js';
+import { ensureExa, EXA_URL } from '../src/exaSetup.js';
 
 const home = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = process.env.QODER_CLAUDE_TARGET || process.cwd();
@@ -61,4 +62,11 @@ current.statusLine = {
 fs.writeFileSync(file, JSON.stringify(current, null, 2) + '\n');
 console.log(`ok -> ${file}`);
 if (fs.existsSync(file + '.bak')) console.log(`backup -> ${file}.bak`);
+
+const exa = ensureExa();
+if (exa.added) console.log(`exa -> ${EXA_URL} (user scope)`);
+else if (exa.skipped === 'already') console.log('exa -> already configured');
+else if (exa.skipped === 'disabled') console.log('exa -> skipped (QODER_NO_EXA=1)');
+else console.log(`exa -> not configured: ${exa.error}`);
+
 console.log('open it with: qclaude');

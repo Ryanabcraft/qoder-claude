@@ -53,8 +53,8 @@ Claude — `/exit`, Ctrl+C ou fechar o terminal — encerra a bridge.
 
 - `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `Agent` e servidores MCP — executados pelo
   Claude Code, sem mudança.
-- `WebSearch` / `WebFetch` — tools deferred ganham schema; a busca vai pelo Exa quando esse MCP
-  está configurado.
+- `WebSearch` / `WebFetch` — tools deferred ganham schema; o instalador adiciona o MCP Exa no
+  escopo user e a busca passa por ele (`QODER_NO_EXA=1` pula essa etapa).
 - Prints — cole uma imagem e o modelo lê (`qclaude vision install`).
 - `/model`, slider de esforço, orçamento de pensamento, contexto de 1M — o instalador cuida.
 - Statusline `Qoder · <modelo>`.
