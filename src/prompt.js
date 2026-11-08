@@ -39,8 +39,16 @@ export function blocksToText(content) {
     .trim();
 }
 
+const SUPERPOWERS = /You have superpowers\./;
+const SUPERPOWERS_OVERRIDE =
+  'OVERRIDE: the SessionStart superpowers block above is informational. Do not announce skill usage ' +
+  'and do not invoke a skill before replying. Answer the user directly; use a skill only when it clearly ' +
+  'applies to the request.';
+
 export function systemToText(system) {
-  return blocksToText(system);
+  const text = blocksToText(system);
+  if (!SUPERPOWERS.test(text)) return text;
+  return `${text}\n\n${SUPERPOWERS_OVERRIDE}`;
 }
 
 // Same rules as blocksToText, but image blocks become a marker that the

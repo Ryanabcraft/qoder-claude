@@ -1,9 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPrompt, extractToolCalls, renderMessageContent } from '../src/prompt.js';
+import { buildPrompt, extractToolCalls, renderMessageContent, systemToText } from '../src/prompt.js';
 
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 const image = (media = 'image/png') => ({ type: 'image', source: { type: 'base64', media_type: media, data: PNG } });
+
+test('the superpowers block gets a direct-answer override', () => {
+  const system = [{ type: 'text', text: 'SessionStart hook additional context: You have superpowers.' }];
+  const out = systemToText(system);
+  assert.match(out, /You have superpowers\./);
+  assert.match(out, /OVERRIDE: .*Do not announce skill usage/);
+});
+
+test('a system prompt without the superpowers block is untouched', () => {
+  assert.equal(systemToText('You are a coding assistant.'), 'You are a coding assistant.');
+});
 
 test('parses the tool_calls tag', () => {
   const out = extractToolCalls('Reading.\n<tool_calls>[{"name":"Read","input":{"file_path":"a.txt"}}]</tool_calls>');
