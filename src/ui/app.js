@@ -286,7 +286,7 @@ function lineChart(box, series, { latency = false } = {}) {
   });
   const countPath = data.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yCount(p.count || 0).toFixed(1)}`).join(' ');
   const areaPath = `${countPath} L${x(n - 1).toFixed(1)},${h - b} L${x(0).toFixed(1)},${h - b} Z`;
-  add('path', { d: areaPath, fill: 'rgba(255,77,109,.12)', stroke: 'none' });
+  add('path', { d: areaPath, fill: 'var(--accent-soft)', stroke: 'none' });
   add('path', { d: countPath, class: 'line' });
   if (latency) {
     const latPath = data.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${yLat(p.avg || 0).toFixed(1)}`).join(' ');
