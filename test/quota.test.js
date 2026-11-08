@@ -59,6 +59,19 @@ test('marks exceeded quotas and rejects foreign links', () => {
   assert.equal(quota.upgradeUrl, null);
 });
 
+test('zero-total quotas report exhausted or unavailable, never 0/0', () => {
+  const exhausted = normalizeQuota({
+    isQuotaExceeded: true,
+    userQuota: { total: 0, used: 0, remaining: 0, unit: 'credits' },
+  }, 1);
+  assert.equal(exhausted.status, 'exceeded');
+  assert.equal(exhausted.reason, 'no-credits');
+  assert.equal(exhausted.percent, 100);
+  const empty = normalizeQuota({ userQuota: { total: 0, used: 0, unit: 'credits' } }, 1);
+  assert.equal(empty.status, 'unavailable');
+  assert.equal(empty.reason, 'no-quota');
+});
+
 test('malformed payloads degrade to unavailable', () => {
   assert.equal(normalizeQuota({}, 1).status, 'unavailable');
   assert.equal(normalizeQuota(null, 1).status, 'unavailable');
