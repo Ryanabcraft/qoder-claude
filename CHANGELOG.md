@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.11.1
+
+- Added the qoder-claude logo to the dashboard, site, README and favicon.
+- The dashboard accent now matches the mint mark from the logo.
+
 ## 1.11.0
 
 - Dashboard rebuilt as a console: grouped navigation, Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models and Settings.

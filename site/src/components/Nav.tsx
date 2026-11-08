@@ -14,7 +14,8 @@ export function Nav() {
   return (
     <nav className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-        <a href="#top" className="font-mono text-sm tracking-tight text-foreground">
+        <a href="#top" className="flex items-center gap-2 font-mono text-sm tracking-tight text-foreground">
+          <img src="/qoder-claude/logo.png" alt="" className="size-7 rounded-md" />
           qoder-claude
         </a>
         <div className="flex items-center gap-2 sm:gap-5">
