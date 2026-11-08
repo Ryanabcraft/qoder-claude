@@ -23,6 +23,21 @@ const serverEntry = path.join(ROOT, 'src', 'server.js');
 const args = process.argv.slice(2);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+function stopBridge(child) {
+  if (child) {
+    try { child.kill(); } catch {}
+  }
+  try {
+    const pidFile = path.join(ROOT, 'bridge.pid');
+    if (!fs.existsSync(pidFile)) return;
+    const pid = Number(fs.readFileSync(pidFile, 'utf8').trim());
+    if (pid > 0 && pid !== process.pid) {
+      try { process.kill(pid); } catch {}
+    }
+    fs.rmSync(pidFile, { force: true });
+  } catch {}
+}
+
 async function isUp() {
   try {
     const r = await fetch(`http://127.0.0.1:${PORT}/health`, { signal: AbortSignal.timeout(1500) });
@@ -53,7 +68,7 @@ async function isUp() {
   const child = spawn(process.execPath, [serverEntry], {
     cwd: ROOT,
     stdio: ['ignore', out, out],
-    env: { ...process.env, BRIDGE_LOG_FILE: LOG },
+    env: { ...process.env, BRIDGE_LOG_FILE: LOG, BRIDGE_PARENT_PID: String(process.pid) },
   });
   for (let i = 0; i < 160; i++) {
     if (await isUp()) return child;
@@ -559,13 +574,10 @@ if (args[0] === '--serve') {
   }
   if (child) console.log(`qclaude: bridge started at 127.0.0.1:${PORT} (log: ${LOG})`);
 
-  const stop = () => {
-    if (child) {
-      try { child.kill(); } catch {}
-    }
-  };
+  const stop = () => stopBridge(child);
   process.on('SIGINT', () => { stop(); process.exit(130); });
   process.on('SIGTERM', () => { stop(); process.exit(143); });
+  process.on('SIGHUP', () => { stop(); process.exit(129); });
 
   const code = await runClaude(claudeBin, claudeArgs);
   stop();

@@ -120,8 +120,9 @@ qclaude --no-browser   # skips the dashboard tab
 qclaude --stop         # stop the server
 ```
 
-When `qclaude` starts the server itself, closing Claude also stops it. A server started by
-`start.cmd` is left alone.
+Closing Claude — `/exit`, Ctrl+C or closing the terminal — stops the bridge too. The server
+also watches its parent, so it exits within 3 seconds even when `qclaude` is killed hard. A
+server started by `start.cmd`/`start.sh` by hand is left alone.
 
 ## Running it
 
