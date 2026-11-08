@@ -66,7 +66,7 @@ pula o backup das contas; `--remove-exa` remove o MCP Exa quando a URL é a do q
 
 ## Dashboard
 
-![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif)
+![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif?v=1.11.1)
 
 Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models e Settings. Os settings
 escrevem `bridge.config.json` e o settings do Claude com backup; o analytics guarda 7 dias.

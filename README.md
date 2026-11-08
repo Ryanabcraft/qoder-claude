@@ -66,7 +66,7 @@ accounts copy; `--remove-exa` removes the Exa MCP when its URL is the qoder-clau
 
 ## Dashboard
 
-![qoder-claude dashboard](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif)
+![qoder-claude dashboard](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif?v=1.11.1)
 
 Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models and Settings. Settings
 write `bridge.config.json` and the Claude user settings with backups; analytics keep 7 days.
