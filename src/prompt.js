@@ -102,9 +102,9 @@ const DEFERRED_SCHEMAS = [
 
 // Deferred tools have no schema in the request; give the model one so the call
 // carries those call names and arguments instead of an empty input.
-function withDeferred(tools, system) {
+function withDeferred(tools, context) {
   const names = new Set(tools.map((t) => t.name));
-  const extra = DEFERRED_SCHEMAS.filter((d) => !names.has(d.name) && d.detect.test(system)).map((d) => ({
+  const extra = DEFERRED_SCHEMAS.filter((d) => !names.has(d.name) && d.detect.test(context)).map((d) => ({
     name: d.name,
     description: d.description,
     input_schema: d.schema,
@@ -114,18 +114,21 @@ function withDeferred(tools, system) {
 
 export function buildPrompt(body, from = 0) {
   const system = normalizeSystem(body.system);
+  const all = Array.isArray(body.messages) ? body.messages : [];
+  const msgs = from > 0 ? all.slice(from) : all;
+  const rendered = msgs.map((m) => blocksToText(m.content));
+  const context = `${system}\n${rendered.join('\n')}`;
+
   const parts = [];
   if (from === 0 && Array.isArray(body.tools) && body.tools.length) {
-    parts.push(toolsToText(withDeferred(body.tools, system)), '');
+    parts.push(toolsToText(withDeferred(body.tools, context)), '');
   }
 
   parts.push('[CONVERSATION]');
-  const all = Array.isArray(body.messages) ? body.messages : [];
-  const msgs = from > 0 ? all.slice(from) : all;
-  for (const m of msgs) {
+  msgs.forEach((m, i) => {
     const role = (m.role || 'user').toUpperCase();
-    parts.push(`${role}: ${blocksToText(m.content)}`);
-  }
+    parts.push(`${role}: ${rendered[i]}`);
+  });
   parts.push('');
   parts.push('[INSTRUCTION]');
   parts.push('Follow the agent instructions exactly.');

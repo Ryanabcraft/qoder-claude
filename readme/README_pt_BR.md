@@ -159,7 +159,8 @@ e servidores MCP rodam do lado do Claude Code; a bridge só carrega os blocos `t
 `WebSearch` e `WebFetch` são *deferred*: pedem uma aprovação e são carregadas pelo `ToolSearch`,
 depois funcionam normalmente. O `WebSearch` nativo volta sem resultados atrás do gateway; quando
 existe um servidor MCP Exa configurado, o turno instrui o modelo a usar
-`mcp__exa__web_search_exa` e entrega o schema, então a chamada chega com query.
+`mcp__exa__web_search_exa`, entrega o schema e reescreve qualquer chamada `WebSearch` para a
+ferramenta do Exa — a busca devolve resultados reais em vez de lista vazia.
 
 Overrides opcionais, quando você realmente quiser:
 
