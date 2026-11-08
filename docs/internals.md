@@ -188,6 +188,13 @@ the Qoder side every request carries `context_window: 1000000`; override with
 | POST | `/v1/messages` | Anthropic Messages |
 | POST | `/v1/messages/count_tokens` | token estimate |
 
+## Dashboard auth
+
+With `BRIDGE_API_KEY` set, `qclaude` opens `/ui#key=…` (fragment, never sent to the server). The
+page stores it in `sessionStorage` and strips it from the URL with `history.replaceState`. API
+calls send `x-api-key`; a 401 asks for the key once. Request logs redact any parameter whose name
+matches `key`, `token`, `secret`, `password` or `auth`.
+
 ## Manual setup
 
 Without the installer, after `qodercli login` and `node src/server.js`, add to

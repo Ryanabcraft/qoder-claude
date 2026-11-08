@@ -48,6 +48,21 @@ function send(res, status, obj) {
   res.end(body);
 }
 
+const SENSITIVE = /(key|token|secret|password|auth)/i;
+
+function safeSearch(url) {
+  const params = new URLSearchParams(url.search);
+  let changed = false;
+  for (const name of [...params.keys()]) {
+    if (SENSITIVE.test(name)) {
+      params.set(name, '***');
+      changed = true;
+    }
+  }
+  const query = params.toString();
+  return query ? `?${query}` : changed ? '' : url.search;
+}
+
 function authorized(req) {
   if (!KEY) return true;
   const h = req.headers['authorization'] || '';
@@ -391,7 +406,7 @@ async function handleMessages(req, res, body) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || HOST}`);
   const path = url.pathname.replace(/\/+$/, '');
-  log(`${new Date().toISOString()} ${req.method} ${url.pathname}${url.search}`);
+  log(`${new Date().toISOString()} ${req.method} ${url.pathname}${safeSearch(url)}`);
 
   if (url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname === '/favicon.svg') {
     if (await handleUi(req, res, url, { authorized, logFile: LOG_PATH })) return;
