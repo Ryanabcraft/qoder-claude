@@ -209,6 +209,7 @@ if (-not $SkipVision) {
 Step 'Configuring Claude Code'
 $targets = @()
 if ($ProjectOnly) { $targets += $ProjectDir } else { $targets += $env:USERPROFILE }
+if ($claude) { $env:CLAUDE_BIN = $claude }
 foreach ($t in $targets) {
   $env:QODER_CLAUDE_TARGET = $t
   & node (Join-Path $InstallDir 'scripts\enable-here.js')

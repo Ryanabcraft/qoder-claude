@@ -22,7 +22,7 @@ export function ensureExa({ bin, configPath = claudeConfigPath(), run = spawnSyn
   if (env.QODER_NO_EXA === '1') return { ok: true, skipped: 'disabled' };
   if (hasExa(configPath)) return { ok: true, skipped: 'already' };
 
-  const cmd = bin || (process.platform === 'win32' ? 'claude.cmd' : 'claude');
+  const cmd = bin || env.CLAUDE_BIN || (process.platform === 'win32' ? 'claude.cmd' : 'claude');
   const args = ['mcp', 'add', '--transport', 'http', 'exa', EXA_URL, '-s', 'user'];
   const result = run(cmd, args, {
     encoding: 'utf8',

@@ -193,6 +193,8 @@ if [ "$NODE_BIN" = "$NODE_LOCAL/bin/node" ]; then
 fi
 
 step "Configuring Claude Code"
+CLAUDE_BIN="$(command -v claude 2>/dev/null || true)"
+export CLAUDE_BIN
 if [ "$PROJECT_ONLY" -eq 1 ]; then
   QODER_CLAUDE_TARGET="$(pwd)" "$NODE_BIN" "$INSTALL_DIR/scripts/enable-here.js"
 else

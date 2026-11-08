@@ -50,6 +50,17 @@ test('ensureExa adds exa in the user scope', () => {
   assert.equal(call.opts.windowsHide, true);
 });
 
+test('CLAUDE_BIN is used when no explicit bin is passed', () => {
+  const file = write('envbin.json', JSON.stringify({ mcpServers: {} }));
+  let cmd = null;
+  ensureExa({
+    configPath: file,
+    env: { CLAUDE_BIN: '/opt/claude' },
+    run: (name) => { cmd = name; return { status: 0 }; },
+  });
+  assert.equal(cmd, '/opt/claude');
+});
+
 test('QODER_NO_EXA disables the setup', () => {
   const file = write('disabled.json', JSON.stringify({ mcpServers: {} }));
   const result = ensureExa({ configPath: file, env: { QODER_NO_EXA: '1' }, run: () => { throw new Error('must not spawn'); } });
