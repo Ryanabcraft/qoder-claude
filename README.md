@@ -47,6 +47,7 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 | `qclaude --no-browser` | skips the dashboard tab |
 | `qclaude --serve` | server only, foreground |
 | `qclaude update` | checks and installs the latest version |
+| `qclaude notes [version]` | prints the changelog for this install |
 | `qclaude uninstall` | removes the app, launcher and settings (asks first) |
 | `qclaude uninstall --dry-run` | lists what would be removed |
 | `qclaude --no-update` | skips the update check |
