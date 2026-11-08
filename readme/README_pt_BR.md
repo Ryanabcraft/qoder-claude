@@ -13,14 +13,6 @@ Claude Code  →  qoder-claude  →  api1.qoder.sh
 
 ## Instalação
 
-Um comando, qualquer SO (precisa de Node 20+):
-
-```bash
-npx -y https://ryanabcraft.github.io/qoder-claude/qoder-claude.tgz
-```
-
-Sem Node, use o instalador da sua plataforma:
-
 ```cmd
 curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```

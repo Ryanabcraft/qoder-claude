@@ -15,4 +15,3 @@ site/*.log
 accounts/
 accounts.json
 tools/
-site/public/qoder-claude.tgz
