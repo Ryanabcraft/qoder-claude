@@ -144,13 +144,17 @@ const DEFERRED_SCHEMAS = [
 
 // Deferred tools have no schema in the request; give the model one so the call
 // carries those call names and arguments instead of an empty input.
-function withDeferred(tools, context) {
+export function deferredTools(tools, context) {
   const names = new Set(tools.map((t) => t.name));
-  const extra = DEFERRED_SCHEMAS.filter((d) => !names.has(d.name) && d.detect.test(context)).map((d) => ({
+  return DEFERRED_SCHEMAS.filter((d) => !names.has(d.name) && d.detect.test(context)).map((d) => ({
     name: d.name,
     description: d.description,
     input_schema: d.schema,
   }));
+}
+
+function withDeferred(tools, context) {
+  const extra = deferredTools(tools, context);
   return extra.length ? [...tools, ...extra] : tools;
 }
 
@@ -193,6 +197,9 @@ export function buildPrompt(body, from = 0, log) {
     );
     parts.push(
       'For web search prefer mcp__exa__web_search_exa when it is available; the built-in WebSearch returns no results behind this gateway.',
+    );
+    parts.push(
+      'When the user asks you to search the web, call the web tool as a tool. Do not answer that search is unavailable before attempting the call.',
     );
   }
   const prompt = parts.join('\n');

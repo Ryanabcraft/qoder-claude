@@ -131,6 +131,10 @@ function alignToolCalls(tc, { preferExa = false } = {}) {
         const query = c.input?.query || c.input?.q || '';
         return { name: 'mcp__exa__web_search_exa', input: query ? { query } : c.input || {} };
       }
+      if (preferExa && name === 'WebFetch') {
+        const url = c.input?.url || '';
+        return { name: 'mcp__exa__web_fetch_exa', input: url ? { url } : c.input || {} };
+      }
       return { ...c, name };
     }),
   };

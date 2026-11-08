@@ -47,7 +47,9 @@ The block becomes a real `tool_use` block and Claude Code executes it. The strea
 text as soon as either marker appears, so a partial block never reaches the client as chat.
 
 Tools that arrive *deferred* (`WebSearch`, `WebFetch`, MCP servers) get a minimal schema in the
-turn and, for search, are routed to `mcp__exa__web_search_exa` when that MCP is configured.
+turn — in the CLI prompt and in the direct payload's `tools` array — so the model can call them
+without a `ToolSearch` round trip. Search and fetch are routed to `mcp__exa__web_search_exa` /
+`mcp__exa__web_fetch_exa` when that MCP is configured.
 
 ## Sessions
 
