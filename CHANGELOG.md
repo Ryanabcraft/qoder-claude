@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.19
+
+- Coverage thresholds adjusted for the file set Node 22 measures in CI (55 lines / 60 branches / 45 functions).
+
 ## 1.10.18
 
 - README badges for CI, version and license, plus a dashboard screenshot.
