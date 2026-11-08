@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Site and documentation
+    url: https://ryanabcraft.github.io/qoder-claude/
+    about: Install, commands and limits.
+  - name: Usage and troubleshooting
+    url: https://github.com/Ryanabcraft/qoder-claude#troubleshooting
+    about: Read this before opening an issue.
