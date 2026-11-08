@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.1
+
+- Landing site restyled to match the docs: light/dark theme, two-column hero with the logo, action buttons, feature cards and a theme toggle.
+
 ## 1.12.0
 
 - Added a VitePress documentation site at /qoder-claude/docs/ with English and pt-BR tracks, local search, sidebar and the mint theme.

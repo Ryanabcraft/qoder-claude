@@ -4,6 +4,8 @@ export type Dict = {
   nav: { how: string; limits: string; docs: string; github: string };
   hero: {
     badge: string;
+    getStarted: string;
+    readDocs: string;
     h1a: string;
     h1b: string;
     p: string;
@@ -41,6 +43,8 @@ export const en: Dict = {
   nav: { how: 'how it works', limits: 'limits', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · zero runtime dependencies',
+    getStarted: 'Get started',
+    readDocs: 'Read the docs',
     h1a: 'The terminal stays.',
     h1b: 'The model changes.',
     p: 'qoder-claude is a local Anthropic Messages API bridge backed by your Qoder plan. Claude Code keeps its tools, its prompts and its effort controls; the tokens come from Qoder.',
@@ -127,6 +131,8 @@ export const pt: Dict = {
   nav: { how: 'como funciona', limits: 'limites', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'código aberto · MIT · zero dependências de runtime',
+    getStarted: 'Começar',
+    readDocs: 'Ler os docs',
     h1a: 'O terminal fica.',
     h1b: 'O modelo muda.',
     p: 'qoder-claude é uma bridge local da Anthropic Messages API apoiada no seu plano Qoder. O Claude Code mantém as ferramentas, os prompts e os controles de esforço; os tokens vêm do Qoder.',
@@ -213,6 +219,8 @@ export const es: Dict = {
   nav: { how: 'cómo funciona', limits: 'límites', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'código abierto · MIT · sin dependencias de ejecución',
+    getStarted: 'Empezar',
+    readDocs: 'Leer los docs',
     h1a: 'La terminal se queda.',
     h1b: 'El modelo cambia.',
     p: 'qoder-claude es un puente local de Anthropic Messages API apoyado en tu plan de Qoder. Claude Code conserva sus herramientas, sus prompts y sus controles de esfuerzo; los tokens vienen de Qoder.',
@@ -299,6 +307,8 @@ export const fr: Dict = {
   nav: { how: 'fonctionnement', limits: 'limites', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · aucune dépendance à l’exécution',
+    getStarted: 'Commencer',
+    readDocs: 'Lire la doc',
     h1a: 'Le terminal reste.',
     h1b: 'Le modèle change.',
     p: 'qoder-claude est un pont local Anthropic Messages API adossé à votre offre Qoder. Claude Code garde ses outils, ses prompts et ses réglages d’effort ; les jetons viennent de Qoder.',
@@ -385,6 +395,8 @@ export const de: Dict = {
   nav: { how: 'funktionsweise', limits: 'grenzen', docs: 'Docs', github: 'GitHub' },
   hero: {
     badge: 'open source · MIT · keine Laufzeitabhängigkeiten',
+    getStarted: 'Loslegen',
+    readDocs: 'Doku lesen',
     h1a: 'Das Terminal bleibt.',
     h1b: 'Das Modell wechselt.',
     p: 'qoder-claude ist eine lokale Anthropic-Messages-API-Bridge auf Basis deines Qoder-Tarifs. Claude Code behält seine Werkzeuge, seine Prompts und seine Effort-Regler; die Tokens kommen von Qoder.',

@@ -1,7 +1,7 @@
-import { KeyRound, RefreshCcw, SlidersHorizontal, Wrench } from 'lucide-react';
+import { Image, KeyRound, Layers, RefreshCcw, Search, SlidersHorizontal, Wrench } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
-const ICONS = [Wrench, KeyRound, SlidersHorizontal, RefreshCcw];
+const ICONS = [Wrench, KeyRound, SlidersHorizontal, RefreshCcw, Layers, Search, Image];
 
 export function Features() {
   const { t } = useI18n();
@@ -18,24 +18,23 @@ export function Features() {
           </p>
         </div>
 
-        <ul className="mt-14 border-t border-border">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {t.features.items.map(({ title, body }, i) => {
             const Icon = ICONS[i] ?? Wrench;
             return (
-              <li
+              <article
                 key={title}
-                className="grid gap-4 border-b border-border py-8 sm:grid-cols-[64px_220px_1fr] sm:items-start sm:gap-8"
+                className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-accent/60"
               >
-                <span className="font-mono text-sm text-accent/80">0{i + 1}</span>
-                <h3 className="flex items-center gap-3 font-display text-xl tracking-tight text-foreground">
-                  <Icon className="size-4 text-accent" aria-hidden="true" />
+                <Icon className="size-5 text-accent" aria-hidden="true" />
+                <h3 className="mt-4 font-display text-base font-semibold tracking-tight text-foreground">
                   {title}
                 </h3>
-                <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{body}</p>
-              </li>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </article>
             );
           })}
-        </ul>
+        </div>
       </div>
     </section>
   );
