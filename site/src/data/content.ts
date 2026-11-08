@@ -1,4 +1,5 @@
 export const REPO = 'https://github.com/Ryanabcraft/qoder-claude';
+export const DOCS = '/qoder-claude/docs/';
 
 export const INSTALL = [
   {

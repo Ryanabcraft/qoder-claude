@@ -115,7 +115,8 @@ Quota is per account. With more than one, the bridge fails over automatically: a
 
 ## Docs
 
-- Update: `update.cmd` (Windows) or `update.sh` (macOS/Linux) — upgrades in place
+- **Documentation site:** https://ryanabcraft.github.io/qoder-claude/docs/ — install, usage, CLI,
+  configuration, troubleshooting, security and contributing (English and pt-BR)
 - [SETUP.md](SETUP.md) — from-scratch install, manual steps
-- [docs/internals.md](docs/internals.md) — transports, sessions, configuration, endpoints
+- [docs/internals.md](docs/internals.md) — deep implementation notes: transports, sessions, endpoints
 - [pt-BR](readme/README_pt_BR.md) · [Contributing](CONTRIBUTING.md) · [MIT](LICENSE)

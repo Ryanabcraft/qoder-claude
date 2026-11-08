@@ -1,5 +1,5 @@
 import { Github } from 'lucide-react';
-import { REPO } from '@/data/content';
+import { DOCS, REPO } from '@/data/content';
 import { useI18n } from '@/i18n';
 import { LangMenu } from './LangMenu';
 
@@ -9,6 +9,7 @@ export function Nav() {
   const links = [
     { href: '#how', label: t.nav.how },
     { href: '#limits', label: t.nav.limits },
+    { href: DOCS, label: t.nav.docs },
   ];
 
   return (
