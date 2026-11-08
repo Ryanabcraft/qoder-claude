@@ -52,7 +52,8 @@ Tools that arrive *deferred* (`WebSearch`, `WebFetch`, MCP servers) get a minima
 turn — in the CLI prompt and in the direct payload's `tools` array — so the model can call them
 without a `ToolSearch` round trip. Search and fetch are routed to `mcp__exa__web_search_exa` /
 `mcp__exa__web_fetch_exa`. The installer (and `qclaude` on startup) adds that MCP in the user
-scope when it is missing; `QODER_NO_EXA=1` skips the step.
+scope when it is missing and allowlists `WebSearch`, `WebFetch` and both Exa tools, so auto mode
+does not need the safety classifier to approve them. `QODER_NO_EXA=1` skips the MCP step.
 
 ## Sessions
 

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectModels } from '../src/models.js';
 import { ensureExa, EXA_URL } from '../src/exaSetup.js';
+import { withWebTools } from '../src/claudeSettings.js';
 
 const home = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = process.env.QODER_CLAUDE_TARGET || process.cwd();
@@ -58,6 +59,8 @@ current.statusLine = {
   type: 'command',
   command: `node "${statusline}"`,
 };
+
+current = withWebTools(current).settings;
 
 fs.writeFileSync(file, JSON.stringify(current, null, 2) + '\n');
 console.log(`ok -> ${file}`);
