@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+const API = 'https://api.github.com/repos/Ryanabcraft/qoder-claude/contents/package.json?ref=main';
 const RAW = 'https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/package.json';
 const TARBALL = 'https://codeload.github.com/Ryanabcraft/qoder-claude/tar.gz/refs/heads/main';
 const KEEP = new Set(['accounts', 'accounts.json', 'tools', 'bridge.log', 'bridge.pid', '.git', '.update-skip']);
@@ -32,16 +33,42 @@ export function isNewer(remote, local) {
   return false;
 }
 
-export async function checkUpdate(root, timeout = 4000) {
-  const local = localVersion(root);
+export function versionFromApiPayload(payload) {
+  if (!payload || payload.encoding !== 'base64' || typeof payload.content !== 'string') return null;
   try {
-    const res = await fetch(RAW, { signal: AbortSignal.timeout(timeout), cache: 'no-store' });
-    if (!res.ok) return { local, remote: local, hasUpdate: false };
-    const remote = JSON.parse(await res.text()).version || local;
-    return { local, remote, hasUpdate: isNewer(remote, local) };
+    const data = JSON.parse(Buffer.from(payload.content, 'base64').toString('utf8'));
+    return typeof data.version === 'string' ? data.version : null;
   } catch {
-    return { local, remote: local, hasUpdate: false };
+    return null;
   }
+}
+
+async function remoteVersion(timeout, fetchImpl) {
+  try {
+    const res = await fetchImpl(API, {
+      signal: AbortSignal.timeout(timeout),
+      cache: 'no-store',
+      headers: { accept: 'application/vnd.github+json' },
+    });
+    if (res.ok) {
+      const version = versionFromApiPayload(await res.json());
+      if (version) return version;
+    }
+  } catch {}
+
+  try {
+    const res = await fetchImpl(`${RAW}?t=${Date.now()}`, { signal: AbortSignal.timeout(timeout), cache: 'no-store' });
+    if (!res.ok) return null;
+    return JSON.parse(await res.text()).version || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function checkUpdate(root, timeout = 4000, fetchImpl = fetch) {
+  const local = localVersion(root);
+  const remote = (await remoteVersion(timeout, fetchImpl)) || local;
+  return { local, remote, hasUpdate: isNewer(remote, local) };
 }
 
 export function skippedVersion(root) {
