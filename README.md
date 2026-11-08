@@ -111,11 +111,12 @@ the "auto mode classifier requests" notice on every session and runs those check
 ### Open it
 
 ```bash
-qclaude                # boots the bridge if needed, then opens Claude Code
+qclaude                # boots the bridge, opens the dashboard, then Claude Code
 qclaude -p "..."       # any argument is forwarded to claude
 qclaude --model X      # same
 qclaude --status       # server and model list
 qclaude --serve        # only the server, foreground
+qclaude --no-browser   # skips the dashboard tab
 qclaude --stop         # stop the server
 ```
 
@@ -124,15 +125,18 @@ When `qclaude` starts the server itself, closing Claude also stops it. A server 
 
 ## Running it
 
-By default `qclaude` opens the server in **its own terminal window** — a new `cmd` on Windows,
-Terminal on macOS, and the first available emulator on Linux (`$TERMINAL`,
-`x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `alacritty`, `kitty`,
-`xterm`). The current window stays with Claude Code.
+By default the server runs **attached to the session**: `qclaude` starts it, keeps its log in
+`bridge.log`, and stops it when Claude exits. Opening the dashboard in the browser happens at
+the same time, once per interactive launch.
 
 ```bash
-qclaude --window      # only the server window
-qclaude --no-window   # server attached to this terminal
+qclaude --window       # server in its own terminal window
+qclaude --no-browser   # no dashboard tab
 ```
+
+`--window` uses a new `cmd` on Windows, Terminal on macOS, and the first emulator on Linux
+(`$TERMINAL`, `x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `alacritty`,
+`kitty`, `xterm`).
 
 Windows also keeps `start.cmd`, which opens a visible console with the port, the log path and
 every request as it happens. Closing that window — or Ctrl+C — stops the server.

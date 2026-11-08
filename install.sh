@@ -199,7 +199,7 @@ fi
 
 printf '\n  \033[32mQoder-Claude installed.\033[0m\n\n'
 printf '  \033[36mStart with: qclaude\033[0m\n\n'
-printf '  qclaude starts the bridge, opens claude, and stops the bridge when claude exits.\n\n'
+printf '  qclaude starts the bridge, opens the dashboard, then opens claude, and stops the bridge when claude exits.\n\n'
 printf '  bridge    : %s\n' "$INSTALL_DIR"
 printf '  port      : %s\n' "$PORT"
 printf '  logs      : %s/bridge.log\n' "$INSTALL_DIR"
