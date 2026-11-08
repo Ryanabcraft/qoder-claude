@@ -9,7 +9,18 @@ export function Footer() {
     <footer className="border-t border-border">
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-sm text-foreground">qoder-claude</p>
+          <div>
+            <p className="font-mono text-sm text-foreground">qoder-claude</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Made by{' '}
+              <a
+                href="https://github.com/Ryanabcraft"
+                className="text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              >
+                Ryanabcraft
+              </a>
+            </p>
+          </div>
 
           <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
             <a href={`${REPO}#readme`} className="transition-colors hover:text-foreground">
