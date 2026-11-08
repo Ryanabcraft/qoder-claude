@@ -187,7 +187,7 @@ export function buildPrompt(body, from = 0, log) {
   const system = normalizeSystem(body.system);
   const all = Array.isArray(body.messages) ? body.messages : [];
   const msgs = from > 0 ? all.slice(from) : all;
-  const lastUser = msgs.reduce((index, m, i) => ((m.role || 'user') !== 'assistant' ? i : index), -1);
+  const lastAssistant = msgs.reduce((index, m, i) => (m.role === 'assistant' ? i : index), -1);
 
   const collected = [];
   let counter = 1;
@@ -204,14 +204,14 @@ export function buildPrompt(body, from = 0, log) {
 
   // Only the newest user turn goes through the vision CLI. Older images become
   // text so a follow-up text turn does not re-upload the whole image history.
-  const images = collected.filter((image) => image.index === lastUser);
+  const images = collected.filter((image) => image.index > lastAssistant);
   const renumbered = new Map();
   images.forEach((image, i) => {
     const marker = image.marker.replace(/^\[\[image \d+:/, `[[image ${i + 1}:`);
     renumbered.set(image.marker, marker);
     image.marker = marker;
   });
-  const historyMarkers = collected.filter((image) => image.index !== lastUser).map((image) => image.marker);
+  const historyMarkers = collected.filter((image) => image.index <= lastAssistant).map((image) => image.marker);
   const renderedText = rendered.map((text) => {
     let out = text;
     for (const [oldMarker, newMarker] of renumbered) out = out.split(oldMarker).join(newMarker);

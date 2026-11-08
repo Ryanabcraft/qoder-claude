@@ -69,14 +69,14 @@ export function buildPayload(body, model, contextWindow, opts = {}) {
   if (system) messages.push({ role: 'system', content: system });
 
   const all = Array.isArray(body.messages) ? body.messages : [];
-  const lastUser = all.reduce((index, m, i) => ((m.role || 'user') !== 'assistant' ? i : index), -1);
+  const lastAssistant = all.reduce((index, m, i) => (m.role === 'assistant' ? i : index), -1);
   let counter = 1;
   let renderedText = '';
   all.forEach((m, index) => {
     const role = m.role === 'assistant' ? 'assistant' : 'user';
     const rendered = renderMessageContent(m.content, {
       start: counter,
-      allowImages: role === 'user' && index === lastUser,
+      allowImages: role === 'user' && index > lastAssistant,
       log: process.env.BRIDGE_LOG === '0' ? undefined : (line) => console.log(line),
     });
     counter = rendered.next;
