@@ -42,9 +42,6 @@ Claude Code --/v1/messages--> qoder-bridge --WASM-signed--> api1.qoder.sh
 npx -y github:Ryanabcraft/qoder-claude
 ```
 
-Detects the platform and runs the matching installer: Windows gets `install.ps1`, Linux, macOS
-and WSL get `install.sh`. Extra flags are forwarded: `--skip-vision`, `--skip-claude`,
-`--skip-login`, `--project-only`, `--dir <path>`.
 
 ### Windows — CMD
 
