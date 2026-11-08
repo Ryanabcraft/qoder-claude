@@ -5,10 +5,32 @@ import { buildPrompt, extractToolCalls, renderMessageContent, systemToText } fro
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 const image = (media = 'image/png') => ({ type: 'image', source: { type: 'base64', media_type: media, data: PNG } });
 
-test('the superpowers block gets a direct-answer override', () => {
+test('a standalone superpowers block without an index is dropped', () => {
   const system = [{ type: 'text', text: 'SessionStart hook additional context: You have superpowers.' }];
-  const out = systemToText(system);
-  assert.match(out, /You have superpowers\./);
+  assert.equal(systemToText(system), '');
+});
+
+test('the skills index survives the superpowers cleanup', () => {
+  const text = [
+    'SessionStart hook additional context: You have superpowers.',
+    'This is the mandate that breaks weak models.',
+    'The following skills are available for use with the Skill tool:',
+    '- impeccable: design polish',
+  ].join('\n');
+  const out = systemToText([{ type: 'text', text }]);
+  assert.match(out, /Never announce skill usage/);
+  assert.match(out, /impeccable: design polish/);
+  assert.doesNotMatch(out, /You have superpowers\./);
+});
+
+test('a superpowers block attached to a message is dropped too', () => {
+  const out = renderMessageContent([{ type: 'text', text: 'SessionStart hook additional context: You have superpowers.' }]);
+  assert.equal(out.text, '');
+});
+
+test('an embedded superpowers mention gets the direct-answer override', () => {
+  const out = systemToText('Project rules.\nSessionStart hook additional context: You have superpowers.');
+  assert.match(out, /Project rules\./);
   assert.match(out, /OVERRIDE: .*Do not announce skill usage/);
 });
 
