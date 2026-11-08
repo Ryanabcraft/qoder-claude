@@ -84,6 +84,12 @@ export function buildPrompt(body, from = 0) {
   parts.push('');
   parts.push('[INSTRUCTION]');
   parts.push('Follow the agent instructions exactly.');
+  const deferred = from === 0 && Array.isArray(body.tools) && body.tools.some((t) => t.name === 'ToolSearch');
+  if (deferred) {
+    parts.push(
+      'Deferred tools appear by name only. Before using one that has no schema in TOOLS, call ToolSearch with "select:<name>" and then call the tool.',
+    );
+  }
   return { system, prompt: parts.join('\n') };
 }
 
