@@ -160,7 +160,9 @@ window at 1M, because every current Qoder frontier model offers it.
 Built-in tools — `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `WebFetch`, `WebSearch` — and
 MCP servers all run on the Claude Code side; the bridge only carries the `tool_use` blocks.
 `WebSearch` and `WebFetch` are *deferred*: they need one approval and load through `ToolSearch`,
-then behave as usual.
+then behave as usual. The built-in `WebSearch` returns no results behind the gateway; when an
+Exa MCP server is configured, the turn tells the model to use `mcp__exa__web_search_exa` and
+gives it the schema, so the call arrives with a query.
 
 Optional overrides, when you actually want them:
 

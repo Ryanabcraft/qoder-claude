@@ -157,7 +157,9 @@ porque todo modelo frontier atual do Qoder oferece isso.
 Ferramentas nativas — `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `WebFetch`, `WebSearch` —
 e servidores MCP rodam do lado do Claude Code; a bridge só carrega os blocos `tool_use`.
 `WebSearch` e `WebFetch` são *deferred*: pedem uma aprovação e são carregadas pelo `ToolSearch`,
-depois funcionam normalmente.
+depois funcionam normalmente. O `WebSearch` nativo volta sem resultados atrás do gateway; quando
+existe um servidor MCP Exa configurado, o turno instrui o modelo a usar
+`mcp__exa__web_search_exa` e entrega o schema, então a chamada chega com query.
 
 Overrides opcionais, quando você realmente quiser:
 
