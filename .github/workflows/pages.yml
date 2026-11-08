@@ -5,6 +5,15 @@ on:
     branches: [main]
     paths:
       - 'site/**'
+      - 'src/**'
+      - 'bin/**'
+      - 'scripts/**'
+      - 'vendor/**'
+      - 'package.json'
+      - 'install*'
+      - 'start*'
+      - 'stop*'
+      - 'update*'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -33,6 +42,14 @@ jobs:
           cache-dependency-path: site/package-lock.json
 
       - run: npm ci
+
+      - name: Package the installer tarball
+        working-directory: .
+        run: |
+          mkdir -p site/public
+          npm pack --pack-destination site/public
+          mv site/public/qoder-claude-*.tgz site/public/qoder-claude.tgz
+
       - run: npm run build
 
       - uses: actions/configure-pages@v5

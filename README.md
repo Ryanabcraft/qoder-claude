@@ -16,7 +16,7 @@ Claude Code  →  qoder-claude  →  api1.qoder.sh
 One command, any OS (needs Node 20+):
 
 ```bash
-npx -y github:Ryanabcraft/qoder-claude
+npx -y https://ryanabcraft.github.io/qoder-claude/qoder-claude.tgz
 ```
 
 Without Node, use the installer for your platform:

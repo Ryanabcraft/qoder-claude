@@ -3,7 +3,7 @@
 Para **usar** o qoder-claude basta um comando:
 
 ```bash
-npx -y github:Ryanabcraft/qoder-claude
+npx -y https://ryanabcraft.github.io/qoder-claude/qoder-claude.tgz
 ```
 
 Este guia é para quem vai manter um fork e publicar.

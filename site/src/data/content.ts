@@ -3,7 +3,7 @@ export const REPO = 'https://github.com/Ryanabcraft/qoder-claude';
 export const INSTALL = [
   {
     id: 'any',
-    code: 'npx -y github:Ryanabcraft/qoder-claude',
+    code: 'npx -y https://ryanabcraft.github.io/qoder-claude/qoder-claude.tgz',
   },
   {
     id: 'cmd',
