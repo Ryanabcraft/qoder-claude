@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
@@ -8,7 +8,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test"
   },
   "author": "Ryanabcraft",
   "license": "MIT",
@@ -35,6 +36,7 @@
     "stop.cmd",
     "stop.sh",
     "update.cmd",
-    "update.sh"
+    "update.sh",
+    "test"
   ]
 }

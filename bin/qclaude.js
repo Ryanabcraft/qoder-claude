@@ -85,7 +85,8 @@ async function isUp() {
 
 function openDashboard() {
   if (process.env.BRIDGE_NO_BROWSER === '1') return;
-  const url = `http://127.0.0.1:${PORT}/ui`;
+  const key = process.env.BRIDGE_API_KEY;
+  const url = `http://127.0.0.1:${PORT}/ui${key ? `?key=${encodeURIComponent(key)}` : ''}`;
   try {
     let child;
     if (process.platform === 'win32') {

@@ -1,6 +1,12 @@
 const $ = (s) => document.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
 
+const KEY_STORE = 'bridge_api_key';
+const urlKey = new URLSearchParams(location.search).get('key');
+if (urlKey) sessionStorage.setItem(KEY_STORE, urlKey);
+const bridgeKey = () => sessionStorage.getItem(KEY_STORE) || '';
+let askedKey = false;
+
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -16,10 +22,24 @@ const svgEl = (tag, attrs = {}) => {
 let state = { status: null, accounts: null, models: [], metrics: null, filter: '' };
 
 async function api(path, opts = {}) {
-  const res = await fetch('/ui/api/' + path, {
-    ...opts,
-    headers: { 'content-type': 'application/json', ...(opts.headers || {}) },
-  });
+  const call = () =>
+    fetch('/ui/api/' + path, {
+      ...opts,
+      headers: {
+        'content-type': 'application/json',
+        ...(bridgeKey() ? { 'x-api-key': bridgeKey() } : {}),
+        ...(opts.headers || {}),
+      },
+    });
+  let res = await call();
+  if (res.status === 401 && !askedKey) {
+    askedKey = true;
+    const key = window.prompt('API key (BRIDGE_API_KEY) to open the dashboard:') || '';
+    if (key) {
+      sessionStorage.setItem(KEY_STORE, key);
+      res = await call();
+    }
+  }
   const text = await res.text();
   let body = {};
   try { body = JSON.parse(text); } catch { body = { error: text }; }
@@ -448,7 +468,7 @@ async function refreshAll() {
 $('#btn-refresh').addEventListener('click', refreshAll);
 $('#btn-stop').addEventListener('click', async () => {
   if (!confirm('Stop the bridge server?')) return;
-  try { await fetch('/ui/api/stop', { method: 'POST' }); } catch {}
+  try { await api('stop', { method: 'POST' }); } catch {}
   setTimeout(loadStatus, 800);
 });
 

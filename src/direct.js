@@ -61,7 +61,7 @@ export function forgetContext(dir) {
   cache.delete(configDirFor(dir));
 }
 
-function buildPayload(body, model, contextWindow) {
+function buildPayload(body, model, contextWindow, opts = {}) {
   const messages = [];
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
@@ -84,6 +84,11 @@ function buildPayload(body, model, contextWindow) {
   const maxTokens = Number(body.max_tokens);
   if (maxTokens > 0) payload.max_tokens = maxTokens;
   if (contextWindow > 0) payload.context_window = contextWindow;
+  if (opts.thinking) {
+    payload.thinking = { type: opts.thinking };
+    if (opts.thinkingBudget) payload.thinking.budget_tokens = opts.thinkingBudget;
+  }
+  if (opts.effort) payload.reasoning_effort = opts.effort;
 
   if (Array.isArray(body.tools) && body.tools.length) {
     payload.tools = body.tools.map((t) => ({
@@ -113,15 +118,21 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   } catch (e) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
-  const payload = buildPayload(body, cfg.model, cfg.contextWindow);
+  const payload = buildPayload(body, cfg.model, cfg.contextWindow, cfg);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
   const headers = Object.fromEntries(req.headers);
 
   let res;
   try {
-    res = await fetch(req.url, { method: 'POST', headers, body: req.body, signal });
+    const timeout = Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000);
+    const signals = [AbortSignal.timeout(timeout)];
+    if (signal) signals.push(signal);
+    res = await fetch(req.url, { method: 'POST', headers, body: req.body, signal: AbortSignal.any(signals) });
   } catch (e) {
     if (e.name === 'AbortError') return { text: '', usage: {}, error: null };
+    if (e.name === 'TimeoutError') {
+      return { text: '', usage: {}, error: `timeout after ${process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000}ms` };
+    }
     return { text: '', usage: {}, error: String(e.message || e) };
   }
 
@@ -132,6 +143,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
 
   let text = '';
   let usage = {};
+  let stopReason = null;
   const calls = new Map();
   const decoder = new TextDecoder();
   let buf = '';
@@ -147,6 +159,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     if (chunk.usage) usage = chunk.usage;
     const choice = chunk.choices && chunk.choices[0];
     if (!choice) return;
+    if (choice.finish_reason) stopReason = choice.finish_reason;
     const delta = choice.delta || {};
 
     if (typeof delta.content === 'string' && delta.content) {
@@ -194,5 +207,5 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     }
   }
 
-  return { text, usage, error: null };
+  return { text, usage, error: null, stopReason };
 }
