@@ -11,6 +11,7 @@ import { detectModels } from './models.js';
 import { handleUi } from './uiApi.js';
 import { record } from './metrics.js';
 import { estimateImageTokens, redactForLog } from './images.js';
+import { runVision, visionCliPath } from './vision.js';
 import {
   candidateAccounts,
   clearCooldown,
@@ -130,7 +131,7 @@ function cfgForAccount(cfg, account) {
  * it down and the next attempt runs on the following account. Requests that
  * already produced visible text never rotate: the caller cannot rewrite a stream.
  */
-async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => true }) {
+async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => true }, runner = run) {
   const accounts = candidateAccounts();
   let last = { text: '', usage: {}, error: 'no account available', account: cfg.account };
 
@@ -143,7 +144,7 @@ async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => t
 
     let out;
     try {
-      out = await run({ body, cfg: attempt, signal, onEvent });
+      out = await runner({ body, cfg: attempt, signal, onEvent });
     } catch (e) {
       out = { text: '', usage: {}, error: e.message || String(e) };
     }
@@ -173,7 +174,12 @@ async function handleMessages(req, res, body) {
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
   const inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
-  if (built.images.length) log(`  images ${built.images.length}`);
+  if (built.images.length) {
+    log(`  images ${built.images.length}${visionCliPath() ? '' : ' (vision engine not installed)'}`);
+  }
+  const runner = built.images.length && visionCliPath()
+    ? (args) => runVision({ ...args, built, log }) || run(args)
+    : run;
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const started = Date.now();
   let usedAccount = cfg.account;
@@ -185,7 +191,7 @@ async function handleMessages(req, res, body) {
   if (!stream) {
     let out;
     try {
-      out = await runWithRotation({ body, cfg, signal: ac.signal });
+      out = await runWithRotation({ body, cfg, signal: ac.signal }, runner);
     } catch (e) {
       const status = errorStatus(e.message || '');
       return send(res, status, errorBody(e.message || 'request failed', status));
@@ -306,7 +312,7 @@ async function handleMessages(req, res, body) {
       onEvent: (ev) => {
         if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') { startStream(); feed(ev.delta.text || ''); }
       },
-    });
+    }, runner);
     usedAccount = out.account || usedAccount;
   } catch (e) {
     clearInterval(keepalive);

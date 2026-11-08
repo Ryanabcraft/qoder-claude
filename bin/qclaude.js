@@ -14,6 +14,7 @@ import {
   setRotation,
   useAccount,
 } from '../src/accounts.js';
+import { installVision, visionCliPath, visionVersion } from '../src/vision.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -441,6 +442,22 @@ if (args[0] === 'account') {
   process.exit(await accountCommand(args[1], args[2]));
 }
 
+if (args[0] === 'vision') {
+  if (args[1] === 'install') {
+    try {
+      installVision((line) => console.log(line));
+      console.log('vision enabled: run qclaude again and paste an image.');
+    } catch (e) {
+      console.error(`qclaude: could not install the vision engine (${e.message})`);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+  const cli = visionCliPath();
+  console.log(cli ? `vision: ready (${visionVersion()}) -> ${cli}` : 'vision: not installed. run: qclaude vision install');
+  process.exit(0);
+}
+
 if (args[0] === 'rotation') {
   if (!args[1]) {
     const rot = rotationSnapshot();
@@ -481,6 +498,9 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude account resume <name>  puts it back in rotation
   qclaude account remove <name>
   qclaude account current
+
+  qclaude vision             vision engine status
+  qclaude vision install     downloads the image-capable engine
 
   qclaude rotation           shows the failover pool
   qclaude rotation on|off    switches automatic failover
