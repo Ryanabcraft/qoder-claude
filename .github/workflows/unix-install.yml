@@ -55,5 +55,5 @@ jobs:
         run: |
           "$RUNNER_TEMP/home/.local/node/bin/node" -v
           "$RUNNER_TEMP/home/.local/bin/qclaude" --help > /dev/null
-          test -f "$RUNNER_TEMP/home/.local/share/qoder-bridge/src/server.js"
+          test -f "$RUNNER_TEMP/home/.local/share/qoder-claude/src/server.js"
           test -f "$RUNNER_TEMP/home/.claude/settings.json"
