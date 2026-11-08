@@ -35,7 +35,8 @@ qclaude
 ```
 
 That starts the bridge, opens the dashboard at <http://127.0.0.1:8787/ui>, and opens Claude Code.
-Closing Claude — `/exit`, Ctrl+C or closing the terminal — stops the bridge.
+Closing Claude — `/exit`, Ctrl+C or closing the terminal — stops the bridge. On open, `qclaude`
+checks for a new version and asks before updating; a declined version is not asked again.
 
 | command | what it does |
 |---|---|
@@ -44,6 +45,8 @@ Closing Claude — `/exit`, Ctrl+C or closing the terminal — stops the bridge.
 | `qclaude --status` | server, account and model list |
 | `qclaude --no-browser` | skips the dashboard tab |
 | `qclaude --serve` | server only, foreground |
+| `qclaude update` | checks and installs the latest version |
+| `qclaude --no-update` | skips the update check |
 | `qclaude --stop` | stops the server |
 
 ## What works
