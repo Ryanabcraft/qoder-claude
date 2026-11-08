@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.16
+
+- Only the newest user image goes to the vision engine; images from earlier turns become text placeholders, so follow-up text turns stay fast instead of re-uploading the image history.
+
 ## 1.10.15
 
 - Update checks use the GitHub API first, with the raw package file as fallback, so a new release is seen without the 5-minute raw cache.

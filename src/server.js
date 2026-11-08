@@ -202,8 +202,9 @@ async function handleMessages(req, res, body) {
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
   const inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
-  if (built.images.length) {
-    log(`  images ${built.images.length}${visionCliPath() ? '' : ' (vision engine not installed)'}`);
+  if (built.images.length || built.historyImages) {
+    const history = built.historyImages ? ` (+${built.historyImages} from history)` : '';
+    log(`  images ${built.images.length}${history}${visionCliPath() ? '' : ' (vision engine not installed)'}`);
   }
   const runner = built.images.length && visionCliPath()
     ? (args) => runVision({ ...args, built, log }) || run(args)

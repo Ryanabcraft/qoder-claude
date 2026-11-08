@@ -78,6 +78,38 @@ test('marks tool_result images with their id', () => {
   assert.match(out.text, /\[\[image 1: image\/png \(tool_result toolu_x\)\]\]/);
 });
 
+test('history images do not trigger the vision path', () => {
+  const body = {
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: 'veja' }, image()] },
+      { role: 'assistant', content: [{ type: 'text', text: 'é um print' }] },
+      { role: 'user', content: 'e agora?' },
+    ],
+  };
+  const out = buildPrompt(body);
+  assert.equal(out.images.length, 0);
+  assert.equal(out.historyImages, 1);
+  assert.match(out.prompt, /not re-sent/);
+  assert.doesNotMatch(out.prompt, /\[\[image 1:/);
+});
+
+test('only the newest message image is attached and renumbered', () => {
+  const body = {
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: 'primeira' }, image()] },
+      { role: 'assistant', content: [{ type: 'text', text: 'ok' }] },
+      { role: 'user', content: [{ type: 'text', text: 'segunda' }, image('image/jpeg')] },
+    ],
+  };
+  const out = buildPrompt(body);
+  assert.equal(out.images.length, 1);
+  assert.equal(out.historyImages, 1);
+  assert.equal(out.images[0].marker, '[[image 1: image/jpeg]]');
+  assert.match(out.prompt, /\[\[image 1: image\/jpeg\]\]/);
+  assert.match(out.prompt, /not re-sent/);
+  assert.doesNotMatch(out.prompt, /\[\[image 2:/);
+});
+
 test('buildPrompt stays text-only without images', () => {
   const built = buildPrompt({ messages: [{ role: 'user', content: 'hello' }] });
   assert.equal(built.images.length, 0);

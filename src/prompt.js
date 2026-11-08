@@ -187,20 +187,39 @@ export function buildPrompt(body, from = 0, log) {
   const system = normalizeSystem(body.system);
   const all = Array.isArray(body.messages) ? body.messages : [];
   const msgs = from > 0 ? all.slice(from) : all;
+  const lastUser = msgs.reduce((index, m, i) => ((m.role || 'user') !== 'assistant' ? i : index), -1);
 
-  const images = [];
+  const collected = [];
   let counter = 1;
-  const rendered = msgs.map((m) => {
+  const rendered = msgs.map((m, index) => {
     const out = renderMessageContent(m.content, {
       start: counter,
       allowImages: (m.role || 'user') !== 'assistant',
       log,
     });
     counter = out.next;
-    images.push(...out.images);
+    for (const image of out.images) collected.push({ ...image, index });
     return out.text;
   });
-  const context = `${system}\n${rendered.join('\n')}`;
+
+  // Only the newest user turn goes through the vision CLI. Older images become
+  // text so a follow-up text turn does not re-upload the whole image history.
+  const images = collected.filter((image) => image.index === lastUser);
+  const renumbered = new Map();
+  images.forEach((image, i) => {
+    const marker = image.marker.replace(/^\[\[image \d+:/, `[[image ${i + 1}:`);
+    renumbered.set(image.marker, marker);
+    image.marker = marker;
+  });
+  const historyMarkers = collected.filter((image) => image.index !== lastUser).map((image) => image.marker);
+  const renderedText = rendered.map((text) => {
+    let out = text;
+    for (const [oldMarker, newMarker] of renumbered) out = out.split(oldMarker).join(newMarker);
+    for (const marker of historyMarkers) out = out.split(marker).join('[[image from an earlier turn: not re-sent]]');
+    return out;
+  });
+
+  const context = `${system}\n${renderedText.join('\n')}`;
 
   const parts = [];
   if (from === 0 && Array.isArray(body.tools) && body.tools.length) {
@@ -210,7 +229,7 @@ export function buildPrompt(body, from = 0, log) {
   parts.push('[CONVERSATION]');
   msgs.forEach((m, i) => {
     const role = (m.role || 'user').toUpperCase();
-    parts.push(`${role}: ${rendered[i]}`);
+    parts.push(`${role}: ${renderedText[i]}`);
   });
   parts.push('');
   parts.push('[INSTRUCTION]');
@@ -229,7 +248,7 @@ export function buildPrompt(body, from = 0, log) {
   }
   const prompt = parts.join('\n');
   const blocks = images.length ? anthropicContent(prompt, images) : null;
-  return { system, prompt, images, blocks };
+  return { system, prompt, images, historyImages: collected.length - images.length, blocks };
 }
 
 export function toolCallMarker() {
