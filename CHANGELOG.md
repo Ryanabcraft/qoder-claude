@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.1
+
+- Fixed the language dropdown opening as a light native menu with pale text in dark mode; selects now follow the active color scheme.
+
 ## 1.13.0
 
 - Dashboard language picker in the top bar and Settings → General, with English, Portuguese (BR), Spanish, French and German.
