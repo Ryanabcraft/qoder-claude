@@ -69,10 +69,55 @@ export function normalizeSystem(system) {
     .trim();
 }
 
+const DEFERRED_SCHEMAS = [
+  {
+    name: 'WebSearch',
+    detect: /\bWebSearch\b/,
+    description: 'Search the web. Input: {"query":"..."}.',
+    schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+  },
+  {
+    name: 'WebFetch',
+    detect: /\bWebFetch\b/,
+    description: 'Fetch a URL and answer a question about it. Input: {"url":"...","prompt":"..."}.',
+    schema: {
+      type: 'object',
+      properties: { url: { type: 'string' }, prompt: { type: 'string' } },
+      required: ['url', 'prompt'],
+    },
+  },
+  {
+    name: 'mcp__exa__web_search_exa',
+    detect: /mcp__exa__web_search_exa/,
+    description: 'Search the web through Exa. Input: {"query":"..."}.',
+    schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+  },
+  {
+    name: 'mcp__exa__web_fetch_exa',
+    detect: /mcp__exa__web_fetch_exa/,
+    description: 'Fetch a URL through Exa. Input: {"url":"..."}.',
+    schema: { type: 'object', properties: { url: { type: 'string' } }, required: ['url'] },
+  },
+];
+
+// Deferred tools have no schema in the request; give the model one so the call
+// carries those call names and arguments instead of an empty input.
+function withDeferred(tools, system) {
+  const names = new Set(tools.map((t) => t.name));
+  const extra = DEFERRED_SCHEMAS.filter((d) => !names.has(d.name) && d.detect.test(system)).map((d) => ({
+    name: d.name,
+    description: d.description,
+    input_schema: d.schema,
+  }));
+  return extra.length ? [...tools, ...extra] : tools;
+}
+
 export function buildPrompt(body, from = 0) {
   const system = normalizeSystem(body.system);
   const parts = [];
-  if (from === 0 && Array.isArray(body.tools) && body.tools.length) parts.push(toolsToText(body.tools), '');
+  if (from === 0 && Array.isArray(body.tools) && body.tools.length) {
+    parts.push(toolsToText(withDeferred(body.tools, system)), '');
+  }
 
   parts.push('[CONVERSATION]');
   const all = Array.isArray(body.messages) ? body.messages : [];
@@ -88,6 +133,9 @@ export function buildPrompt(body, from = 0) {
   if (deferred) {
     parts.push(
       'Deferred tools appear by name only. Before using one that has no schema in TOOLS, call ToolSearch with "select:<name>" and then call the tool.',
+    );
+    parts.push(
+      'For web search prefer mcp__exa__web_search_exa when it is available; the built-in WebSearch returns no results behind this gateway.',
     );
   }
   return { system, prompt: parts.join('\n') };
