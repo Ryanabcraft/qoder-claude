@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { renderMessageContent, systemToText } from './prompt.js';
+import { deferredTools, renderMessageContent, systemToText } from './prompt.js';
 import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
 
@@ -62,12 +62,13 @@ export function forgetContext(dir) {
   cache.delete(configDirFor(dir));
 }
 
-function buildPayload(body, model, contextWindow, opts = {}) {
+export function buildPayload(body, model, contextWindow, opts = {}) {
   const messages = [];
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
 
   let counter = 1;
+  let renderedText = '';
   for (const m of Array.isArray(body.messages) ? body.messages : []) {
     const role = m.role === 'assistant' ? 'assistant' : 'user';
     const rendered = renderMessageContent(m.content, {
@@ -76,6 +77,7 @@ function buildPayload(body, model, contextWindow, opts = {}) {
       log: process.env.BRIDGE_LOG === '0' ? undefined : (line) => console.log(line),
     });
     counter = rendered.next;
+    renderedText += rendered.text + '\n';
     if (!rendered.text && !rendered.images.length) continue;
     const content = rendered.images.length ? openAIContent(rendered.text, rendered.images) : rendered.text;
     messages.push({ role, content });
@@ -91,8 +93,10 @@ function buildPayload(body, model, contextWindow, opts = {}) {
   }
   if (opts.effort) payload.reasoning_effort = opts.effort;
 
-  if (Array.isArray(body.tools) && body.tools.length) {
-    payload.tools = body.tools.map((t) => ({
+  const baseTools = Array.isArray(body.tools) ? body.tools : [];
+  const tools = baseTools.length ? [...baseTools, ...deferredTools(baseTools, `${system}\n${renderedText}`)] : [];
+  if (tools.length) {
+    payload.tools = tools.map((t) => ({
       type: 'function',
       function: {
         name: t.name,
