@@ -5,6 +5,8 @@ param(
   [string]$ProjectDir = (Get-Location).Path,
   [switch]$ProjectOnly,
   [switch]$SkipDeps,
+  [switch]$SkipClaude,
+  [switch]$SkipLogin,
   [switch]$SkipVision,
   [switch]$NoStart
 )
@@ -111,7 +113,9 @@ function Find-Claude {
 }
 
 Step 'Installing Claude Code'
-$claude = Find-Claude
+$claude = if ($SkipClaude) { $null } else { Find-Claude }
+if ($SkipClaude) { Warn 'skipped (-SkipClaude)' }
+else {
 if (-not $claude) {
   if ($SkipDeps) {
     Warn 'claude is missing (-SkipDeps). Install it with: irm https://claude.ai/install.ps1 | iex'
@@ -128,20 +132,25 @@ if (-not $claude) {
     }
   }
 }
-if ($claude) {
-  Ok 'claude ready'
-} else {
-  Warn 'claude could not be installed; qclaude will retry on first run'
+  if ($claude) {
+    Ok 'claude ready'
+  } else {
+    Warn 'claude could not be installed; qclaude will retry on first run'
+  }
 }
 
 Step 'Checking Qoder login'
-$status = (& cmd /c 'qodercli status 2>nul' | Out-String)
-if ($status -match 'Username:') {
-  Ok (($status -split "`n" | Where-Object { $_ -match 'Username:' }) -join '').Trim()
+if ($SkipLogin) {
+  Warn 'skipped (-SkipLogin)'
 } else {
-  Warn 'no active session; opening the browser login'
-  & cmd /c 'qodercli login'
-  if ($LASTEXITCODE -ne 0) { Die 'Qoder login failed.' }
+  $status = (& cmd /c 'qodercli status 2>nul' | Out-String)
+  if ($status -match 'Username:') {
+    Ok (($status -split "`n" | Where-Object { $_ -match 'Username:' }) -join '').Trim()
+  } else {
+    Warn 'no active session; opening the browser login'
+    & cmd /c 'qodercli login'
+    if ($LASTEXITCODE -ne 0) { Die 'Qoder login failed.' }
+  }
 }
 
 Step "Copying the bridge to $InstallDir"

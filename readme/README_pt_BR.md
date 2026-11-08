@@ -34,6 +34,16 @@ Este é o espelho do [README principal](../README.md), em inglês.
 
 ## Instalação
 
+### Qualquer SO — um comando (precisa de Node 20+)
+
+```bash
+npx -y github:Ryanabcraft/qoder-claude
+```
+
+Detecta a plataforma e roda o instalador certo: Windows usa `install.ps1`; Linux, macOS e WSL
+usam `install.sh`. Flags extras são repassadas: `--skip-vision`, `--skip-claude`,
+`--skip-login`, `--project-only`, `--dir <path>`.
+
 ### Windows — CMD
 
 ```cmd

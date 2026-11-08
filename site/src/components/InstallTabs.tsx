@@ -54,6 +54,9 @@ export function InstallTabs() {
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
         </button>
       </div>
+      {item.id === 'any' && (
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t.hero.anyNote}</p>
+      )}
       <p aria-live="polite" className="mt-2 h-4 font-mono text-[11px] text-muted-foreground">
         {copied ? t.hero.copied : ''}
       </p>

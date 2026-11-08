@@ -2,6 +2,10 @@ export const REPO = 'https://github.com/Ryanabcraft/qoder-claude';
 
 export const INSTALL = [
   {
+    id: 'any',
+    code: 'npx -y github:Ryanabcraft/qoder-claude',
+  },
+  {
     id: 'cmd',
     code: 'curl -fsSL https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/install.cmd -o install.cmd && install.cmd && del install.cmd',
   },

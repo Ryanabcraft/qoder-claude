@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
@@ -10,5 +10,8 @@
   "scripts": {
     "start": "node src/server.js"
   },
-  "author": "Ryanabcraft"
+  "author": "Ryanabcraft",
+  "bin": {
+    "qoder-claude": "bin/install.js"
+  }
 }
