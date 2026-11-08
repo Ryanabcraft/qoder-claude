@@ -51,7 +51,8 @@ text as soon as either marker appears, so a partial block never reaches the clie
 Tools that arrive *deferred* (`WebSearch`, `WebFetch`, MCP servers) get a minimal schema in the
 turn — in the CLI prompt and in the direct payload's `tools` array — so the model can call them
 without a `ToolSearch` round trip. Search and fetch are routed to `mcp__exa__web_search_exa` /
-`mcp__exa__web_fetch_exa` when that MCP is configured.
+`mcp__exa__web_fetch_exa`. The installer (and `qclaude` on startup) adds that MCP in the user
+scope when it is missing; `QODER_NO_EXA=1` skips the step.
 
 ## Sessions
 
@@ -174,6 +175,7 @@ the Qoder side every request carries `context_window: 1000000`; override with
 | `BRIDGE_STALL_MS` | `90000` | abort an attempt after this much upstream silence |
 | `QODER_MODELS_TTL_MS` | `600000` | model list cache lifetime |
 | `BRIDGE_MODELS_REFRESH` | on | `0` disables the background model-list refresh |
+| `QODER_NO_EXA` | off | `1` skips adding the Exa MCP server at install/startup |
 | `QODER_MODEL` | `Auto` | fixed model |
 | `QODER_THINKING` | from request | `enabled`, `adaptive`, `disabled` |
 | `QODER_THINKING_BUDGET` | from request | thinking tokens |
