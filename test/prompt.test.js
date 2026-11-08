@@ -93,6 +93,20 @@ test('history images do not trigger the vision path', () => {
   assert.doesNotMatch(out.prompt, /\[\[image 1:/);
 });
 
+test('an image split from the text in the same turn is still attached', () => {
+  const body = {
+    messages: [
+      { role: 'assistant', content: [{ type: 'text', text: 'anterior' }] },
+      { role: 'user', content: [image()] },
+      { role: 'user', content: 'o que tem na foto?' },
+    ],
+  };
+  const out = buildPrompt(body);
+  assert.equal(out.images.length, 1);
+  assert.equal(out.historyImages, 0);
+  assert.equal(out.images[0].marker, '[[image 1: image/png]]');
+});
+
 test('only the newest message image is attached and renumbered', () => {
   const body = {
     messages: [

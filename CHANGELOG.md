@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.17
+
+- Fixed image turns when Claude Code sends the image and the text in separate user messages: every image after the last assistant message belongs to the current turn.
+
 ## 1.10.16
 
 - Only the newest user image goes to the vision engine; images from earlier turns become text placeholders, so follow-up text turns stay fast instead of re-uploading the image history.
