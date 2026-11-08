@@ -7,7 +7,7 @@ import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './pro
 import { runCompletion, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
-import { detectModels } from './models.js';
+import { cachedModels, startModelRefresh } from './models.js';
 import { handleUi } from './uiApi.js';
 import { record } from './metrics.js';
 import { estimateImageTokens, redactForLog } from './images.js';
@@ -94,7 +94,7 @@ function sseWriter(res) {
 function errorStatus(message) {
   if (/billing|daily count|quota|403|not logged in|unauthori[sz]ed/i.test(message)) return 400;
   if (/rate.?limit|429/i.test(message)) return 429;
-  if (/timeout|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND/i.test(message)) return 503;
+  if (/timeout|stall|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND/i.test(message)) return 503;
   return 502;
 }
 
@@ -206,8 +206,16 @@ async function handleMessages(req, res, body) {
     : run;
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const started = Date.now();
+  let firstByteAt = 0;
   let usedAccount = cfg.account;
-  res.once('finish', () => record({ model: cfg.model, status: res.statusCode, ms: Date.now() - started, transport: TRANSPORT, account: usedAccount }));
+  res.once('finish', () => record({
+    model: cfg.model,
+    status: res.statusCode,
+    ms: Date.now() - started,
+    ttft: firstByteAt ? firstByteAt - t0 : 0,
+    transport: TRANSPORT,
+    account: usedAccount,
+  }));
 
   const ac = new AbortController();
   res.on('close', () => {
@@ -238,7 +246,7 @@ async function handleMessages(req, res, body) {
     } else {
       content.push({ type: 'text', text: stripToolBlocks(out.text) });
     }
-    log(`  done session=${out.sessionHit ? 'hit' : 'miss'} key=${out.sessionKey || '-'} from=${out.from ?? 0} total=${Date.now() - t0}ms`);
+    log(`  done transport=${TRANSPORT} ttft=- total=${Date.now() - t0}ms`);
     return send(res, 200, {
       id: msgId,
       type: 'message',
@@ -336,7 +344,11 @@ async function handleMessages(req, res, body) {
       body, cfg, signal: ac.signal,
       canRotate: () => emitted.length === 0 && !headersSent,
       onEvent: (ev) => {
-        if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') { startStream(); feed(ev.delta.text || ''); }
+        if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+          if (!firstByteAt) firstByteAt = Date.now();
+          startStream();
+          feed(ev.delta.text || '');
+        }
       },
     }, runner);
     usedAccount = out.account || usedAccount;
@@ -350,7 +362,7 @@ async function handleMessages(req, res, body) {
   }
   clearInterval(keepalive);
 
-  log(`  done session=${out.sessionHit ? 'hit' : 'miss'} total=${Date.now() - t0}ms`);
+  log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms`);
 
   if (out.error && !out.text && !emitted) {
     if (!headersSent) {
@@ -422,7 +434,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && (path === '/v1/models' || path === '/models')) {
     return send(res, 200, {
-      data: detectModels().map((m) => ({ type: 'model', id: m, display_name: m, created_at: new Date(0).toISOString() })),
+      data: cachedModels().map((m) => ({ type: 'model', id: m, display_name: m, created_at: new Date(0).toISOString() })),
       has_more: false,
     });
   }
@@ -493,11 +505,13 @@ if (PARENT_PID > 0) {
 
 server.requestTimeout = 0;
 server.headersTimeout = 0;
+server.on('connection', (socket) => socket.setNoDelay(true));
 server.listen(PORT, HOST, () => {
   log(`qoder-claude on http://${HOST}:${PORT}`);
   log(`claude:  ANTHROPIC_BASE_URL=http://${HOST}:${PORT}`);
   log(`dashboard: http://${HOST}:${PORT}/ui`);
   log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');
   log('close this window or press Ctrl+C to stop.');
-  log(`models: ${detectModels().slice(0, 5).join(', ')}, ...`);
+  log(`models: ${cachedModels().slice(0, 5).join(', ')}, ...`);
+  startModelRefresh();
 });

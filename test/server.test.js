@@ -23,6 +23,7 @@ test.before(async () => {
       BRIDGE_PORT: String(PORT),
       BRIDGE_API_KEY: KEY,
       BRIDGE_LOG: '0',
+      BRIDGE_MODELS_REFRESH: '0',
     },
     stdio: 'ignore',
   });

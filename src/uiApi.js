@@ -14,7 +14,7 @@ import {
   setRotation,
   useAccount,
 } from './accounts.js';
-import { detectModels } from './models.js';
+import { cachedModels } from './models.js';
 import { resolveCli } from './cliPath.js';
 import { snapshot } from './metrics.js';
 
@@ -122,7 +122,7 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
         count: rot.accounts.filter((a) => a.enabled).length,
         paused: rot.accounts.filter((a) => a.coolingLeft).length,
       },
-      models: detectModels().length,
+      models: cachedModels().length,
       uptime: Math.round(process.uptime()),
     }), true;
   }
@@ -188,7 +188,7 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   }
 
   if (req.method === 'GET' && route === 'models') {
-    return sendJson(res, 200, { models: detectModels() }), true;
+    return sendJson(res, 200, { models: cachedModels() }), true;
   }
 
   if (req.method === 'GET' && route === 'logs') {

@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { resolveCli } from './cliPath.js';
 
 export const QODER_MODELS = [
@@ -10,8 +10,10 @@ export const QODER_MODELS = [
 const TTL_MS = Number(process.env.QODER_MODELS_TTL_MS || 10 * 60 * 1000);
 let cache = null;
 let cacheAt = 0;
+let refreshing = null;
+let timer = null;
 
-function parseModels(out) {
+export function parseModels(out) {
   const list = [];
   for (const raw of String(out).split(/\r?\n/)) {
     const line = raw.trim();
@@ -21,6 +23,68 @@ function parseModels(out) {
     if (!list.includes(line)) list.push(line);
   }
   return list;
+}
+
+const stale = () => !cache || Date.now() - cacheAt >= TTL_MS;
+
+export function cachedModels() {
+  return cache || QODER_MODELS;
+}
+
+function fetchModels() {
+  return new Promise((resolve) => {
+    let cli;
+    try {
+      cli = resolveCli();
+    } catch {
+      resolve(cachedModels());
+      return;
+    }
+    let out = '';
+    let cap = null;
+    let settled = false;
+    const finish = (list) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(cap);
+      if (list && list.length) cache = list;
+      cacheAt = Date.now();
+      resolve(cachedModels());
+    };
+    let child;
+    try {
+      child = spawn(cli.cmd, [...cli.prefix, '--list-models'], {
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'ignore'],
+        env: process.env,
+      });
+    } catch {
+      finish();
+      return;
+    }
+    cap = setTimeout(() => { try { child.kill(); } catch {} finish(); }, 60000);
+    cap.unref?.();
+    if (!child.stdout) {
+      finish();
+      return;
+    }
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (d) => { out += d; });
+    child.on('error', () => finish());
+    child.on('close', () => finish(parseModels(out)));
+  });
+}
+
+export function refreshModels() {
+  if (!refreshing) refreshing = fetchModels().finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+export function startModelRefresh() {
+  if (process.env.BRIDGE_MODELS_REFRESH === '0' || timer) return;
+  refreshModels();
+  timer = setInterval(() => { if (stale()) refreshModels(); }, Math.min(TTL_MS, 60_000));
+  timer.unref?.();
 }
 
 export function detectModels({ force = false } = {}) {

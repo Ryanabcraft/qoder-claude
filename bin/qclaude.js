@@ -68,10 +68,12 @@ async function isUp() {
   }
 
   const out = fs.openSync(LOG, 'a');
+  const env = { ...process.env, BRIDGE_PARENT_PID: String(process.pid) };
+  delete env.BRIDGE_LOG_FILE;
   const child = spawn(process.execPath, [serverEntry], {
     cwd: ROOT,
     stdio: ['ignore', out, out],
-    env: { ...process.env, BRIDGE_LOG_FILE: LOG, BRIDGE_PARENT_PID: String(process.pid) },
+    env,
   });
   for (let i = 0; i < 160; i++) {
     if (await isUp()) return child;

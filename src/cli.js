@@ -13,7 +13,8 @@ import {
   touchSession,
 } from './sessions.js';
 import { resolveCli } from './cliPath.js';
-import { detectModels } from './models.js';
+import { cachedModels } from './models.js';
+import { createStallTimer, stallMs } from './stall.js';
 
 const EMPTY_MCP = JSON.stringify({ mcpServers: {} });
 const DEFAULT_MODEL = process.env.QODER_MODEL || 'Auto';
@@ -42,7 +43,7 @@ export function resolveModel(requested) {
     if (/haiku/i.test(name)) return process.env.QODER_MODEL_HAIKU || 'Fast';
     if (/sonnet/i.test(name)) return process.env.QODER_MODEL_SONNET || 'Auto';
   }
-  return detectModels().includes(name) ? name : DEFAULT_MODEL;
+  return cachedModels().includes(name) ? name : DEFAULT_MODEL;
 }
 
 function baseArgs(cfg) {
@@ -202,10 +203,14 @@ class WorkerPool {
     this.starting = 0;
     this.stopped = false;
     this.defaultCfg = workerConfig({});
-    this.fill(this.defaultCfg);
   }
   fill(cfg) {
     if (this.stopped) return;
+    for (const w of [...this.ready]) {
+      if (w.key === cfg.key) continue;
+      this.ready.splice(this.ready.indexOf(w), 1);
+      try { w.kill(); } catch {}
+    }
     if (this.ready.length + this.starting >= this.size) return;
     this.lastCfg = cfg;
     this.starting++;
@@ -221,12 +226,16 @@ class WorkerPool {
   }
   acquire(cfg) {
     const idx = this.ready.findIndex((w) => w.key === cfg.key);
-    if (idx !== -1) return Promise.resolve(this.ready.splice(idx, 1)[0]);
+    if (idx !== -1) {
+      const w = this.ready.splice(idx, 1)[0];
+      this.fill(cfg);
+      return Promise.resolve(w);
+    }
     this.lastCfg = cfg;
     this.starting++;
     const w = spawnWorker(cfg);
     return w.ready.then(
-      () => { this.starting--; return w; },
+      () => { this.starting--; this.fill(cfg); return w; },
       (e) => { this.starting--; try { w.kill(); } catch {}; throw e; },
     );
   }
@@ -249,6 +258,13 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
     let resultMsg = null;
     let settled = false;
     let hardStop = null;
+    let stallError = null;
+    const limit = stallMs();
+    const stall = createStallTimer(limit, () => {
+      stallError = `stalled: no upstream data for ${limit}ms`;
+      try { worker.kill(); } catch {}
+      done();
+    });
     const onClose = () => done();
     const onExit = () => done();
 
@@ -256,6 +272,7 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
       if (settled) return;
       settled = true;
       clearTimeout(hardStop);
+      stall.clear();
       worker.proc.removeListener('close', onClose);
       worker.proc.removeListener('exit', onExit);
       off();
@@ -265,7 +282,7 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
         text: finalText,
         stopReason: finalMessage?.stop_reason || resultMsg?.stop_reason || 'end_turn',
         usage: resultMsg?.usage || {},
-        error: resultMsg?.is_error ? errorText(resultMsg) : null,
+        error: resultMsg?.is_error ? errorText(resultMsg) : stallError,
       });
     };
     const onAbort = () => worker.kill();
@@ -275,6 +292,7 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
     }
 
     const off = worker.on((m) => {
+      stall.arm();
       if (m.type === 'stream_event' && m.event) {
         const e = m.event;
         if (e.type === 'content_block_delta' && e.delta?.type === 'text_delta') {
@@ -293,6 +311,7 @@ function runOnWorker(worker, { prompt, blocks, signal, onEvent }) {
     hardStop = setTimeout(() => { worker.kill(); done(); }, Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000));
     hardStop.unref?.();
     worker.send(prompt, blocks);
+    stall.arm();
   });
 }
 
@@ -302,16 +321,24 @@ function runDirect(cfg, { prompt, blocks, signal, onEvent }) {
   });
   return new Promise((resolve) => {
     let buf = '', text = '', finalMessage = null, resultMsg = null, settled = false, timer = null;
+    let stallError = null;
+    const limit = stallMs();
+    const stall = createStallTimer(limit, () => {
+      stallError = `stalled: no upstream data for ${limit}ms`;
+      try { proc.kill(); } catch {}
+      done();
+    });
     const done = () => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      stall.clear();
       const finalText = (finalMessage?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('') || text;
       resolve({
         text: finalText,
         stopReason: finalMessage?.stop_reason || resultMsg?.stop_reason || 'end_turn',
         usage: resultMsg?.usage || {},
-        error: resultMsg?.is_error ? errorText(resultMsg) : null,
+        error: resultMsg?.is_error ? errorText(resultMsg) : stallError,
       });
     };
     timer = setTimeout(() => { try { proc.kill(); } catch {}; done(); }, Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000));
@@ -320,8 +347,10 @@ function runDirect(cfg, { prompt, blocks, signal, onEvent }) {
     proc.stdin.on('error', () => {});
     const content = Array.isArray(blocks) && blocks.length ? blocks : [{ type: 'text', text: prompt }];
     proc.stdin.end(JSON.stringify({ type: 'user', message: { role: 'user', content } }) + '\n');
+    stall.arm();
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', (d) => {
+      stall.arm();
       buf += d;
       let nl;
       while ((nl = buf.indexOf('\n')) !== -1) {
