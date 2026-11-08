@@ -39,7 +39,7 @@ curl -sN http://127.0.0.1:8787/v1/messages \
 | `src/direct.js` | WASM-signed transport, no CLI process |
 | `src/prompt.js` | Anthropic → prompt translation, tool-call parsing |
 | `src/images.js` | image blocks, size limits, log redaction |
-| `src/vision.js` | 1.1.80 engine for image turns |
+| `src/vision.js` | bundled image engine for image turns |
 | `src/accounts.js` | profiles and failover rotation |
 | `src/sessions.js` | session reuse and delta |
 | `src/uiApi.js` + `src/ui/` | dashboard |

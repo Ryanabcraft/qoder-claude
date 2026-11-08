@@ -183,6 +183,7 @@ the Qoder side every request carries `context_window: 1000000`; override with
 | `QODER_CONTEXT_WINDOW` | from request | context window |
 | `QODER_MAX_OUTPUT_TOKENS` | from request | fallback cap used only when the request sends no `max_tokens` |
 | `QODER_CLI_BIN` | auto-detected | path to `qodercli.js` |
+| `QODER_CLI_VERSION` | detected from the bundle | client version sent to Qoder |
 | `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | decoded size cap per image |
 | `BRIDGE_IMAGE_MAX_COUNT` | `50` | images kept per request |
 | `QODER_VISION_CLI` | bundled 1.1.80 | path to an image-capable CLI |
@@ -191,6 +192,10 @@ the Qoder side every request carries `context_window: 1000000`; override with
 | `BRIDGE_DUMP` | empty | file path for the last request |
 
 `max_tokens` is forwarded as-is; the bridge applies no cap of its own.
+
+`1.1.80` is pinned on purpose: the 1.1.85 bundle removed `--attachment`, which is how image
+turns are sent. The text-only client version is detected from the installed bundle instead of
+being hardcoded.
 
 ## Endpoints
 

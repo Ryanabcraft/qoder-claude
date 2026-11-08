@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { deferredTools, renderMessageContent, systemToText } from './prompt.js';
 import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
+import { cliVersion } from './cliPath.js';
 
 const require = createRequire(import.meta.url);
 const auth = require('../vendor/qoder-auth.cjs');
@@ -12,7 +13,7 @@ const CONFIG_DIR =
   process.env.QODER_CONFIG_DIR || path.join(process.env.USERPROFILE || process.env.HOME || '', '.qoder');
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
-const VERSION = process.env.QODER_CLI_VERSION || '1.1.84';
+const VERSION = cliVersion();
 
 const cache = new Map();
 
