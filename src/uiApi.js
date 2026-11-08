@@ -22,6 +22,8 @@ import { snapshot } from './metrics.js';
 import { publicConfig, saveConfig } from './config.js';
 import { applyWebTools, readClaudePrefs, updateClaudePrefs } from './claudePrefs.js';
 import { healthSnapshot } from './health.js';
+import { quotaSnapshot } from './quota.js';
+import { derive, history } from './quotaStore.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const UI_DIR = path.join(HERE, 'ui');
@@ -176,6 +178,23 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   if (req.method === 'GET' && route === 'accounts') {
     const data = loadAccounts();
     return sendJson(res, 200, { active: data.active, accounts: data.accounts, rotation: rotationSnapshot() }), true;
+  }
+
+  if (req.method === 'GET' && route === 'quota') {
+    const snapshot = await quotaSnapshot({ refresh: url.searchParams.get('refresh') === '1' });
+    return sendJson(res, 200, snapshot), true;
+  }
+
+  if (req.method === 'GET' && route === 'quota/history') {
+    const name = url.searchParams.get('account') || '';
+    const range = url.searchParams.get('range') || '24h';
+    const span = range === '7d' ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    return sendJson(res, 200, {
+      account: name,
+      range,
+      samples: history(name, span),
+      stats: derive(name, { now: Date.now() }),
+    }), true;
   }
 
   if (req.method === 'POST' && route === 'rotation') {

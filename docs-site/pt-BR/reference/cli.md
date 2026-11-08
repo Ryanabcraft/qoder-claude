@@ -19,6 +19,8 @@ O `qclaude` sobe a bridge, abre o dashboard e abre o Claude Code. Argumentos ext
 | `qclaude --stop` | para o servidor |
 | `qclaude update` | instala a versão mais nova |
 | `qclaude notes [versão]` | imprime o changelog |
+| `qclaude quota [nome]` | créditos, restante, consumo e previsão |
+| `qclaude quota --json` | snapshot de cota legível por máquina |
 | `qclaude uninstall [flags]` | remove app, launcher e settings do instalador |
 | `qclaude account ...` | gerencia perfis Qoder |
 | `qclaude rotation [on\|off]` | mostra ou muda o failover |
@@ -37,6 +39,18 @@ qclaude account resume trabalho
 qclaude account remove trabalho
 qclaude account current
 ```
+
+## Quota
+
+```bash
+qclaude quota                 # todas as contas
+qclaude quota trabalho        # uma conta
+qclaude quota --refresh       # ignora o cache de 60s
+qclaude quota --json          # snapshot completo
+```
+
+As porcentagens vêm de `used / total`; a Qoder manda frações (`0.68` = 68%). O token é decifrado
+localmente e só vai no header Authorization para `openapi.qoder.sh`.
 
 ## Flags do uninstall
 

@@ -20,14 +20,16 @@ reais; a bridge converte o formato de texto do modelo antes do Claude Code.
 ## API do dashboard
 
 `/ui/api/` expõe status, contas, rotação, modelos, métricas, logs, config, settings do Claude,
-health, teste, stop e ordem/label de contas. A resposta de config nunca inclui a API key.
+health, teste, stop, ordem/label de contas, quota e histórico de quota. A resposta de config nunca
+inclui a API key nem o token da Qoder.
 
 ## Transporte
 
 1. O Claude Code posta um request Anthropic.
 2. A bridge monta o prompt, injeta schemas das deferred tools e estima tokens.
 3. `direct` chama `api1.qoder.sh` com assinatura WASM local (`Authorization: COSY.*`, `Cosy-Key`,
-   `Cosy-Date`). Os chunks SSE são lidos e reemitidos.
+   `Cosy-Date`) e `stream_options.include_usage`. Os chunks SSE são lidos e reemitidos; tokens
+   reais, cache e créditos substituem as estimativas.
 4. `cli` é o fallback: um processo Qoder CLI aquecido recebe o prompt por stdio e emite eventos no
    formato Anthropic. Sessões são reaproveitadas por `session_id` e hash das mensagens; um turno novo
    manda só o delta.

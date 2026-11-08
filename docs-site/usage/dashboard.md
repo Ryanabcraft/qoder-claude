@@ -25,6 +25,11 @@ The top bar has a language picker (also in Settings → General) covering Englis
 Spanish, French and German. The choice is stored in `localStorage`, so it survives reloads; the
 dashboard re-renders in place without a page reload.
 
+Accounts show a real quota meter per profile (used/total credits, remaining, plan, state), Home
+has a Credits KPI and Analytics adds credits per bucket, burn rate and a projected empty date.
+Usage & Logs shows the credits and whether each row used real upstream usage or an estimate; CSV
+export includes both.
+
 ## Settings
 
 Settings write two files, both with backups:

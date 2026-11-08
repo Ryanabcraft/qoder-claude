@@ -91,6 +91,10 @@ export const en: Dict = {
         title: 'Images',
         body: 'Paste a screenshot and the model reads it. Image turns run through a bundled image engine, installed once with qclaude vision install.',
       },
+      {
+        title: 'Real quota',
+        body: 'Every account card shows the credits Qoder actually reports: used, remaining, burn rate and the date the quota runs out. Usage rows say whether tokens are real or estimated.',
+      },
     ],
   },
   models: {
@@ -178,6 +182,10 @@ export const pt: Dict = {
       {
         title: 'Imagens',
         body: 'Cole um print e o modelo lê. Turnos com imagem rodam num motor de imagem embutido, instalado uma vez com qclaude vision install.',
+      },
+      {
+        title: 'Cota real',
+        body: 'Cada card de conta mostra os créditos que a Qoder realmente informa: usados, restantes, consumo e a data em que a cota acaba. As linhas de uso dizem se os tokens são reais ou estimados.',
       },
     ],
   },
@@ -267,6 +275,10 @@ export const es: Dict = {
         title: 'Imágenes',
         body: 'Pega una captura y el modelo la lee. Los turnos con imagen usan un motor de imagen embebido, instalado una vez con qclaude vision install.',
       },
+      {
+        title: 'Cota real',
+        body: 'Cada tarjeta de cuenta muestra los créditos que Qoder informa de verdad: usados, restantes, consumo y la fecha en que se agota la cuota. Las filas de uso indican si los tokens son reales o estimados.',
+      },
     ],
   },
   models: {
@@ -355,6 +367,10 @@ export const fr: Dict = {
         title: 'Images',
         body: 'Collez une capture et le modèle la lit. Les tours avec image passent par un moteur d’image embarqué, installé une fois avec qclaude vision install.',
       },
+      {
+        title: 'Quota réelle',
+        body: 'Chaque carte de compte affiche les crédits réellement rapportés par Qoder : utilisés, restants, consommation et date d’épuisement. Les lignes d’usage indiquent si les jetons sont réels ou estimés.',
+      },
     ],
   },
   models: {
@@ -442,6 +458,10 @@ export const de: Dict = {
       {
         title: 'Bilder',
         body: 'Screenshot einfügen und das Modell liest ihn. Bild-Turns laufen über eine eingebettete Bild-Engine, einmalig installiert mit qclaude vision install.',
+      },
+      {
+        title: 'Echtes Kontingent',
+        body: 'Jede Kontokarte zeigt die von Qoder gemeldeten Credits: verbraucht, verbleibend, Verbrauchsrate und das Datum, an dem das Kontingent endet. Nutzungszeilen zeigen, ob Token echt oder geschätzt sind.',
       },
     ],
   },

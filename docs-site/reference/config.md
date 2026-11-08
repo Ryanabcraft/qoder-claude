@@ -26,6 +26,8 @@ Existing environment variables win over the file. Values set by the launcher (su
 | `modelRetries` | `0` | retries inside the CLI |
 | `maxAttempts` | `0` | `0` tries every account |
 | `log` | `true` | access log; restart |
+| `quota` | `true` | read real Qoder quota per account |
+| `quotaPollMs` | `300000` | quota poll interval (60s–1h) |
 
 ## Environment variables
 
@@ -41,6 +43,10 @@ Existing environment variables win over the file. Values set by the launcher (su
 | `BRIDGE_STALL_MS` | `90000` | silence watchdog |
 | `BRIDGE_MAX_ATTEMPTS` | all | failover attempt limit |
 | `BRIDGE_MODEL_RETRIES` | `0` | CLI retries |
+| `BRIDGE_QUOTA` | on | `0` disables quota polling |
+| `BRIDGE_QUOTA_POLL_MS` | `300000` | quota poll interval |
+| `QODER_QUOTA_ENDPOINT` | `https://openapi.qoder.sh` | quota host override |
+| `QODER_QUOTA_TOKEN` | from account | explicit bearer token (testing/CI) |
 | `QODER_CONTEXT_WINDOW` | `1000000` | context window |
 | `QODER_THINKING` | from request | thinking mode |
 | `QODER_THINKING_BUDGET` | from request | thinking tokens |

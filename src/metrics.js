@@ -14,7 +14,11 @@ const state = {
   lastError: null,
 };
 
-const bucket = () => ({ count: 0, ok: 0, err: 0, msSum: 0, ttftSum: 0, in: 0, out: 0, models: {}, accounts: {} });
+const bucket = () => ({
+  count: 0, ok: 0, err: 0, msSum: 0, ttftSum: 0, in: 0, out: 0,
+  credits: 0, cacheRead: 0, cacheWrite: 0, real: 0, estimated: 0,
+  models: {}, accounts: {},
+});
 
 function minuteOf(t) {
   return Math.floor(t / 60000) * 60000;
@@ -32,12 +36,13 @@ function entryFor(t) {
 
 function bump(map, key, item, ok) {
   const name = key || '-';
-  const row = map[name] || { count: 0, ok: 0, err: 0, msSum: 0, in: 0, out: 0 };
+  const row = map[name] || { count: 0, ok: 0, err: 0, msSum: 0, in: 0, out: 0, credits: 0 };
   row.count += 1;
   if (ok) row.ok += 1; else row.err += 1;
   row.msSum += item.ms;
   row.in += item.in;
   row.out += item.out;
+  row.credits += item.credits;
   map[name] = row;
 }
 
@@ -48,6 +53,10 @@ function add(entry, item, ok) {
   entry.ttftSum += item.ttft;
   entry.in += item.in;
   entry.out += item.out;
+  entry.credits += item.credits;
+  entry.cacheRead += item.cacheRead;
+  entry.cacheWrite += item.cacheWrite;
+  if (item.usageSource === 'estimated') entry.estimated += 1; else entry.real += 1;
   bump(entry.models, item.model, item, ok);
   bump(entry.accounts, item.account, item, ok);
 }
@@ -95,7 +104,7 @@ function scheduleFlush() {
   flushTimer.unref?.();
 }
 
-export function record({ model, status, ms, ttft, transport, account, inTokens, outTokens }) {
+export function record({ model, status, ms, ttft, transport, account, inTokens, outTokens, credits, cacheRead, cacheWrite, usageSource }) {
   const t = Date.now();
   const ok = status >= 200 && status < 300;
   const item = {
@@ -108,6 +117,10 @@ export function record({ model, status, ms, ttft, transport, account, inTokens, 
     account: account || '-',
     in: Number(inTokens) || 0,
     out: Number(outTokens) || 0,
+    credits: Number(credits) || 0,
+    cacheRead: Number(cacheRead) || 0,
+    cacheWrite: Number(cacheWrite) || 0,
+    usageSource: usageSource || 'estimated',
   };
   state.samples.push(item);
   if (state.samples.length > MAX_SAMPLES) state.samples.shift();
@@ -123,13 +136,14 @@ function aggregate(entries, select) {
   const out = {};
   for (const entry of entries) {
     for (const [name, row] of Object.entries(entry[select] || {})) {
-      const target = out[name] || { name, count: 0, ok: 0, err: 0, msSum: 0, in: 0, out: 0 };
+      const target = out[name] || { name, count: 0, ok: 0, err: 0, msSum: 0, in: 0, out: 0, credits: 0 };
       target.count += row.count;
       target.ok += row.ok;
       target.err += row.err;
       target.msSum += row.msSum;
       target.in += row.in;
       target.out += row.out;
+      target.credits += row.credits || 0;
       out[name] = target;
     }
   }
@@ -156,7 +170,7 @@ function series(entries, range, now) {
   const start = Math.floor((now - spec.ms) / spec.step) * spec.step;
   const points = [];
   for (let i = 0; i < spec.count; i += 1) {
-    points.push({ t: start + i * spec.step, count: 0, ok: 0, err: 0, msSum: 0, in: 0, out: 0 });
+    points.push({ t: start + i * spec.step, count: 0, ok: 0, err: 0, msSum: 0, in: 0, out: 0, credits: 0 });
   }
   for (const entry of entries) {
     const index = Math.floor((entry.t - start) / spec.step);
@@ -168,6 +182,7 @@ function series(entries, range, now) {
     point.msSum += entry.msSum;
     point.in += entry.in;
     point.out += entry.out;
+    point.credits += entry.credits || 0;
   }
   return points.map(({ msSum, ...point }) => ({
     ...point,
@@ -191,8 +206,13 @@ export function snapshot(range = '30m') {
     sum.ttftSum += entry.ttftSum;
     sum.in += entry.in;
     sum.out += entry.out;
+    sum.credits += entry.credits || 0;
+    sum.cacheRead += entry.cacheRead || 0;
+    sum.cacheWrite += entry.cacheWrite || 0;
+    sum.real += entry.real || 0;
+    sum.estimated += entry.estimated || 0;
     return sum;
-  }, { count: 0, ok: 0, err: 0, msSum: 0, ttftSum: 0, in: 0, out: 0 });
+  }, { count: 0, ok: 0, err: 0, msSum: 0, ttftSum: 0, in: 0, out: 0, credits: 0, cacheRead: 0, cacheWrite: 0, real: 0, estimated: 0 });
 
   const samples = state.samples.filter((sample) => sample.t > now - spec.ms);
   return {
@@ -208,6 +228,11 @@ export function snapshot(range = '30m') {
     ttftP50: percentile(samples.filter((sample) => sample.ttft > 0).map((sample) => sample.ttft), 50),
     tokensIn: totals.in,
     tokensOut: totals.out,
+    credits: totals.credits,
+    cacheRead: totals.cacheRead,
+    cacheWrite: totals.cacheWrite,
+    usageReal: totals.real,
+    usageEstimated: totals.estimated,
     series: series(entries, label, now),
     topModels: aggregate(entries, 'models').slice(0, 8),
     topAccounts: aggregate(entries, 'accounts').slice(0, 8),

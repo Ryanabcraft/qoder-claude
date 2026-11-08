@@ -23,6 +23,11 @@ A barra superior tem um seletor de idioma (também em Settings → General) com 
 espanhol, francês e alemão. A escolha fica em `localStorage`, sobrevive a recarregamentos e o
 dashboard é traduzido no lugar, sem recarregar a página.
 
+Accounts mostra uma barra de cota real por perfil (créditos usados/total, restante, plano e
+estado), a Home tem um KPI de Créditos e o Analytics ganhou créditos por intervalo, taxa de consumo
+e data prevista de esgotamento. Usage & Logs mostra os créditos e se a linha usou usage real ou
+estimativa; o CSV inclui os dois.
+
 ## Settings
 
 Os settings escrevem dois arquivos, ambos com backup:

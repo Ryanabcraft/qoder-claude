@@ -29,6 +29,11 @@ controles de esforço.
 
 Cada conta tem seu próprio diretório de config do Qoder. A cota é por conta.
 
+A bridge lê a cota real de cada conta na Qoder (`GET /api/v2/quota/usage`), guarda por 60 segundos e
+consulta a cada cinco minutos. O dashboard mostra créditos usados, restantes, plano, consumo e a
+data prevista de esgotamento. `qclaude quota` imprime os mesmos dados e `qclaude quota --json` é
+legível por máquina. A cota é só visual: nunca muda a ordem do failover.
+
 ```bash
 qclaude account list
 qclaude account add trabalho   # login no navegador, cria o perfil

@@ -54,6 +54,8 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 | `qclaude --serve` | server only, foreground |
 | `qclaude update` | checks and installs the latest version |
 | `qclaude notes [version]` | prints the changelog for this install |
+| `qclaude quota` | credits used/left, burn rate and forecast |
+| `qclaude quota --json` | machine-readable quota snapshot |
 | `qclaude uninstall` | removes the app, launcher and settings (asks first) |
 | `qclaude uninstall --dry-run` | lists what would be removed |
 | `qclaude --no-update` | skips the update check |
@@ -69,7 +71,9 @@ accounts copy; `--remove-exa` removes the Exa MCP when its URL is the qoder-clau
 ![qoder-claude dashboard](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard-1.11.1.gif)
 
 Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models and Settings. Settings
-write `bridge.config.json` and the Claude user settings with backups; analytics keep 7 days.
+write `bridge.config.json` and the Claude user settings with backups; analytics keep 7 days. The
+Accounts cards show real Qoder credits per profile, and Analytics adds credits, burn rate and a
+quota forecast.
 
 ## What works
 
@@ -93,6 +97,18 @@ qclaude rotation             # failover pool
 
 Quota is per account. With more than one, the bridge fails over automatically: a quota, `403`,
 `429` or lost session pauses that account and the same request runs on the next one.
+
+## Quotas and credits
+
+`qclaude quota` reads Qoder's quota endpoint per account and prints credits used, remaining, plan,
+burn rate and the projected empty date. The dashboard shows the same data as a meter on each
+account card, a Credits KPI on Home and a forecast card in Analytics.
+
+Real `usage` from Qoder (input/output/cache tokens and credits) is forwarded to Claude Code and
+stored in `metrics.jsonl`; when the upstream omits it, the bridge falls back to estimates and marks
+the row as `estimated`. Quota snapshots live in `quota.jsonl` for 30 days and are read locally —
+the token only ever travels in the Authorization header to Qoder, never to the browser or logs.
+Quota is display-only: it does not reorder failover.
 
 ## Limits
 

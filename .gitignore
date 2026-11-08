@@ -19,6 +19,8 @@ tools/
 bridge.config.json
 metrics.jsonl
 metrics.jsonl.tmp
+quota.jsonl
+quota.jsonl.tmp
 docs-site/node_modules/
 docs-site/.vitepress/cache/
 docs-site/.vitepress/dist/

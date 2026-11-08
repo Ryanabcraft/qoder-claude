@@ -30,6 +30,11 @@ Choose a model inside Claude Code with `/model`. The installer labels every opti
 
 Each account has its own Qoder config directory. Quota is per account.
 
+The bridge reads each account's real quota from Qoder (`GET /api/v2/quota/usage`), caches it for
+60 seconds and polls every five minutes. The dashboard shows credits used, remaining, plan, burn
+rate and the projected empty date. `qclaude quota` prints the same data, and `qclaude quota --json`
+is machine-readable. Quota is display-only: it never changes failover order.
+
 ```bash
 qclaude account list
 qclaude account add work       # browser login, creates a profile

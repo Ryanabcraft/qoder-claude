@@ -1,7 +1,7 @@
-import { Image, KeyRound, Layers, RefreshCcw, Search, SlidersHorizontal, Wrench } from 'lucide-react';
+import { Gauge, Image, KeyRound, Layers, RefreshCcw, Search, SlidersHorizontal, Wrench } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
-const ICONS = [Wrench, KeyRound, SlidersHorizontal, RefreshCcw, Layers, Search, Image];
+const ICONS = [Wrench, KeyRound, SlidersHorizontal, RefreshCcw, Layers, Search, Image, Gauge];
 
 export function Features() {
   const { t } = useI18n();
