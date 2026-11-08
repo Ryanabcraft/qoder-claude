@@ -34,7 +34,7 @@ async function main() {
     return;
   }
   if (argv0.includes('--help') || argv0.includes('-h')) {
-    console.log('usage: npx -y github:Ryanabcraft/qoder-claude [installer flags]');
+    console.log('usage: npx -y https://ryanabcraft.github.io/qoder-claude/qoder-claude.tgz [installer flags]');
     console.log('  detects Windows, macOS or Linux and runs the right installer');
     console.log('  flags: --project-only, --skip-vision, --skip-claude, --skip-login, --dir <path>');
     return;

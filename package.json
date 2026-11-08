@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
@@ -22,5 +22,22 @@
   "homepage": "https://ryanabcraft.github.io/qoder-claude/",
   "bugs": {
     "url": "https://github.com/Ryanabcraft/qoder-claude/issues"
-  }
+  },
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "vendor",
+    "README.md",
+    "LICENSE",
+    "install.cmd",
+    "install.ps1",
+    "install.sh",
+    "start.cmd",
+    "start.sh",
+    "stop.cmd",
+    "stop.sh",
+    "update.cmd",
+    "update.sh"
+  ]
 }
