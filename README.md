@@ -18,11 +18,15 @@ Claude Code --/v1/messages--> qoder-bridge --WASM-signed--> api1.qoder.sh
 
 - Anthropic-compatible `/v1/messages` with real SSE streaming and `tool_use` blocks
 - Direct transport: signs and encrypts each request with the embedded Qoder WASM, no CLI process
-- Warm worker pool on the CLI fallback: ~2 s per request once the pool is up
+- **1–2 s per turn** on the direct path; a tool round-trip or a web search costs more
+- 1M context window by default, for every model
 - Any number of accounts, with automatic failover when one hits its quota
-- Model, thinking budget and context window selectable per request
+- Built-in tools, MCP servers, web search and web fetch keep working — deferred tools get a
+  schema and web search is routed through Exa when that MCP is present
+- Local dashboard with accounts, live metrics and logs, opened with `qclaude`
+- `qclaude` owns the server: it starts with Claude and stops when Claude exits
 - `Qoder · <model>` statusline written into Claude Code settings
-- One-command installer for Windows: dependencies, login, config, server, health check
+- One-command installer: Node, Qoder CLI, Claude Code, login, settings and health check
 - The token stays local: the bridge decrypts the Qoder store in memory to sign a request and
   never sends it to any other host
 
@@ -506,11 +510,19 @@ reaches the client as chat.
 
 ## Limitations
 
-- One inference call per tool round-trip. Inside a session the worker is reused (~2 s); only the first turn of a conversation pays the cold start (~10 s).
-- The first three requests after start pay the cold start.
-- Full history is serialized into the prompt on every request, so long conversations are
-  expensive and slower.
-- Qoder's own built-in tools stay disabled (`--tools ""`); the Claude Code side executes.
+Measured here, not from a spec sheet: `node scripts/bench.mjs` against the direct transport
+gave **2052 ms** on the first turn after start and **840–1242 ms** on the next two. A turn that
+calls a tool costs one extra round-trip (typically 3–5 s); a web search through Exa took 4–15 s.
+
+- One inference call per tool round-trip, so every tool costs a full extra turn.
+- The first request after start pays TLS and session setup (~2 s); later ones are sub-second
+  to ~1.5 s.
+- The full history is sent on every request. 1M context makes that viable, not free — long
+  conversations still cost more tokens and time.
+- `WebSearch` from Anthropic returns nothing behind a gateway; the bridge routes it to Exa when
+  that MCP is configured, otherwise the model only has `WebFetch`.
+- Background daemon tools (`Cron*`, `Monitor`) are deferred and not proxied — they stay on the
+  Claude Code side.
 - Provider-side policy refusals pass through unchanged.
 
 ## Contributing

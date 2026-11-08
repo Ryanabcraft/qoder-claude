@@ -15,8 +15,13 @@ Este é o espelho do [README principal](../README.md), em inglês.
 
 - `/v1/messages` compatível com Anthropic, SSE real e blocos `tool_use`
 - Transporte direto: assina e cifra cada requisição com o WASM embutido do Qoder, sem processo do CLI
-- Pool de workers aquecidos no fallback CLI: ~2 s por request com o pool pronto
+- **1–2 s por turno** no caminho direto; um round-trip de ferramenta ou busca custa mais
+- Janela de contexto de 1M por padrão, em todos os modelos
 - Quantas contas você quiser, com failover automático quando uma bate a cota
+- Ferramentas nativas, MCP, busca e leitura de página continuam funcionando — deferred tools
+  ganham schema e a busca é roteada pelo Exa quando esse MCP está presente
+- Dashboard local com contas, métricas ao vivo e logs, aberto pelo `qclaude`
+- O `qclaude` manda no servidor: sobe junto com o Claude e cai quando ele sai
 - Modelo, orçamento de pensamento e janela de contexto selecionáveis por request
 - Statusline `Qoder · <modelo>` gravada nas configurações do Claude Code
 - Instalador de um comando no Windows: dependências, login, configuração, servidor e health check
@@ -491,10 +496,19 @@ que qualquer um dos marcadores aparece, então bloco pela metade nunca chega ao 
 
 ## Limites
 
-- Uma inferência por round-trip de ferramenta. Dentro da sessão o worker é reaproveitado (~2 s); só o primeiro turno de uma conversa paga o cold start (~10 s).
-- Os três primeiros requests após o start pagam o cold start.
-- O histórico inteiro vai serializado no prompt a cada request: conversa longa custa caro e fica lenta.
-- As ferramentas nativas do Qoder ficam desligadas (`--tools ""`); quem executa é o Claude Code.
+Medido aqui, não em folha de especificação: `node scripts/bench.mjs` contra o transporte direto
+deu **2052 ms** no primeiro turno após o start e **840–1242 ms** nos dois seguintes. Turno que
+chama ferramenta custa um round-trip extra (3–5 s típico); busca web pelo Exa levou 4–15 s.
+
+- Uma inferência por round-trip de ferramenta, então cada ferramenta custa um turno inteiro a mais.
+- O primeiro request após o start paga TLS e setup de sessão (~2 s); os seguintes ficam entre
+  menos de 1 s e ~1,5 s.
+- O histórico inteiro vai em cada request. 1M de contexto torna isso viável, não gratuito —
+  conversa longa continua custando mais tokens e tempo.
+- O `WebSearch` da Anthropic não retorna nada atrás do gateway; o bridge roteia para o Exa
+  quando esse MCP está configurado, senão o modelo só tem `WebFetch`.
+- Ferramentas de daemon (`Cron*`, `Monitor`) são deferred e não são proxiadas — ficam do lado
+  do Claude Code.
 - Recusas por política do provedor passam intactas.
 
 ## Contribuição
