@@ -228,6 +228,7 @@ main { padding: 8px 26px 26px; flex: 1; }
 .donut-label strong { font-size: 26px; letter-spacing: -0.02em; }
 
 /* table */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .table { width: 100%; border-collapse: collapse; }
 .table th {
   text-align: left;
@@ -435,9 +436,22 @@ input {
 }
 
 @media (max-width: 760px) {
+  main { padding: 8px 14px 20px; }
+  .bar { padding: 16px 14px 8px; }
+  .foot { padding: 12px 14px 16px; flex-wrap: wrap; }
+  .inline.wide input { min-width: 0; }
+  .table { min-width: 560px; }
+}
+
+@media (max-width: 760px) {
   .app { flex-direction: column; }
-  .side { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; overflow-x: auto; }
-  .side-nav { flex-direction: row; }
+  .side {
+    width: 100%; height: auto; position: static;
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+    overflow: visible; gap: 12px;
+  }
+  .side-nav { flex-direction: row; width: 100%; overflow-x: auto; padding-bottom: 2px; }
+  .side-nav .side-item { flex: 0 0 auto; }
   .side-foot { display: none; }
   .kpis { grid-template-columns: 1fr; }
   .bar { flex-wrap: wrap; }
