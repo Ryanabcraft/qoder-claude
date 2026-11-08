@@ -26,6 +26,7 @@ const LOG_FILE = process.env.BRIDGE_LOG_FILE || '';
 const LOG_ON = process.env.BRIDGE_LOG !== '0';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOG_PATH = LOG_FILE || path.join(ROOT, 'bridge.log');
+const PID_PATH = path.join(ROOT, 'bridge.pid');
 
 function log(msg) {
   if (!LOG_ON) return;
@@ -431,6 +432,29 @@ const server = http.createServer(async (req, res) => {
 
   return send(res, 404, { type: 'error', error: { type: 'not_found_error', message: `no route ${req.method} ${path}` } });
 });
+
+function removePidFile() {
+  try { fs.rmSync(PID_PATH, { force: true }); } catch {}
+}
+
+try { fs.writeFileSync(PID_PATH, String(process.pid)); } catch {}
+process.on('exit', removePidFile);
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => { removePidFile(); process.exit(0); });
+}
+
+const PARENT_PID = Number(process.env.BRIDGE_PARENT_PID || 0);
+if (PARENT_PID > 0) {
+  const watchdog = setInterval(() => {
+    try {
+      process.kill(PARENT_PID, 0);
+    } catch {
+      removePidFile();
+      process.exit(0);
+    }
+  }, 3000);
+  watchdog.unref?.();
+}
 
 server.requestTimeout = 0;
 server.headersTimeout = 0;

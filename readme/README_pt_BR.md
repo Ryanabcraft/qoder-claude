@@ -117,8 +117,9 @@ qclaude --no-browser   # não abre a aba do dashboard
 qclaude --stop         # derruba o servidor
 ```
 
-Quando o `qclaude` sobe o servidor, fechar o Claude também o encerra. Um servidor iniciado
-pelo `start.cmd` fica intocado.
+Fechar o Claude — `/exit`, Ctrl+C ou fechar o terminal — encerra a bridge também. O servidor
+também vigia o processo pai, então sai em até 3 segundos mesmo quando o `qclaude` é morto à
+força. Um servidor iniciado à mão pelo `start.cmd`/`start.sh` fica intocado.
 
 ## Rodando
 
