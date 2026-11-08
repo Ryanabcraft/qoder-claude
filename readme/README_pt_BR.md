@@ -46,8 +46,15 @@ Claude — `/exit`, Ctrl+C ou fechar o terminal — encerra a bridge.
 | `qclaude --no-browser` | sem a aba do dashboard |
 | `qclaude --serve` | só o servidor, em primeiro plano |
 | `qclaude update` | verifica e instala a versão mais nova |
+| `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |
+| `qclaude uninstall --dry-run` | lista o que seria removido |
 | `qclaude --no-update` | pula a checagem de atualização |
 | `qclaude --stop` | derruba o servidor |
+
+O `qclaude uninstall` faz backup das contas em `~/.qoder-claude-accounts-<hora>` antes de apagar,
+limpa só os settings que o instalador escreveu e mantém seus servidores MCP e
+`permissions.allow`. `--project <dir>` limpa também uma instalação project-only; `--no-backup`
+pula o backup das contas; `--remove-exa` remove o MCP Exa quando a URL é a do qoder-claude.
 
 ## O que funciona
 

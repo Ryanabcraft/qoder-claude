@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
 import readline from 'node:readline/promises';
+import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -16,8 +17,9 @@ import {
   useAccount,
 } from '../src/accounts.js';
 import { installVision, visionCliPath, visionVersion } from '../src/vision.js';
-import { ensureExa } from '../src/exaSetup.js';
-import { ensureWebTools } from '../src/claudeSettings.js';
+import { ensureExa, EXA_URL, claudeConfigPath } from '../src/exaSetup.js';
+import { ensureWebTools, settingsPath } from '../src/claudeSettings.js';
+import { backupAccounts, filterPathEntries, installRoots, stripBridgeSettings } from '../src/uninstall.js';
 import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -455,6 +457,237 @@ async function ask(question) {
   }
 }
 
+function settingsPlan(file) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const { settings, removed } = stripBridgeSettings(parsed);
+    return { file, settings, removed };
+  } catch {
+    return { file, settings: null, removed: [] };
+  }
+}
+
+function userPath() {
+  const r = spawnSync('powershell.exe', ['-NoProfile', '-Command', "[Environment]::GetEnvironmentVariable('Path','User')"], {
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  return r.status === 0 ? String(r.stdout || '').trim() : null;
+}
+
+function setUserPath(value) {
+  const r = spawnSync('powershell.exe', ['-NoProfile', '-Command', "[Environment]::SetEnvironmentVariable('Path', $env:QODER_NEW_PATH, 'User')"], {
+    env: { ...process.env, QODER_NEW_PATH: value },
+    windowsHide: true,
+    stdio: 'ignore',
+  });
+  return r.status === 0;
+}
+
+function removeLauncher(roots, home, dryRun) {
+  const file = path.join(home, '.local', 'bin', 'qclaude');
+  let text = '';
+  try { text = fs.readFileSync(file, 'utf8'); } catch { return; }
+  if (!roots.some((root) => text.includes(path.join(root, 'bin', 'qclaude.js')))) {
+    console.log(`launcher: ${file} does not belong to this install; kept`);
+    return;
+  }
+  if (dryRun) {
+    console.log(`launcher: ${file}`);
+    return;
+  }
+  try {
+    fs.rmSync(file, { force: true });
+    console.log(`launcher: removed ${file}`);
+  } catch (e) {
+    console.warn(`launcher: could not remove ${file} (${e.message})`);
+  }
+}
+
+function scheduleRootRemoval(roots, dryRun) {
+  if (!roots.length) return;
+  if (dryRun) {
+    for (const root of roots) console.log(`dir: ${root}`);
+    return;
+  }
+  if (process.platform === 'win32') {
+    const file = path.join(os.tmpdir(), `qoder-claude-cleanup-${Date.now()}.cmd`);
+    const lines = [
+      '@echo off',
+      'cd /d "%TEMP%"',
+      'ping -n 3 127.0.0.1 >nul',
+      ...roots.map((root) => `rmdir /s /q "${root}"`),
+      'del /f /q "%~f0"',
+      '',
+    ];
+    try {
+      fs.writeFileSync(file, lines.join('\r\n'));
+      const child = spawn('cmd.exe', ['/c', file], { detached: true, stdio: 'ignore', windowsHide: true });
+      child.unref();
+      console.log('dir: removal scheduled for a few seconds from now');
+    } catch (e) {
+      console.warn(`dir: could not schedule removal (${e.message}); delete ${roots.join(', ')} manually`);
+    }
+    return;
+  }
+  for (const root of roots) {
+    try {
+      fs.rmSync(root, { recursive: true, force: true });
+      console.log(`dir: removed ${root}`);
+    } catch (e) {
+      console.warn(`dir: could not remove ${root} (${e.message})`);
+    }
+  }
+}
+
+async function uninstallCommand(argv) {
+  const yes = argv.includes('--yes') || argv.includes('-y');
+  const dryRun = argv.includes('--dry-run');
+  const noBackup = argv.includes('--no-backup');
+  const removeExa = argv.includes('--remove-exa');
+  const projectAt = argv.indexOf('--project');
+  const project = projectAt === -1 ? '' : argv[projectAt + 1];
+  if (projectAt !== -1 && !project) {
+    console.error('qclaude: --project needs a directory');
+    return 1;
+  }
+
+  const home = os.homedir();
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const checkout = fs.existsSync(path.join(ROOT, '.git'));
+  if (checkout) {
+    console.error(`qclaude: ${ROOT} is a source checkout; run the installed copy to uninstall.`);
+    return 1;
+  }
+  const roots = installRoots({ root: ROOT, home, includeDefaults: !process.env.QODER_BRIDGE_HOME });
+  const settingsFiles = [
+    settingsPath(home),
+    project ? path.join(project, '.claude', 'settings.json') : '',
+  ].filter(Boolean);
+  const plans = settingsFiles.map(settingsPlan);
+  const accountBackup = path.join(home, `.qoder-claude-accounts-${stamp}`);
+  const rootsWithAccounts = roots.filter((root) =>
+    fs.existsSync(path.join(root, 'accounts')) || fs.existsSync(path.join(root, 'accounts.json')));
+  const backupDestFor = (root) => (rootsWithAccounts.length === 1 ? accountBackup : path.join(accountBackup, path.basename(root)));
+
+  console.log(`qoder-claude ${localVersion(ROOT)}`);
+  console.log(`install: ${ROOT}`);
+  console.log('');
+  console.log(dryRun ? 'dry run - nothing will change:' : 'this will remove:');
+  for (const root of roots) console.log(`  dir      ${root}`);
+  for (const plan of plans) {
+    if (!fs.existsSync(plan.file)) {
+      console.log(`  settings ${plan.file} (not found)`);
+      continue;
+    }
+    if (!plan.removed.length) {
+      console.log(`  settings ${plan.file} (no bridge entries)`);
+      continue;
+    }
+    console.log(`  settings ${plan.file}`);
+    for (const key of plan.removed) console.log(`             - ${key}`);
+  }
+  for (const root of rootsWithAccounts) {
+    console.log(`  accounts ${noBackup ? `deleted (${root})` : `backup -> ${backupDestFor(root)}`}`);
+  }
+  if (removeExa) console.log('  exa      the qoder-claude Exa MCP entry (only if the URL matches)');
+  if (process.platform === 'win32') {
+    const current = userPath();
+    if (current !== null) {
+      const entries = current.split(';').filter(Boolean);
+      const removed = entries.length - filterPathEntries(entries, roots.map((root) => path.join(root, 'bin'))).length;
+      console.log(`  path      ${removed ? `${removed} entr${removed === 1 ? 'y' : 'ies'} in the user PATH` : 'no qoder-claude entry'}`);
+    }
+  } else {
+    const launcher = path.join(home, '.local', 'bin', 'qclaude');
+    try {
+      const text = fs.readFileSync(launcher, 'utf8');
+      if (roots.some((root) => text.includes(path.join(root, 'bin', 'qclaude.js')))) console.log(`  launcher  ${launcher}`);
+    } catch {}
+  }
+  console.log('');
+  console.log('kept: ~/.claude.json MCP servers, permissions.allow, Claude Code, Qoder CLI and login');
+  console.log('');
+
+  if (dryRun) return 0;
+  if (!roots.length && !plans.some((p) => p.removed.length)) {
+    console.log('qclaude: nothing to remove.');
+    return 0;
+  }
+  if (!yes && !(await ask('Remove qoder-claude? [y/N] '))) {
+    console.log('cancelled.');
+    return 0;
+  }
+
+  await stopServer();
+
+  if (rootsWithAccounts.length && !noBackup) {
+    try {
+      for (const root of rootsWithAccounts) {
+        const dest = backupDestFor(root);
+        backupAccounts(root, dest);
+        console.log(`accounts: backed up to ${dest}`);
+      }
+    } catch (e) {
+      console.error(`qclaude: could not back up accounts (${e.message}); nothing was removed.`);
+      return 1;
+    }
+  }
+
+  for (const plan of plans) {
+    if (!plan.removed.length || !plan.settings) continue;
+    try {
+      fs.copyFileSync(plan.file, `${plan.file}.bak-uninstall-${stamp}`);
+      fs.writeFileSync(plan.file, JSON.stringify(plan.settings, null, 2) + '\n');
+      console.log(`settings: cleaned ${plan.file}`);
+    } catch (e) {
+      console.warn(`settings: could not clean ${plan.file} (${e.message})`);
+    }
+  }
+
+  if (process.platform === 'win32') {
+    const binDirs = roots.map((root) => path.join(root, 'bin'));
+    const current = userPath();
+    if (current === null) {
+      console.warn('PATH: could not read the user PATH; remove the qclaude bin folder manually');
+    } else {
+      const entries = current.split(';').filter(Boolean);
+      const kept = filterPathEntries(entries, binDirs);
+      if (kept.length === entries.length) console.log('PATH: no qoder-claude entry');
+      else if (!setUserPath(kept.join(';'))) console.warn('PATH: could not update; remove the qclaude bin folder manually');
+      else console.log('PATH: removed the qclaude bin entry');
+    }
+  } else {
+    removeLauncher(roots, home, false);
+  }
+
+  if (removeExa) {
+    let config = null;
+    try { config = JSON.parse(fs.readFileSync(claudeConfigPath(), 'utf8')); } catch {}
+    if (config?.mcpServers?.exa?.url !== EXA_URL) {
+      console.log('exa: no qoder-claude Exa entry found; kept');
+    } else {
+      const bin = process.env.CLAUDE_BIN || (process.platform === 'win32' ? 'claude.cmd' : 'claude');
+      const r = spawnSync(bin, ['mcp', 'remove', 'exa', '-s', 'user'], {
+        stdio: 'inherit',
+        windowsHide: true,
+        shell: process.platform === 'win32' && /\.(cmd|bat)$/i.test(bin),
+      });
+      if (r.status !== 0) console.warn('exa: could not remove; run: claude mcp remove exa -s user');
+      else console.log('exa: removed');
+    }
+  }
+
+  scheduleRootRemoval(roots, false);
+  console.log('');
+  console.log('qoder-claude removed. Open a new terminal so PATH is reloaded.');
+  return 0;
+}
+
+if (args[0] === 'uninstall') {
+  process.exit(await uninstallCommand(args.slice(1)));
+}
+
 if (args[0] === 'update') {
   const before = localVersion(ROOT);
   console.log(`current: ${before}`);
@@ -525,6 +758,8 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude --no-browser       does not open the dashboard
   qclaude --no-update        skips the update check
   qclaude update             checks and installs the latest version
+  qclaude uninstall          removes qclaude, the launcher and its Claude settings
+  qclaude uninstall --dry-run  lists what would be removed, changes nothing
   qclaude --stop             stops the server
 
   qclaude account            lists the accounts
