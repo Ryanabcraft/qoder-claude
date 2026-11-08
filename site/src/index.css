@@ -3,20 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --bg: #07110f;
-  --bg-rgb: 7 17 15;
-  --panel: #0c1a17;
-  --panel-rgb: 12 26 23;
-  --ink: #e9f4f0;
-  --ink-rgb: 233 244 240;
-  --muted: #8fa8a0;
-  --muted-rgb: 143 168 160;
-  --line: #1b2f29;
-  --line-rgb: 27 47 41;
-  --accent: #ffb703;
-  --accent-rgb: 255 183 3;
-  --accent-2: #3ddcbf;
-  --accent-2-rgb: 61 220 191;
+  --bg: #ffffff;
+  --bg-rgb: 255 255 255;
+  --panel: #f6f6f7;
+  --panel-rgb: 246 246 247;
+  --ink: #3c3c43;
+  --ink-rgb: 60 60 67;
+  --muted: #67676c;
+  --muted-rgb: 103 103 108;
+  --line: #e2e2e3;
+  --line-rgb: 226 226 227;
+  --accent: #0f9f83;
+  --accent-rgb: 15 159 131;
+  --accent-2: #0f9f83;
+  --accent-2-rgb: 15 159 131;
+  --accent-soft: rgba(15, 159, 131, 0.1);
+  color-scheme: light;
+}
+
+html.dark {
+  --bg: #1b1b1f;
+  --bg-rgb: 27 27 31;
+  --panel: #202127;
+  --panel-rgb: 32 33 39;
+  --ink: #dfdfd6;
+  --ink-rgb: 223 223 214;
+  --muted: #98989f;
+  --muted-rgb: 152 152 159;
+  --line: #2e2e32;
+  --line-rgb: 46 46 50;
+  --accent: #3fffd1;
+  --accent-rgb: 63 255 209;
+  --accent-2: #3fffd1;
+  --accent-2-rgb: 63 255 209;
+  --accent-soft: rgba(63, 255, 209, 0.12);
+  color-scheme: dark;
 }
 
 html {
@@ -29,10 +50,9 @@ html {
 body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
-  background-image:
-    linear-gradient(to right, rgba(143, 168, 160, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(143, 168, 160, 0.055) 1px, transparent 1px);
-  background-size: 72px 72px;
+  font-size: 16px;
+  line-height: 1.7;
+  background: var(--bg);
 }
 
 ::selection {
@@ -41,9 +61,13 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-2);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 4px;
+}
+
+a {
+  text-underline-offset: 3px;
 }
 
 @keyframes travel {
@@ -64,16 +88,16 @@ body {
   background: transparent;
 }
 .lang-scroll::-webkit-scrollbar-thumb {
-  background: #24403a;
+  background: var(--line);
   border-radius: 999px;
   border: 2px solid var(--panel);
 }
 .lang-scroll::-webkit-scrollbar-thumb:hover {
-  background: #35594f;
+  background: var(--muted);
 }
 .lang-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #24403a transparent;
+  scrollbar-color: var(--line) transparent;
   overscroll-behavior: contain;
 }
 

@@ -32,7 +32,7 @@ export function InstallTabs() {
             className={cn(
               'px-3 py-2 text-sm transition-colors',
               i === active
-                ? 'text-foreground border-b-2 border-primary -mb-px'
+                ? 'text-accent border-b-2 border-accent -mb-px'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -41,7 +41,7 @@ export function InstallTabs() {
         ))}
       </div>
 
-      <div className="mt-4 flex items-start gap-3 border border-border bg-card/60 p-4">
+      <div className="mt-4 flex items-start gap-3 rounded-lg border border-border bg-card p-4">
         <Terminal className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
         <code className="min-w-0 flex-1 break-all font-mono text-[13px] leading-relaxed text-foreground">
           {item.code}
@@ -49,7 +49,7 @@ export function InstallTabs() {
         <button
           onClick={copy}
           aria-label={copied ? t.hero.copied : 'Copy command'}
-          className="shrink-0 border border-border p-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          className="shrink-0 rounded-md border border-border p-2 text-muted-foreground transition-colors hover:border-accent hover:text-accent"
         >
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
         </button>
