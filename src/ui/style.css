@@ -378,6 +378,12 @@ input:disabled, select:disabled { opacity: .55; }
 .account-card .a-title span { font: 10px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
 .account-card .a-meta { display: flex; flex-wrap: wrap; gap: 6px; }
 .account-card .a-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.quota-box { display: flex; flex-direction: column; gap: 5px; }
+.quota-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.meter { height: 6px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); overflow: hidden; }
+.meter-fill { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+.meter-fill.warn { background: var(--warn); }
+.meter-fill.err { background: var(--err); }
 .strip { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 .strip .who { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; font: 10px var(--mono); color: var(--muted); }
 .strip .who.active { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }

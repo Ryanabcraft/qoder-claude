@@ -23,6 +23,8 @@ export const DEFAULTS = {
   modelRetries: 0,
   maxAttempts: 0,
   log: true,
+  quota: true,
+  quotaPollMs: 300000,
 };
 
 const ENV = {
@@ -42,6 +44,8 @@ const ENV = {
   modelRetries: 'BRIDGE_MODEL_RETRIES',
   maxAttempts: 'BRIDGE_MAX_ATTEMPTS',
   log: 'BRIDGE_LOG',
+  quota: 'BRIDGE_QUOTA',
+  quotaPollMs: 'BRIDGE_QUOTA_POLL_MS',
 };
 
 export const RESTART_KEYS = ['port', 'host', 'apiKey', 'transport', 'pool', 'poolSize', 'log'];
@@ -55,6 +59,8 @@ const LIVE_KEYS = [
   'maxOutputTokens',
   'modelRetries',
   'maxAttempts',
+  'quota',
+  'quotaPollMs',
 ];
 
 const ORIGINAL_ENV = { ...process.env };
@@ -93,6 +99,7 @@ export function normalize(raw = {}) {
   out.maxOutputTokens = clamp(out.maxOutputTokens, 0, 200000, 0);
   out.modelRetries = clamp(out.modelRetries, 0, 10, 0);
   out.maxAttempts = clamp(out.maxAttempts, 0, 20, 0);
+  out.quotaPollMs = clamp(out.quotaPollMs, 60000, 3600000, DEFAULTS.quotaPollMs);
   if (!['auto', 'direct', 'cli'].includes(out.transport)) out.transport = 'auto';
   if (!THINKING.includes(out.thinking)) out.thinking = '';
   if (!EFFORT.includes(out.effort)) out.effort = '';
@@ -118,7 +125,7 @@ function envNumber(name, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function effectiveConfig() {
+export function effectiveConfig() {
   const cfg = readConfig();
   return {
     ...cfg,
@@ -138,20 +145,27 @@ function effectiveConfig() {
     modelRetries: envNumber('BRIDGE_MODEL_RETRIES', cfg.modelRetries),
     maxAttempts: envNumber('BRIDGE_MAX_ATTEMPTS', cfg.maxAttempts),
     log: process.env.BRIDGE_LOG !== undefined ? process.env.BRIDGE_LOG !== '0' : cfg.log,
+    quota: process.env.BRIDGE_QUOTA !== undefined ? process.env.BRIDGE_QUOTA !== '0' : cfg.quota,
+    quotaPollMs: envNumber('BRIDGE_QUOTA_POLL_MS', cfg.quotaPollMs),
   };
 }
 
 export function publicConfig() {
   const cfg = effectiveConfig();
   const { apiKey } = cfg;
-  const out = { ...cfg, apiKeySet: Boolean(apiKey), envLocked: envLocked() };
+  const out = {
+    ...cfg,
+    apiKeySet: Boolean(apiKey),
+    envLocked: envLocked(),
+    quotaEndpoint: process.env.QODER_QUOTA_ENDPOINT || 'https://openapi.qoder.sh',
+  };
   delete out.apiKey;
   return out;
 }
 
 function envValue(key, value) {
   if (key === 'transport') return value === 'auto' ? undefined : value;
-  if (key === 'pool' || key === 'log') return value ? '1' : '0';
+  if (key === 'pool' || key === 'log' || key === 'quota') return value ? '1' : '0';
   if (['thinking', 'effort'].includes(key)) return value || undefined;
   if (['thinkingBudget', 'maxOutputTokens', 'maxAttempts', 'modelRetries'].includes(key)) {
     return Number(value) > 0 ? String(value) : undefined;

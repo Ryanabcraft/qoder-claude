@@ -54,6 +54,8 @@ notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 | `qclaude --serve` | só o servidor, em primeiro plano |
 | `qclaude update` | verifica e instala a versão mais nova |
 | `qclaude notes [versão]` | mostra o changelog desta instalação |
+| `qclaude quota` | créditos usados/restantes, consumo e previsão |
+| `qclaude quota --json` | snapshot de cota legível por máquina |
 | `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |
 | `qclaude uninstall --dry-run` | lista o que seria removido |
 | `qclaude --no-update` | pula a checagem de atualização |
@@ -69,7 +71,9 @@ pula o backup das contas; `--remove-exa` remove o MCP Exa quando a URL é a do q
 ![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard-1.11.1.gif)
 
 Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models e Settings. Os settings
-escrevem `bridge.config.json` e o settings do Claude com backup; o analytics guarda 7 dias.
+escrevem `bridge.config.json` e o settings do Claude com backup; o analytics guarda 7 dias. Os
+cards de conta mostram os créditos reais de cada perfil, e o Analytics ganhou créditos, taxa de
+consumo e previsão de cota.
 
 ## O que funciona
 
@@ -93,6 +97,18 @@ qclaude rotation               # pool de failover
 
 A cota é por conta. Com mais de uma, a bridge faz failover sozinha: cota, `403`, `429` ou sessão
 perdida pausam aquela conta e a mesma requisição roda na próxima.
+
+## Cotas e créditos
+
+`qclaude quota` lê o endpoint de cota da Qoder por conta e mostra créditos usados, restantes,
+plano, consumo por dia e a data prevista de esgotamento. O dashboard repete os dados numa barra em
+cada card de conta, num KPI de Créditos na Home e num card de previsão no Analytics.
+
+O `usage` real da Qoder (tokens de entrada/saída/cache e créditos) é repassado ao Claude Code e
+gravado no `metrics.jsonl`; quando o upstream não manda, a bridge usa estimativa e marca a linha
+como `estimated`. Os snapshots de cota ficam no `quota.jsonl` por 30 dias e são lidos localmente —
+o token só viaja no header Authorization até a Qoder, nunca para o navegador ou logs. A cota é só
+visual: não muda a ordem do failover.
 
 ## Limites
 

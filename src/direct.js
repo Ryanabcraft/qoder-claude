@@ -1,67 +1,12 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { createRequire } from 'node:module';
 import { deferredTools, renderMessageContent, systemToText } from './prompt.js';
 import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
-import { cliVersion } from './cliPath.js';
+import { context, forgetContext } from './qoderAuth.js';
 
-const require = createRequire(import.meta.url);
-const auth = require('../vendor/qoder-auth.cjs');
+export { forgetContext };
 
-const CONFIG_DIR =
-  process.env.QODER_CONFIG_DIR || path.join(process.env.USERPROFILE || process.env.HOME || '', '.qoder');
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
-const VERSION = cliVersion();
-
-const cache = new Map();
-
-function configDirFor(dir) {
-  return dir || CONFIG_DIR;
-}
-
-function context(dir, force = false) {
-  const root = configDirFor(dir);
-  const cached = cache.get(root);
-  if (cached && !force) return cached;
-  const userFile = path.join(root, '.auth', 'user');
-  const midFile = path.join(root, '.auth', 'machine_id');
-  const user = fs.readFileSync(userFile, 'utf8').trim();
-  const mid = fs.readFileSync(midFile, 'utf8').trim();
-
-  auth.init();
-  const creds = JSON.parse(auth.credentialDecrypt(user, mid.slice(0, 16)));
-  const fields = JSON.parse(
-    auth.generateRuntimeAuthFields(
-      JSON.stringify({
-        uid: creds.uid,
-        security_oauth_token: creds.security_oauth_token,
-        data_policy_agreed: true,
-      }),
-    ),
-  );
-  const info = JSON.stringify({
-    uid: creds.uid,
-    encrypt_user_info: fields.encrypt_user_info,
-    key: fields.key,
-    data_policy_agreed: true,
-  });
-  const client = JSON.stringify({
-    client_type: '5',
-    business_product: 'cli',
-    business_type: 'agent',
-    scene: 'assistant',
-  });
-  const ctx = new auth.QoderContext(mid, VERSION, info, client);
-  const built = { ctx, uid: creds.uid };
-  cache.set(root, built);
-  return built;
-}
-
-export function forgetContext(dir) {
-  cache.delete(configDirFor(dir));
-}
 
 export function buildPayload(body, model, contextWindow, opts = {}) {
   const messages = [];
@@ -86,7 +31,13 @@ export function buildPayload(body, model, contextWindow, opts = {}) {
     messages.push({ role, content });
   });
 
-  const payload = { messages, model: String(model).toLowerCase(), agent_id: AGENT_ID };
+  const payload = {
+    messages,
+    model: String(model).toLowerCase(),
+    agent_id: AGENT_ID,
+    stream: true,
+    stream_options: { include_usage: true },
+  };
   const maxTokens = Number(body.max_tokens);
   if (maxTokens > 0) payload.max_tokens = maxTokens;
   if (contextWindow > 0) payload.context_window = contextWindow;

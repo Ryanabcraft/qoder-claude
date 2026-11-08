@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 const API = 'https://api.github.com/repos/Ryanabcraft/qoder-claude/contents/package.json?ref=main';
 const RAW = 'https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/package.json';
 const TARBALL = 'https://codeload.github.com/Ryanabcraft/qoder-claude/tar.gz/refs/heads/main';
-const KEEP = new Set(['accounts', 'accounts.json', 'tools', 'bridge.log', 'bridge.pid', 'bridge.config.json', 'metrics.jsonl', '.git', '.update-skip']);
+const KEEP = new Set(['accounts', 'accounts.json', 'tools', 'bridge.log', 'bridge.pid', 'bridge.config.json', 'metrics.jsonl', 'quota.jsonl', '.git', '.update-skip']);
 
 export function localVersion(root) {
   try {

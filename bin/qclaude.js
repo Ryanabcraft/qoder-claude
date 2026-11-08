@@ -23,6 +23,7 @@ import { ensureWebTools, settingsPath } from '../src/claudeSettings.js';
 import { backupAccounts, filterPathEntries, installRoots, stripBridgeSettings } from '../src/uninstall.js';
 import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
 import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
+import { getQuota, quotaSnapshot } from '../src/quota.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -755,6 +756,37 @@ if (args[0] === 'rotation') {
 }
 
 
+if (args[0] === 'quota') {
+  const json = args.includes('--json');
+  const refresh = args.includes('--refresh');
+  const name = args.slice(1).find((arg) => !arg.startsWith('-'));
+  const snapshot = await quotaSnapshot({ refresh });
+  if (name && !snapshot.accounts[name]) {
+    console.error(`qclaude: account not found: ${name}`);
+    process.exit(1);
+  }
+  if (json) {
+    console.log(JSON.stringify(name ? snapshot.accounts[name] : snapshot, null, 2));
+    process.exit(0);
+  }
+  const rows = name ? [snapshot.accounts[name]] : Object.values(snapshot.accounts);
+  for (const row of rows) {
+    console.log(`${row.label || row.name}${row.active ? ' (active)' : ''}`);
+    if (row.status !== 'ok') {
+      console.log(`  quota : ${row.status}${row.reason ? ` (${row.reason})` : ''}`);
+      continue;
+    }
+    const percent = Math.round(row.percent);
+    console.log(`  quota : ${percent}% used · ${row.used}/${row.total} ${row.unit} · ${row.remaining} left${row.exceeded ? ' · EXCEEDED' : ''}`);
+    console.log(`  plan  : ${row.plan || '—'}${row.expiresAt ? ` · expires ${new Date(row.expiresAt).toLocaleDateString()}` : ' · no expiry'}`);
+    if (row.burnPerDay !== null && row.burnPerDay !== undefined) {
+      const forecast = row.forecastAt ? new Date(row.forecastAt).toLocaleDateString() : '—';
+      console.log(`  burn  : ${row.burnPerDay.toFixed(2)} ${row.unit}/day · forecast ${forecast}`);
+    }
+  }
+  process.exitCode = 0;
+}
+
 if (args[0] === '--help' || args[0] === '-h') {
   console.log(`qclaude - Qoder models inside Claude Code
 
@@ -769,6 +801,8 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude --no-update        skips the update check
   qclaude update             checks and installs the latest version
   qclaude notes [version]    prints the changelog for this install
+  qclaude quota [name]       shows Qoder credits, burn rate and forecast
+  qclaude quota --json       machine-readable quota snapshot
   qclaude uninstall          removes qclaude, the launcher and its Claude settings
   qclaude uninstall --dry-run  lists what would be removed, changes nothing
   qclaude --stop             stops the server
@@ -813,6 +847,12 @@ if (args[0] === '--status') {
   const pool = rot.accounts.filter((a) => a.enabled).length;
   console.log(`version  : ${localVersion(ROOT)}`);
   console.log(`account  : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (global config)'}`);
+  try {
+    const quota = await getQuota(acc.dir, { account: acc.name });
+    console.log(quota.status === 'ok'
+      ? `quota    : ${Math.round(quota.percent)}% used · ${quota.used}/${quota.total} ${quota.unit} · ${quota.remaining} left`
+      : `quota    : ${quota.status}${quota.reason ? ` (${quota.reason})` : ''}`);
+  } catch {}
   console.log(`failover : ${rot.on ? `on (${pool} account${pool === 1 ? '' : 's'} in the pool)` : 'off'}`);
   console.log(`server   : ${up ? `running at 127.0.0.1:${PORT}` : 'stopped'}`);
   if (up) console.log(`dashboard: http://127.0.0.1:${PORT}/ui`);
@@ -825,7 +865,7 @@ if (args[0] === '--status') {
   }
   console.log(`source   : ${ROOT}`);
   console.log(`log      : ${LOG}`);
-  process.exit(up ? 0 : 1);
+  process.exitCode = up ? 0 : 1;
 }
 
 if (args[0] === '--stop') {
@@ -852,6 +892,7 @@ if (args[0] === '--window') {
   process.exit(1);
 }
 
+if (!['quota', '--status'].includes(args[0])) {
 if (args[0] === '--serve') {
   const child = await startServer({ window: false });
   if (!child) {
@@ -917,4 +958,6 @@ if (args[0] === '--serve') {
   const code = await runClaude(claudeBin, claudeArgs);
   stop();
   process.exit(code);
+}
+
 }

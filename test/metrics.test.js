@@ -42,6 +42,22 @@ test('record aggregates totals, tokens and percentiles', () => {
   assert.equal(snap.lastError.status, 500);
 });
 
+test('record carries credits, cache tokens and usage source', () => {
+  metrics.record({
+    model: 'Auto', status: 200, ms: 120, ttft: 40, transport: 'direct', account: 'default',
+    inTokens: 30, outTokens: 8, credits: 1.5, cacheRead: 12, cacheWrite: 3, usageSource: 'upstream',
+  });
+  metrics.record({ model: 'Auto', status: 200, ms: 80, ttft: 20, transport: 'direct', account: 'default', inTokens: 10, outTokens: 2 });
+  const snap = metrics.snapshot('30m');
+  assert.equal(snap.credits, 1.5);
+  assert.equal(snap.cacheRead, 12);
+  assert.equal(snap.cacheWrite, 3);
+  assert.ok(snap.usageReal >= 1);
+  assert.ok(snap.usageEstimated >= 1);
+  assert.equal(snap.topModels[0].credits, 1.5);
+  assert.equal(snap.recent[0].usageSource, 'estimated');
+});
+
 test('ranges expose the expected number of points', () => {
   assert.equal(metrics.snapshot('30m').series.length, 30);
   assert.equal(metrics.snapshot('24h').series.length, 288);

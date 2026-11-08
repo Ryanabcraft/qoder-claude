@@ -4,17 +4,40 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 8799;
 const KEY = 'test-key';
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'qclaude-server-'));
+const quotaPayload = {
+  userType: 'personal_standard',
+  usageType: 'credits',
+  totalUsagePercentage: 0.675,
+  isQuotaExceeded: false,
+  expiresAt: 253402214400000,
+  upgradeUrl: 'https://qoder.com/pricing',
+  userQuota: { total: 0, used: 0, remaining: 0, percentage: 0, unit: 'credits' },
+  addOnQuota: { total: 200, used: 135, remaining: 65, percentage: 0.675, unit: 'credits' },
+};
+let quotaMode = 'ok';
+let mock;
 let proc;
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 test.before(async () => {
+  mock = http.createServer((req, res) => {
+    if (quotaMode !== 'ok') {
+      res.writeHead(500, { 'content-type': 'application/json' });
+      return res.end('{"error":"down"}');
+    }
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(quotaPayload));
+  });
+  await new Promise((resolve) => mock.listen(0, '127.0.0.1', resolve));
+  const quotaPort = mock.address().port;
   proc = spawn(process.execPath, [path.join(ROOT, 'src', 'server.js')], {
     cwd: ROOT,
     env: {
@@ -24,6 +47,9 @@ test.before(async () => {
       BRIDGE_API_KEY: KEY,
       BRIDGE_LOG: '0',
       BRIDGE_MODELS_REFRESH: '0',
+      BRIDGE_QUOTA: '0',
+      QODER_QUOTA_ENDPOINT: `http://127.0.0.1:${quotaPort}`,
+      QODER_QUOTA_TOKEN: 'test-token',
     },
     stdio: 'ignore',
   });
@@ -39,6 +65,7 @@ test.before(async () => {
 
 test.after(() => {
   try { proc?.kill(); } catch {}
+  try { mock?.close(); } catch {}
   fs.rmSync(home, { recursive: true, force: true });
 });
 
@@ -93,6 +120,32 @@ test('config updates persist live values', async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.config.stallMs, 120000);
+});
+
+test('quota route normalizes credits and never echoes the token', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/quota?refresh=1`, { headers: { 'x-api-key': KEY } });
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  assert.equal(text.includes('test-token'), false);
+  const body = JSON.parse(text);
+  assert.equal(body.summary.status, 'ok');
+  assert.equal(body.summary.total, 200);
+  assert.equal(body.summary.used, 135);
+  assert.equal(body.summary.remaining, 65);
+  assert.equal(body.summary.percent, 67.5);
+  assert.equal(body.summary.exceeded, false);
+  assert.equal(body.summary.expiresAt, null);
+});
+
+test('quota route serves the last good sample when the upstream fails', async () => {
+  quotaMode = 'down';
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/quota?refresh=1`, { headers: { 'x-api-key': KEY } });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.summary.status, 'ok');
+  assert.equal(body.summary.stale, true);
+  assert.equal(body.summary.reason, 'http_500');
+  quotaMode = 'ok';
 });
 
 test('count_tokens answers without a backend', async () => {

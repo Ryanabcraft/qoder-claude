@@ -68,10 +68,11 @@ const state = {
   health: null,
   metrics: null,
   heat: null,
+  quota: null,
   logs: '',
   range: '30m',
   search: '',
-  usage: { status: '', model: '', account: '', transport: '' },
+  usage: { status: '', model: '', account: '', transport: '', source: '' },
 };
 
 const TITLES = {
@@ -143,6 +144,39 @@ function timeOf(value) {
   return new Date(value).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 function pct(n) { return `${Math.round(Number(n) || 0)}%`; }
+function fmtCredits(n) {
+  const value = Number(n) || 0;
+  return value.toLocaleString(locale(), { maximumFractionDigits: value >= 100 ? 0 : 1 });
+}
+function quotaState(record) {
+  if (!record) return { cls: '', label: '—' };
+  if (record.status !== 'ok') return { cls: 'warn', label: record.status };
+  if (record.exceeded) return { cls: 'err', label: t('Quota exceeded') };
+  if (record.percent >= 95) return { cls: 'err', label: t('Critical') };
+  if (record.percent >= 80) return { cls: 'warn', label: t('Low quota') };
+  return { cls: 'ok', label: t('Ready') };
+}
+function quotaCell(record) {
+  if (!record) return '—';
+  if (record.status !== 'ok') return record.status === 'no-auth' ? t('No account signed in') : t('Unavailable');
+  return `${pct(record.percent)} · ${fmtCredits(record.used)}/${fmtCredits(record.total)}`;
+}
+function forecastDate(value) {
+  return value ? new Date(value).toLocaleDateString(locale()) : '—';
+}
+function unitLabel(unit) {
+  return unit === 'credits' ? t('credits') : unit;
+}
+function sourceLabel(value) {
+  return t(value === 'upstream' ? 'Real' : value === 'mixed' ? 'Mixed' : 'Estimated');
+}
+function ago(value) {
+  const seconds = Math.max(0, Math.round((Date.now() - Number(value || 0)) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
+}
 
 function toast(message, kind = '') {
   const node = el('div', `toast ${kind}`, message);
@@ -339,6 +373,41 @@ function tokenChart(box, series) {
   box.append(svg);
 }
 
+function creditChart(box, series) {
+  box.textContent = '';
+  const data = Array.isArray(series) ? series : [];
+  if (!data.length) {
+    box.append(el('div', 'chart-empty', 'no data yet'));
+    return;
+  }
+  const w = 620, h = 220, l = 34, r = 10, t = 12, b = 24;
+  const max = Math.max(1, ...data.map((p) => Number(p.credits) || 0));
+  const n = data.length;
+  const gap = (w - l - r) / Math.max(1, n);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const add = (tag, attrs) => {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    svg.append(node);
+  };
+  for (let i = 0; i <= 3; i += 1) {
+    const y = t + ((h - t - b) * i) / 3;
+    add('line', { x1: l, y1: y, x2: w - r, y2: y, class: 'gridline' });
+    if (i === 0 || i === 3) {
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', 2); label.setAttribute('y', y + 3); label.setAttribute('class', 'axis');
+      label.textContent = i === 0 ? fmtCredits(max) : '0';
+      svg.append(label);
+    }
+  }
+  data.forEach((p, i) => {
+    const height = ((Number(p.credits) || 0) / max) * (h - t - b);
+    add('rect', { x: l + i * gap + gap * 0.2, y: h - b - height, width: Math.max(1, gap * 0.6), height, class: 'bar' });
+  });
+  box.append(svg);
+}
+
 function donut(box, success, sub) {
   box.textContent = '';
   const value = Math.max(0, Math.min(100, Number(success) || 0));
@@ -448,18 +517,19 @@ function renderUsage() {
   const table = $('#usage-table');
   const rows = (state.metrics?.recent || []).filter((row) => {
     const needle = state.search.trim().toLowerCase();
-    if (needle && !`${row.model} ${row.account} ${row.transport}`.toLowerCase().includes(needle)) return false;
+    if (needle && !`${row.model} ${row.account} ${row.transport} ${row.credits} ${row.usageSource}`.toLowerCase().includes(needle)) return false;
     if (state.usage.status === 'ok' && !(row.status >= 200 && row.status < 300)) return false;
     if (state.usage.status === 'err' && row.status >= 200 && row.status < 300) return false;
     if (state.usage.model && row.model !== state.usage.model) return false;
     if (state.usage.account && row.account !== state.usage.account) return false;
     if (state.usage.transport && row.transport !== state.usage.transport) return false;
+    if (state.usage.source && (row.usageSource || 'estimated') !== state.usage.source) return false;
     return true;
   });
   const cols = [
     { label: t('Time') }, { label: t('Model') }, { label: t('Account') }, { label: t('Transport') },
     { label: t('Status') }, { label: t('In'), right: true }, { label: t('Out'), right: true },
-    { label: 'TTFT', right: true }, { label: t('Latency'), right: true },
+    { label: t('Credits'), right: true }, { label: t('Source') }, { label: 'TTFT', right: true }, { label: t('Latency'), right: true },
   ];
   $('#usage-count').textContent = t('{count} shown', { count: rows.length });
   if (!rows.length) return emptyTable(table, cols, 'no requests match');
@@ -479,6 +549,8 @@ function renderUsage() {
       el('td', '', ''),
       el('td', 'right mono', fmtInt(row.in)),
       el('td', 'right mono', fmtInt(row.out)),
+      el('td', 'right mono', fmtCredits(row.credits)),
+      el('td', 'mono', sourceLabel(row.usageSource)),
       el('td', 'right mono', row.ttft ? fmtMs(row.ttft) : '—'),
       el('td', 'right mono', fmtMs(row.ms)),
     );
@@ -519,13 +591,16 @@ async function loadHome() {
   await refreshStatus();
   state.metrics = await api('metrics?range=30m');
   if (!state.accounts) state.accounts = await api('accounts');
+  state.quota = await api('quota').catch(() => state.quota);
   const m = state.metrics;
   const status = state.status;
+  const quota = state.quota?.summary;
   kpis($('#home-kpis'), [
     { label: t('Requests'), value: fmtInt(m.total), sub: t('{ok} ok · {err} errors', { ok: m.ok, err: m.err }), icon: 'bolt' },
     { label: t('Success'), value: pct(m.success), sub: t('{total} completed', { total: fmtInt(m.total) }), icon: 'check' },
     { label: t('Avg latency'), value: fmtMs(m.avgMs), sub: t('p95 {ms}', { ms: fmtMs(m.p95) }), icon: 'clock' },
     { label: t('Tokens'), value: fmtInt(m.tokensIn + m.tokensOut), sub: t('{in} in · {out} out', { in: fmtInt(m.tokensIn), out: fmtInt(m.tokensOut) }), icon: 'chart' },
+    { label: t('Credits'), value: quota?.status === 'ok' ? pct(quota.percent) : '—', sub: quota?.status === 'ok' ? t('{used}/{total} credits · {remaining} left', { used: fmtCredits(quota.used), total: fmtCredits(quota.total), remaining: fmtCredits(quota.remaining) }) : t(quota?.status === 'no-auth' ? 'No account signed in' : 'Unavailable'), icon: 'key' },
     { label: t('Accounts'), value: fmtInt(state.accounts?.rotation?.accounts?.length || 0), sub: status?.rotation?.on ? t('failover on · {count} in pool', { count: status.rotation.count }) : t('failover off'), icon: 'users' },
     { label: t('Models'), value: fmtInt(status?.models || state.models.length), sub: t('transport {transport}', { transport: status?.transport || '—' }), icon: 'layers' },
     { label: t('Sessions'), value: fmtInt(status?.sessions || 0), sub: status?.pool?.enabled ? t('pool {ready}/{size}', { ready: status.pool.ready, size: status.pool.size }) : t('direct transport'), icon: 'activity' },
@@ -541,6 +616,7 @@ async function loadHome() {
     ['Transport', status?.transport || '—'],
     ['Endpoint', status ? `${status.host}:${status.port}` : '—'],
     ['Version', status?.version ? `v${status.version}` : '—'],
+    ['Credits', quotaCell(quota)],
     ['Last error', m.lastError ? `${m.lastError.status} · ${new Date(m.lastError.t).toLocaleTimeString(locale())}` : 'none'],
   ];
   for (const [key, value] of lines) {
@@ -590,7 +666,9 @@ async function loadEndpoint() {
 }
 
 async function loadAccounts() {
-  state.accounts = await api('accounts');
+  const [accounts, quota] = await Promise.all([api('accounts'), api('quota').catch(() => null)]);
+  state.accounts = accounts;
+  if (quota) state.quota = quota;
   renderAccounts();
 }
 
@@ -626,6 +704,27 @@ function renderAccounts() {
     if (account.active) meta.append(el('span', 'pill accent', 'current'));
     card.append(meta);
     if (account.reason) card.append(el('p', 'muted small', account.reason));
+    const quota = state.quota?.accounts?.[account.name];
+    if (quota) {
+      const info = quotaState(quota);
+      const box = el('div', 'quota-box');
+      const top = el('div', 'quota-top');
+      top.append(el('span', 'muted small', t('Quota')), el('span', `pill ${info.cls}`, info.label));
+      box.append(top);
+      const bar = el('div', 'meter');
+      const fill = el('span', `meter-fill ${info.cls}`);
+      fill.style.width = `${quota.status === 'ok' ? Math.min(100, quota.percent) : 0}%`;
+      bar.append(fill);
+      box.append(bar);
+      box.append(el('div', 'muted small', quotaCell(quota)));
+      if (quota.status === 'ok') {
+        const detail = [`${quota.plan || '—'}`, `${t('Updated {when} ago', { when: ago(quota.fetchedAt) })}`];
+        if (quota.burnPerDay) detail.push(t('{rate} credits/day', { rate: fmtCredits(quota.burnPerDay) }));
+        box.append(el('div', 'muted small', detail.join(' · ')));
+        if (quota.forecastAt) box.append(el('div', 'muted small', t('Forecast: {date}', { date: forecastDate(quota.forecastAt) })));
+      }
+      card.append(box);
+    }
     const actions = el('div', 'a-actions');
     if (!account.active) {
       const use = el('button', 'btn small', 'Use');
@@ -722,17 +821,21 @@ async function moveAccount(index, delta) {
 }
 
 async function loadAnalytics() {
-  const [metrics, heat] = await Promise.all([
+  const [metrics, heat, quota] = await Promise.all([
     api(`metrics?range=${state.range}`),
     api('metrics?range=7d'),
+    api('quota').catch(() => null),
   ]);
   state.metrics = metrics;
   state.heat = heat;
+  if (quota) state.quota = quota;
   renderAnalytics();
 }
 
 function renderAnalytics() {
   const m = state.metrics || {};
+  const quota = state.quota?.summary;
+  const tokenSource = m.usageReal && !m.usageEstimated ? t('real usage') : m.usageReal ? t('Mixed') : t('estimated');
   const topModel = m.topModels?.[0]?.name || '—';
   kpis($('#analytics-kpis'), [
     { label: t('Requests'), value: fmtInt(m.total), sub: t('{ok} ok · {err} err', { ok: m.ok, err: m.err }), icon: 'bolt' },
@@ -740,14 +843,32 @@ function renderAnalytics() {
     { label: t('P50'), value: fmtMs(m.p50), sub: t('latency'), icon: 'clock' },
     { label: t('P95'), value: fmtMs(m.p95), sub: t('latency'), icon: 'activity' },
     { label: t('TTFT p50'), value: m.ttftP50 ? fmtMs(m.ttftP50) : '—', sub: t('first token'), icon: 'play' },
-    { label: t('Tokens in'), value: fmtInt(m.tokensIn), sub: t('estimated'), icon: 'chart' },
-    { label: t('Tokens out'), value: fmtInt(m.tokensOut), sub: t('estimated'), icon: 'chart' },
+    { label: t('Tokens in'), value: fmtInt(m.tokensIn), sub: tokenSource, icon: 'chart' },
+    { label: t('Tokens out'), value: fmtInt(m.tokensOut), sub: tokenSource, icon: 'chart' },
+    { label: t('Credits'), value: fmtCredits(m.credits), sub: t('in this range'), icon: 'key' },
+    { label: t('Burn rate'), value: quota?.burnPerDay ? t('{rate}/day', { rate: fmtCredits(quota.burnPerDay) }) : '—', sub: t('credits'), icon: 'bolt' },
+    { label: t('Forecast'), value: quota?.forecastAt ? forecastDate(quota.forecastAt) : '—', sub: t('quota empty date'), icon: 'clock' },
     { label: t('Top model'), value: topModel, sub: t('by requests'), icon: 'layers' },
   ]);
   $('#analytics-chart-sub').textContent = state.range === '7d' ? 'last 7 days' : state.range === '24h' ? 'last 24 hours' : 'last 30 minutes';
   $$('#analytics-range button').forEach((b) => b.classList.toggle('active', b.dataset.range === state.range));
   lineChart($('#analytics-chart'), m.series, { latency: true });
   tokenChart($('#token-chart'), m.series);
+  creditChart($('#credit-chart'), m.series);
+  const quotaBox = $('#analytics-quota');
+  quotaBox.textContent = '';
+  if (!quota) {
+    quotaBox.append(el('div', 'muted small', t('Unavailable')));
+  } else if (quota.status !== 'ok') {
+    quotaBox.append(el('div', 'muted small', t(quota.status === 'no-auth' ? 'No account signed in' : 'Unavailable')));
+  } else {
+    addKv(quotaBox, t('Quota'), quotaCell(quota));
+    addKv(quotaBox, t('Remaining'), `${fmtCredits(quota.remaining)} ${unitLabel(quota.unit)}`);
+    addKv(quotaBox, t('Burn rate'), quota.burnPerDay ? t('{rate} credits/day', { rate: fmtCredits(quota.burnPerDay) }) : '—');
+    addKv(quotaBox, t('Forecast'), forecastDate(quota.forecastAt));
+    addKv(quotaBox, t('Plan'), quota.plan || '—');
+    addKv(quotaBox, t('Expires'), quota.expiresAt ? forecastDate(quota.expiresAt) : t('no expiry'));
+  }
   heatmap($('#heatmap'), state.heat?.series);
   renderTop($('#top-models'), m.topModels, 'Model');
   renderTop($('#top-accounts'), m.topAccounts, 'Account');
@@ -920,6 +1041,9 @@ function fillSettings() {
     setField('#cfg-retries', cfg.modelRetries, locked.modelRetries);
     setField('#cfg-request-timeout', cfg.requestTimeoutMs, locked.requestTimeoutMs);
     setField('#cfg-stall', cfg.stallMs, locked.stallMs);
+    setField('#cfg-quota', cfg.quota, locked.quota);
+    setField('#cfg-quota-poll', cfg.quotaPollMs, locked.quotaPollMs);
+    if ($('#quota-endpoint')) $('#quota-endpoint').textContent = cfg.quotaEndpoint || '';
     $('#cfg-path').textContent = state.status?.configPath || state.health?.paths?.config || '';
     $('#key-state').textContent = cfg.apiKeySet ? 'set · restart to change' : 'not required';
     $('#advanced-info').textContent = '';
@@ -1000,6 +1124,11 @@ function saveResilience() {
   return saveConfigValues({
     requestTimeoutMs: val('#cfg-request-timeout'), stallMs: val('#cfg-stall'),
   }, 'Timeouts');
+}
+function saveAdvanced() {
+  return saveConfigValues({
+    quota: val('#cfg-quota'), quotaPollMs: val('#cfg-quota-poll'),
+  }, 'Quota');
 }
 function saveRoutingPage() {
   return saveConfigValues({
@@ -1169,6 +1298,7 @@ function bind() {
   $('#usage-model').addEventListener('change', (e) => { state.usage.model = e.target.value; renderUsage(); });
   $('#usage-account').addEventListener('change', (e) => { state.usage.account = e.target.value; renderUsage(); });
   $('#usage-transport').addEventListener('change', (e) => { state.usage.transport = e.target.value; renderUsage(); });
+  $('#usage-source').addEventListener('change', (e) => { state.usage.source = e.target.value; renderUsage(); });
   $('#health-refresh').addEventListener('click', () => loadHealth().catch((e) => toast(e.message, 'err')));
   $('#models-refresh').addEventListener('click', () => loadModels().catch((e) => toast(e.message, 'err')));
   $('#models-open-settings').addEventListener('click', () => { showPage('settings'); switchSettingsTab('ai'); });
@@ -1182,6 +1312,7 @@ function bind() {
     else if (kind === 'security') saveKey();
     else if (kind === 'routing') saveRouting();
     else if (kind === 'resilience') saveResilience();
+    else if (kind === 'advanced') saveAdvanced();
   }));
   $('#key-clear').addEventListener('click', clearKey);
   $('#web-tools-apply').addEventListener('click', applyWebTools);
@@ -1221,8 +1352,8 @@ function downloadText(name, text) {
 }
 function downloadUsage() {
   const rows = state.metrics?.recent || [];
-  const header = 'time,model,account,transport,status,in,out,ttft_ms,ms';
-  const lines = rows.map((r) => [new Date(r.t).toISOString(), r.model, r.account, r.transport, r.status, r.in, r.out, r.ttft, r.ms].join(','));
+  const header = 'time,model,account,transport,status,in,out,credits,source,ttft_ms,ms';
+  const lines = rows.map((r) => [new Date(r.t).toISOString(), r.model, r.account, r.transport, r.status, r.in, r.out, r.credits || 0, r.usageSource || 'estimated', r.ttft, r.ms].join(','));
   downloadText('qoder-claude-usage.csv', [header, ...lines].join('\n'));
 }
 

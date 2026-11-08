@@ -19,6 +19,8 @@ forwarded to `claude`.
 | `qclaude --stop` | stop the server |
 | `qclaude update` | check and install the latest version |
 | `qclaude notes [version]` | print the changelog |
+| `qclaude quota [name]` | credits, remaining, burn rate and forecast |
+| `qclaude quota --json` | machine-readable quota snapshot |
 | `qclaude uninstall [flags]` | remove the app, launcher and installer settings |
 | `qclaude account ...` | manage Qoder profiles |
 | `qclaude rotation [on\|off]` | show or change failover |
@@ -37,6 +39,18 @@ qclaude account resume work
 qclaude account remove work
 qclaude account current
 ```
+
+## Quota
+
+```bash
+qclaude quota                 # all accounts
+qclaude quota work            # one account
+qclaude quota --refresh       # bypass the 60s cache
+qclaude quota --json          # full snapshot
+```
+
+Percentages are computed from `used / total`; Qoder reports fractions (`0.68` = 68%). The token is
+decrypted locally and only sent in the Authorization header to `openapi.qoder.sh`.
 
 ## Uninstall flags
 

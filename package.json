@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
@@ -9,8 +9,8 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/accounts.test.js test/claudePrefs.test.js test/claudeSettings.test.js test/cliPath.test.js test/config.test.js test/direct.test.js test/exaSetup.test.js test/metrics.test.js test/models.test.js test/prompt.test.js test/releaseNotes.test.js test/selfUpdate.test.js test/server.test.js test/sessions.test.js test/stall.test.js test/uninstall.test.js",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-exclude=src/ui/** --test-coverage-lines=55 --test-coverage-branches=60 --test-coverage-functions=45 test/accounts.test.js test/claudePrefs.test.js test/claudeSettings.test.js test/cliPath.test.js test/config.test.js test/direct.test.js test/exaSetup.test.js test/metrics.test.js test/models.test.js test/prompt.test.js test/releaseNotes.test.js test/selfUpdate.test.js test/server.test.js test/sessions.test.js test/stall.test.js test/uninstall.test.js"
+    "test": "node --test test/accounts.test.js test/claudePrefs.test.js test/claudeSettings.test.js test/cliPath.test.js test/config.test.js test/direct.test.js test/exaSetup.test.js test/metrics.test.js test/models.test.js test/prompt.test.js test/releaseNotes.test.js test/selfUpdate.test.js test/server.test.js test/sessions.test.js test/stall.test.js test/uninstall.test.js test/usage.test.js test/quota.test.js test/quotaStore.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-exclude=src/ui/** --test-coverage-lines=55 --test-coverage-branches=60 --test-coverage-functions=45 test/accounts.test.js test/claudePrefs.test.js test/claudeSettings.test.js test/cliPath.test.js test/config.test.js test/direct.test.js test/exaSetup.test.js test/metrics.test.js test/models.test.js test/prompt.test.js test/releaseNotes.test.js test/selfUpdate.test.js test/server.test.js test/sessions.test.js test/stall.test.js test/uninstall.test.js test/usage.test.js test/quota.test.js test/quotaStore.test.js"
   },
   "author": "Ryanabcraft",
   "license": "MIT",

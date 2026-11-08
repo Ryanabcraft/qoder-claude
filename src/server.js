@@ -5,10 +5,12 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './prompt.js';
+import { mergeUsage } from './usage.js';
 import { runCompletion, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, startModelRefresh } from './models.js';
+import { startQuotaPolling } from './quota.js';
 import { handleUi } from './uiApi.js';
 import { record } from './metrics.js';
 import { estimateImageTokens, redactForLog } from './images.js';
@@ -204,7 +206,7 @@ async function handleMessages(req, res, body) {
   const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
-  const inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
+  let inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
   if (built.images.length || built.historyImages) {
     const history = built.historyImages ? ` (+${built.historyImages} from history)` : '';
     log(`  images ${built.images.length}${history}${visionCliPath() ? '' : ' (vision engine not installed)'}`);
@@ -216,6 +218,11 @@ async function handleMessages(req, res, body) {
   const started = Date.now();
   let firstByteAt = 0;
   let outTokens = 0;
+  let credits = 0;
+  let cacheRead = 0;
+  let cacheWrite = 0;
+  let usageSource = 'estimated';
+  let realUsage = null;
   let usedAccount = cfg.account;
   res.once('finish', () => record({
     model: cfg.model,
@@ -226,7 +233,23 @@ async function handleMessages(req, res, body) {
     account: usedAccount,
     inTokens,
     outTokens,
+    credits,
+    cacheRead,
+    cacheWrite,
+    usageSource,
   }));
+
+  const trackUsage = (raw, text) => {
+    const real = mergeUsage(raw, inTokens, estimate(text || ''));
+    inTokens = real.anthropic.input_tokens;
+    outTokens = real.anthropic.output_tokens;
+    credits = real.metrics.credits;
+    cacheRead = real.metrics.cacheRead;
+    cacheWrite = real.metrics.cacheWrite;
+    usageSource = real.metrics.source;
+    realUsage = real.anthropic;
+    return real;
+  };
 
   const ac = new AbortController();
   res.on('close', () => {
@@ -257,7 +280,7 @@ async function handleMessages(req, res, body) {
     } else {
       content.push({ type: 'text', text: stripToolBlocks(out.text) });
     }
-    outTokens = estimate(out.text || '');
+    trackUsage(out.usage, out.text || '');
     log(`  done transport=${TRANSPORT} ttft=- total=${Date.now() - t0}ms`);
     return send(res, 200, {
       id: msgId,
@@ -267,7 +290,7 @@ async function handleMessages(req, res, body) {
       content,
       stop_reason: stopReason(out.stopReason, Boolean(tc)),
       stop_sequence: null,
-      usage: { input_tokens: inTokens, output_tokens: estimate(out.text) },
+      usage: realUsage,
     });
   }
 
@@ -373,7 +396,7 @@ async function handleMessages(req, res, body) {
     out = { text: '', error: e.message || String(e), usage: {} };
   }
   clearInterval(keepalive);
-  if (!out.error) outTokens = estimate(out.text || '');
+  if (!out.error) trackUsage(out.usage, out.text || '');
 
   log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms`);
 
@@ -411,7 +434,7 @@ async function handleMessages(req, res, body) {
     write('message_delta', {
       type: 'message_delta',
       delta: { stop_reason: 'tool_use', stop_sequence: null },
-      usage: { output_tokens: estimate(full) },
+      usage: realUsage || { output_tokens: estimate(full) },
     });
   } else {
     const visible = stripToolBlocks(full);
@@ -420,7 +443,7 @@ async function handleMessages(req, res, body) {
     write('message_delta', {
       type: 'message_delta',
       delta: { stop_reason: stopReason(out.stopReason, false), stop_sequence: null },
-      usage: { output_tokens: estimate(full) },
+      usage: realUsage || { output_tokens: estimate(full) },
     });
   }
 
@@ -527,4 +550,5 @@ server.listen(PORT, HOST, () => {
   log('close this window or press Ctrl+C to stop.');
   log(`models: ${cachedModels().slice(0, 5).join(', ')}, ...`);
   startModelRefresh();
+  startQuotaPolling();
 });

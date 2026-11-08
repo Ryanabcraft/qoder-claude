@@ -4,9 +4,11 @@
 
 - Qoder credentials live in the Qoder config directory and in each account directory under the
   install. The bridge reads them locally to sign requests.
-- Requests go only to the Qoder endpoint (`api1.qoder.sh`) or to the local Qoder CLI. Nothing is
-  forwarded to another host.
-- `bridge.config.json` and `metrics.jsonl` are local files and gitignored.
+- Requests go only to the Qoder endpoint (`api1.qoder.sh`), the quota endpoint
+  (`openapi.qoder.sh`) or the local Qoder CLI. Nothing is forwarded to another host.
+- The account token is sent only as an Authorization header to Qoder; the dashboard never receives
+  it and the logs never contain it.
+- `bridge.config.json`, `metrics.jsonl` and `quota.jsonl` are local files and gitignored.
 - Claude Code, the Qoder CLI and the account files are never uploaded by the bridge.
 
 ## API key

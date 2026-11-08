@@ -204,7 +204,19 @@ being hardcoded.
 environment variables win over the file; port, host, API key, transport, pool and log need a
 restart, while timeouts, context, thinking, effort, output cap, retries and max attempts apply to
 the next request. Writes are atomic and keep a `.bak`. `metrics.jsonl` stores one line per minute
-and keeps 7 days; it contains model/account names and token estimates, never prompt text.
+and keeps 7 days; it contains model/account names, tokens (real or estimated), credits, cache
+counts and the usage source, never prompt text.
+
+Direct requests set `stream_options.include_usage`; Qoder returns `prompt_tokens`,
+`completion_tokens`, `prompt_tokens_details.cached_tokens` and `credits`, which are normalized into
+Anthropic `usage` (with `qoder_usage_source`). The streaming `message_start` input figure stays an
+estimate because real input is only known at the end; `message_delta` carries the real numbers.
+
+`quota.jsonl` stores one quota snapshot per account at most every 15 minutes, keeps 30 days, and is
+used for burn rate and the empty-date forecast. `GET /api/v2/quota/usage` on
+`openapi.qoder.sh` is a private endpoint: calls are isolated in `src/quota.js`, cached 60s, polled
+every five minutes, and degrade to `unavailable`/stale without touching requests. The bearer token
+is decrypted locally and never logged or exposed.
 
 ## Endpoints
 
@@ -217,6 +229,8 @@ and keeps 7 days; it contains model/account names and token estimates, never pro
 | GET/PUT | `/ui/api/config` | dashboard config (key masked) |
 | GET | `/ui/api/health` | process, memory and paths |
 | GET | `/ui/api/metrics?range=30m\|24h\|7d` | request analytics |
+| GET | `/ui/api/quota` | credits per account, burn and forecast |
+| GET | `/ui/api/quota/history` | quota samples and derived stats |
 | GET/PUT | `/ui/api/claude` | Claude settings (model, 1M) |
 | POST | `/ui/api/web-tools` | re-apply Exa and the allowlist |
 

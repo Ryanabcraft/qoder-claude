@@ -25,6 +25,8 @@ Variáveis de ambiente existentes vencem o arquivo. Valores definidos pelo launc
 | `maxOutputTokens` | `0` | live; sem teto quando zero |
 | `modelRetries` | `0` | retries dentro do CLI |
 | `maxAttempts` | `0` | `0` tenta todas as contas |
+| `quota` | `true` | lê a cota real da Qoder por conta |
+| `quotaPollMs` | `300000` | intervalo da consulta de cota (60s–1h) |
 | `log` | `true` | access log; restart |
 
 ## Variáveis de ambiente
@@ -41,6 +43,10 @@ Variáveis de ambiente existentes vencem o arquivo. Valores definidos pelo launc
 | `BRIDGE_STALL_MS` | `90000` | watchdog de silêncio |
 | `BRIDGE_MAX_ATTEMPTS` | todas | limite de failover |
 | `BRIDGE_MODEL_RETRIES` | `0` | retries do CLI |
+| `BRIDGE_QUOTA` | on | `0` desliga a consulta de cota |
+| `BRIDGE_QUOTA_POLL_MS` | `300000` | intervalo da consulta |
+| `QODER_QUOTA_ENDPOINT` | `https://openapi.qoder.sh` | host da cota |
+| `QODER_QUOTA_TOKEN` | da conta | token bearer explícito (teste/CI) |
 | `QODER_CONTEXT_WINDOW` | `1000000` | contexto |
 | `QODER_THINKING` | do request | modo de thinking |
 | `QODER_THINKING_BUDGET` | do request | tokens de thinking |

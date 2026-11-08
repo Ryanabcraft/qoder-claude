@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.14.0
+
+- Real Qoder usage: prompt/completion/cache tokens and credits from the upstream now replace local estimates in responses and `metrics.jsonl`.
+- Real quota per account from Qoder, cached and polled every 5 minutes; `qclaude quota [name] [--json]` prints credits, remaining, burn rate and forecast.
+- Dashboard: quota meters on Accounts, Credits KPI on Home, credits/burn/forecast in Analytics, credits and usage source in Usage & Logs, quota tracking in Advanced settings.
+- Quota history in `quota.jsonl` (30 days) for burn rate and the projected empty date. Display-only: failover order is unchanged.
+
 ## 1.13.1
 
 - Fixed the language dropdown opening as a light native menu with pale text in dark mode; selects now follow the active color scheme.
