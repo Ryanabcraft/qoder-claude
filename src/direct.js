@@ -60,7 +60,7 @@ export function forgetContext(dir) {
   cache.delete(configDirFor(dir));
 }
 
-function buildPayload(body, model) {
+function buildPayload(body, model, contextWindow) {
   const messages = [];
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
@@ -74,6 +74,7 @@ function buildPayload(body, model) {
   const payload = { messages, model: String(model).toLowerCase(), agent_id: AGENT_ID };
   const maxTokens = Number(body.max_tokens);
   if (maxTokens > 0) payload.max_tokens = maxTokens;
+  if (contextWindow > 0) payload.context_window = contextWindow;
 
   if (Array.isArray(body.tools) && body.tools.length) {
     payload.tools = body.tools.map((t) => ({
@@ -103,7 +104,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   } catch (e) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
-  const payload = buildPayload(body, cfg.model);
+  const payload = buildPayload(body, cfg.model, cfg.contextWindow);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
   const headers = Object.fromEntries(req.headers);
 

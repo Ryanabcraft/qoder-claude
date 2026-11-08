@@ -19,6 +19,9 @@ if (fs.existsSync(file)) {
 }
 
 const CAPS = 'effort,xhigh_effort,thinking,adaptive_thinking,interleaved_thinking';
+// A model ID Claude Code knows, so custom Qoder ids inherit its client-side
+// profile (1M window, effort defaults) without changing what is sent upstream.
+const BEHAVES_AS = process.env.QODER_BEHAVES_AS || 'claude-opus-4-8';
 
 current.env = {
   ...(current.env || {}),
@@ -31,6 +34,9 @@ current.env = {
   ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES: CAPS,
   ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES: CAPS,
   CLAUDE_CODE_AUTO_MODE_SERVER: '0',
+  CLAUDE_CODE_MAX_CONTEXT_TOKENS: '1000000',
+  CLAUDE_CODE_DISABLE_1M_CONTEXT: '0',
+  DISABLE_COMPACT: '0',
 };
 delete current.env.ANTHROPIC_DEFAULT_FABLE_MODEL;
 
@@ -43,6 +49,7 @@ current.modelPicker = {
     model: m,
     label: `Qoder · ${m}`,
     description: `${m} via Qoder CLI`,
+    behavesAs: BEHAVES_AS,
   })),
 };
 

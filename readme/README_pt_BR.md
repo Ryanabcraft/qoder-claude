@@ -197,14 +197,33 @@ lista a linha Qoder direto, sem Opus/Sonnet/Haiku:
 "modelPicker": {
   "replaceBuiltInOptions": true,
   "options": [
-    { "model": "Auto", "label": "Qoder · Auto", "description": "Auto via Qoder CLI" },
-    { "model": "Qwen3.8-Max", "label": "Qoder · Qwen3.8-Max", "description": "Qwen3.8-Max via Qoder CLI" }
+    {
+      "model": "Auto",
+      "label": "Qoder · Auto",
+      "description": "Auto via Qoder CLI",
+      "behavesAs": "claude-opus-4-8"
+    }
   ]
 }
 ```
 
 `modelPicker` exige Claude Code v2.1.243+ e só vale em user settings, `--settings` ou
 managed settings — settings de projeto ignoram a chave.
+
+### Contexto de 1M
+
+Um ID do Qoder é desconhecido para o Claude Code, que então assume 200K e compacta cedo. Duas
+coisas resolvem, e o instalador grava as duas:
+
+| ajuste | efeito |
+|---|---|
+| `"behavesAs": "claude-opus-4-8"` em cada linha do picker | o cliente aplica o perfil desse modelo (janela de 1M) e continua enviando o ID do Qoder |
+| `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000` | teto de reserva, quando a linha não é honrada |
+| `CLAUDE_CODE_DISABLE_1M_CONTEXT=0` | mantém o caminho de 1M ligado |
+
+No lado do Qoder, toda requisição leva `context_window: 1000000` por padrão — o CLI recebe
+`--context-window 1000000` e o transporte direto põe o mesmo valor no payload. Ajuste com
+`QODER_CONTEXT_WINDOW` (ex.: `200000`) ou por request com `context_window`.
 
 ## Atualização
 
