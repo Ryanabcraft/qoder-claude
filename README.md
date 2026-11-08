@@ -46,8 +46,15 @@ checks for a new version and asks before updating; a declined version is not ask
 | `qclaude --no-browser` | skips the dashboard tab |
 | `qclaude --serve` | server only, foreground |
 | `qclaude update` | checks and installs the latest version |
+| `qclaude uninstall` | removes the app, launcher and settings (asks first) |
+| `qclaude uninstall --dry-run` | lists what would be removed |
 | `qclaude --no-update` | skips the update check |
 | `qclaude --stop` | stops the server |
+
+`qclaude uninstall` backs up accounts to `~/.qoder-claude-accounts-<time>` before deleting them,
+cleans only the Claude settings the installer wrote, and keeps your MCP servers and
+`permissions.allow`. `--project <dir>` also cleans a project-only install; `--no-backup` skips the
+accounts copy; `--remove-exa` removes the Exa MCP when its URL is the qoder-claude one.
 
 ## What works
 
