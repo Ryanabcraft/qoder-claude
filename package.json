@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",
@@ -13,5 +13,14 @@
   "author": "Ryanabcraft",
   "bin": {
     "qoder-claude": "bin/install.js"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ryanabcraft/qoder-claude.git"
+  },
+  "homepage": "https://ryanabcraft.github.io/qoder-claude/",
+  "bugs": {
+    "url": "https://github.com/Ryanabcraft/qoder-claude/issues"
   }
 }
