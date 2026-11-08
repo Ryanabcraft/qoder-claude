@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.14
+
+- Added `qclaude notes` to print the changelog for the installed version, or for a version you pass.
+- Post-update notes are printed by updaters from 1.10.13 onward; 1.10.12 and older cannot show them.
+
 ## 1.10.13
 
 - `qclaude` prints the release notes after an update, capped at 10 lines and ending with `...` when longer.

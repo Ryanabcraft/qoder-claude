@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseReleaseNotes, showReleaseNotes } from '../src/releaseNotes.js';
+import { notesForVersion, parseReleaseNotes, showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 
 const changelog = [
   '# Changelog',
@@ -38,6 +38,24 @@ test('a version equal to the current one is not repeated', () => {
 
 test('an unknown range yields nothing', () => {
   assert.deepEqual(parseReleaseNotes(changelog, '9.0.0', '10.0.0'), { lines: [], truncated: false });
+});
+
+test('notesForVersion returns one exact section', () => {
+  assert.deepEqual(notesForVersion(changelog, '1.1.0'), ['middle']);
+  assert.deepEqual(notesForVersion(changelog, 'v1.2.0'), ['newest', 'also new']);
+  assert.deepEqual(notesForVersion(changelog, '9.9.9'), []);
+});
+
+test('showVersionNotes prints a single version', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qclaude-version-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'CHANGELOG.md'), changelog);
+    const out = [];
+    assert.equal(showVersionNotes(dir, '1.1.0', (line) => out.push(line)), true);
+    assert.deepEqual(out, ['notes for 1.1.0:', '  - middle']);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('showReleaseNotes reads CHANGELOG.md and prints the cap', () => {

@@ -21,7 +21,7 @@ import { ensureExa, EXA_URL, claudeConfigPath } from '../src/exaSetup.js';
 import { ensureWebTools, settingsPath } from '../src/claudeSettings.js';
 import { backupAccounts, filterPathEntries, installRoots, stripBridgeSettings } from '../src/uninstall.js';
 import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
-import { showReleaseNotes } from '../src/releaseNotes.js';
+import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -689,6 +689,11 @@ if (args[0] === 'uninstall') {
   process.exit(await uninstallCommand(args.slice(1)));
 }
 
+if (args[0] === 'notes') {
+  const version = args[1] || localVersion(ROOT);
+  process.exit(showVersionNotes(ROOT, version) ? 0 : 1);
+}
+
 if (args[0] === 'update') {
   const before = localVersion(ROOT);
   console.log(`current: ${before}`);
@@ -762,6 +767,7 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude --no-browser       does not open the dashboard
   qclaude --no-update        skips the update check
   qclaude update             checks and installs the latest version
+  qclaude notes [version]    prints the changelog for this install
   qclaude uninstall          removes qclaude, the launcher and its Claude settings
   qclaude uninstall --dry-run  lists what would be removed, changes nothing
   qclaude --stop             stops the server

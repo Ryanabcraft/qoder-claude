@@ -47,6 +47,7 @@ notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 | `qclaude --no-browser` | sem a aba do dashboard |
 | `qclaude --serve` | só o servidor, em primeiro plano |
 | `qclaude update` | verifica e instala a versão mais nova |
+| `qclaude notes [versão]` | mostra o changelog desta instalação |
 | `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |
 | `qclaude uninstall --dry-run` | lista o que seria removido |
 | `qclaude --no-update` | pula a checagem de atualização |
