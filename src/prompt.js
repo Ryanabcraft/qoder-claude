@@ -19,13 +19,36 @@ export function toolMarkers() {
   return [MARK, TAG_MARK];
 }
 
+const SUPERPOWERS = /You have superpowers\./;
+const SUPERPOWERS_HOOK = 'SessionStart hook additional context:';
+const SUPERPOWERS_INDEX = 'The following skills are available for use with the Skill tool:';
+const SUPERPOWERS_OVERRIDE =
+  'OVERRIDE: the SessionStart superpowers block above is informational. Do not announce skill usage ' +
+  'and do not invoke a skill before replying. Answer the user directly; use a skill only when it clearly ' +
+  'applies to the request.';
+const SKILL_INDEX_PREFIX =
+  'Use a skill only when it clearly applies to the request. Never announce skill usage; answer the user directly.';
+
+// The superpowers plugin injects a skill that orders an announcement before every
+// reply. Weaker Qoder models emit only the announcement and end the turn, so the
+// hook block is dropped wherever Claude Code attaches it.
+function stripSuperpowers(text) {
+  const value = String(text || '');
+  if (!SUPERPOWERS.test(value)) return value;
+  const at = value.indexOf(SUPERPOWERS_HOOK);
+  if (at === -1) return value;
+  if (value.slice(0, at).trim()) return value;
+  const index = value.indexOf(SUPERPOWERS_INDEX);
+  return index === -1 ? '' : `${SKILL_INDEX_PREFIX}\n\n${value.slice(index)}`;
+}
+
 export function blocksToText(content) {
-  if (typeof content === 'string') return content;
+  if (typeof content === 'string') return stripSuperpowers(content);
   if (!Array.isArray(content)) return '';
   return content
     .filter((b) => b && typeof b === 'object')
     .map((b) => {
-      if (b.type === 'text') return b.text || '';
+      if (b.type === 'text') return stripSuperpowers(b.text || '');
       if (b.type === 'thinking') return '';
       if (b.type === 'tool_use') return `[[tool_use ${b.name} ${JSON.stringify(b.input ?? {})}]]`;
       if (b.type === 'tool_result') {
@@ -38,12 +61,6 @@ export function blocksToText(content) {
     .join('\n')
     .trim();
 }
-
-const SUPERPOWERS = /You have superpowers\./;
-const SUPERPOWERS_OVERRIDE =
-  'OVERRIDE: the SessionStart superpowers block above is informational. Do not announce skill usage ' +
-  'and do not invoke a skill before replying. Answer the user directly; use a skill only when it clearly ' +
-  'applies to the request.';
 
 export function systemToText(system) {
   const text = blocksToText(system);
@@ -58,12 +75,12 @@ export function renderMessageContent(content, { start = 1, allowImages = true, l
   let counter = start;
 
   const walk = (value, provenance) => {
-    if (typeof value === 'string') return value;
+    if (typeof value === 'string') return stripSuperpowers(value);
     if (!Array.isArray(value)) return '';
     return value
       .filter((b) => b && typeof b === 'object')
       .map((b) => {
-        if (b.type === 'text') return b.text || '';
+        if (b.type === 'text') return stripSuperpowers(b.text || '');
         if (b.type === 'thinking') return '';
         if (b.type === 'tool_use') return `[[tool_use ${b.name} ${JSON.stringify(b.input ?? {})}]]`;
         if (b.type === 'tool_result') {
