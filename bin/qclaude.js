@@ -561,6 +561,7 @@ if (args[0] === '--status') {
   const acc = activeAccount();
   const rot = rotationSnapshot();
   const pool = rot.accounts.filter((a) => a.enabled).length;
+  console.log(`version  : ${localVersion(ROOT)}`);
   console.log(`account  : ${acc.name}${acc.dir ? `  (${acc.dir})` : '  (global config)'}`);
   console.log(`failover : ${rot.on ? `on (${pool} account${pool === 1 ? '' : 's'} in the pool)` : 'off'}`);
   console.log(`server   : ${up ? `running at 127.0.0.1:${PORT}` : 'stopped'}`);
