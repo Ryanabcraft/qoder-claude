@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.0
+
+- Dashboard rebuilt as a console: grouped navigation, Home, Endpoint, Accounts, Routing, Analytics, Usage & Logs, Health, Models and Settings.
+- Settings write `bridge.config.json` and the Claude user settings with backups; startup-only fields show a restart banner.
+- Analytics keep 7 days in `metrics.jsonl`, with 30m/24h/7d ranges, percentiles and token estimates.
+- Dark/light/system themes and a responsive layout down to mobile.
+
 ## 1.10.21
 
 - Dashboard GIF re-encoded with a generated 256-color palette, removing the fixed-palette dithering.

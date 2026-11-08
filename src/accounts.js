@@ -61,6 +61,30 @@ export function addAccount(name, dir) {
   saveAccounts(data);
 }
 
+export function setAccountLabel(name, label) {
+  const data = loadAccounts();
+  if (!data.accounts[name]) throw new Error(`account "${name}" does not exist`);
+  const clean = String(label || '').trim().slice(0, 32) || name;
+  data.accounts[name].label = clean;
+  saveAccounts(data);
+  return clean;
+}
+
+export function reorderAccounts(names) {
+  const data = loadAccounts();
+  if (!Array.isArray(names)) throw new Error('order must be an array');
+  const ordered = {};
+  for (const name of names) {
+    if (data.accounts[name]) ordered[name] = data.accounts[name];
+  }
+  for (const [name, item] of Object.entries(data.accounts)) {
+    if (!ordered[name]) ordered[name] = item;
+  }
+  data.accounts = ordered;
+  saveAccounts(data);
+  return Object.keys(data.accounts);
+}
+
 export function removeAccount(name) {
   if (name === 'default') throw new Error('the default account cannot be removed');
   const data = loadAccounts();

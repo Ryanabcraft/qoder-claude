@@ -9,14 +9,19 @@ import {
   addAccount,
   loadAccounts,
   removeAccount,
+  reorderAccounts,
   rotationSnapshot,
   setAccountEnabled,
+  setAccountLabel,
   setRotation,
   useAccount,
 } from './accounts.js';
 import { cachedModels } from './models.js';
 import { resolveCli } from './cliPath.js';
 import { snapshot } from './metrics.js';
+import { publicConfig, saveConfig } from './config.js';
+import { applyWebTools, readClaudePrefs, updateClaudePrefs } from './claudePrefs.js';
+import { healthSnapshot } from './health.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const UI_DIR = path.join(HERE, 'ui');
@@ -111,9 +116,11 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   if (req.method === 'GET' && route === 'status') {
     const acc = activeAccount();
     const rot = rotationSnapshot();
+    const health = healthSnapshot();
     return sendJson(res, 200, {
       ok: true,
       port: Number(process.env.BRIDGE_PORT || 8787),
+      host: process.env.BRIDGE_HOST || '127.0.0.1',
       transport: process.env.BRIDGE_TRANSPORT || 'auto',
       version: JSON.parse(fs.readFileSync(path.join(HERE, '..', 'package.json'), 'utf8')).version,
       account: { name: acc.name, dir: acc.dir, label: acc.label },
@@ -124,7 +131,44 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
       },
       models: cachedModels().length,
       uptime: Math.round(process.uptime()),
+      node: health.node,
+      pid: health.pid,
+      memory: health.memory,
+      sessions: health.sessions,
+      pool: health.pool,
+      apiKeySet: Boolean(process.env.BRIDGE_API_KEY),
+      configPath: health.paths.config,
+      logPath: health.paths.log,
+      envLocked: publicConfig().envLocked,
     }), true;
+  }
+
+  if (req.method === 'GET' && route === 'config') {
+    return sendJson(res, 200, publicConfig()), true;
+  }
+
+  if ((req.method === 'PUT' || req.method === 'POST') && route === 'config') {
+    const body = await readBody(req);
+    const result = saveConfig(body);
+    return sendJson(res, result.ok ? 200 : 400, result), true;
+  }
+
+  if (req.method === 'GET' && route === 'claude') {
+    return sendJson(res, 200, readClaudePrefs()), true;
+  }
+
+  if ((req.method === 'PUT' || req.method === 'POST') && route === 'claude') {
+    const body = await readBody(req);
+    const result = updateClaudePrefs(body);
+    return sendJson(res, result.ok ? 200 : 400, result), true;
+  }
+
+  if (req.method === 'POST' && route === 'web-tools') {
+    return sendJson(res, 200, applyWebTools()), true;
+  }
+
+  if (req.method === 'GET' && route === 'health') {
+    return sendJson(res, 200, healthSnapshot()), true;
   }
 
   if (req.method === 'GET' && route === 'accounts') {
@@ -162,6 +206,27 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
     return sendJson(res, 200, { url: job.url, done: job.done, ok: job.ok, log: job.log.slice(-400) }), true;
   }
 
+  if (req.method === 'POST' && route === 'accounts/order') {
+    const body = await readBody(req);
+    try {
+      const order = reorderAccounts(body.order);
+      return sendJson(res, 200, { ok: true, order }), true;
+    } catch (e) {
+      return sendJson(res, 400, { error: e.message }), true;
+    }
+  }
+
+  if (req.method === 'PATCH' && route.startsWith('accounts/')) {
+    const name = decodeURIComponent(route.slice('accounts/'.length));
+    const body = await readBody(req);
+    try {
+      const label = setAccountLabel(name, body.label);
+      return sendJson(res, 200, { ok: true, label }), true;
+    } catch (e) {
+      return sendJson(res, 400, { error: e.message }), true;
+    }
+  }
+
   if (req.method === 'POST' && route === 'accounts/use') {
     const body = await readBody(req);
     try { useAccount(String(body.name || '')); } catch (e) { return sendJson(res, 400, { error: e.message }), true; }
@@ -184,7 +249,7 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   }
 
   if (req.method === 'GET' && route === 'metrics') {
-    return sendJson(res, 200, snapshot()), true;
+    return sendJson(res, 200, snapshot(url.searchParams.get('range') || '30m')), true;
   }
 
   if (req.method === 'GET' && route === 'models') {
@@ -204,12 +269,16 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   if (req.method === 'POST' && route === 'test') {
     const body = await readBody(req);
     const prompt = String(body.prompt || 'say exactly: ok').slice(0, 500);
+    const model = String(body.model || 'Auto').slice(0, 64);
     const started = Date.now();
     try {
       const r = await fetch(`http://127.0.0.1:${process.env.BRIDGE_PORT || 8787}/v1/messages`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'Auto', max_tokens: 64, stream: false, messages: [{ role: 'user', content: prompt }] }),
+        headers: {
+          'content-type': 'application/json',
+          ...(process.env.BRIDGE_API_KEY ? { 'x-api-key': process.env.BRIDGE_API_KEY } : {}),
+        },
+        body: JSON.stringify({ model, max_tokens: 64, stream: false, messages: [{ role: 'user', content: prompt }] }),
       });
       const j = await r.json();
       const text = (j.content || []).map((c) => c.text || '').join('');

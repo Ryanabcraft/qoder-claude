@@ -58,6 +58,43 @@ test('api routes accept the key', async () => {
   assert.equal(res.status, 200);
 });
 
+test('config is returned without the API key', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/config`, { headers: { 'x-api-key': KEY } });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.apiKeySet, true);
+  assert.equal('apiKey' in body, false);
+  assert.ok(body.port > 0);
+});
+
+test('health reports process data', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/health`, { headers: { 'x-api-key': KEY } });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.ok(body.pid > 0);
+  assert.ok(body.memory.rss > 0);
+});
+
+test('metrics expose the three ranges', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/metrics?range=7d`, { headers: { 'x-api-key': KEY } });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.range, '7d');
+  assert.equal(body.series.length, 168);
+});
+
+test('config updates persist live values', async () => {
+  const res = await fetch(`http://127.0.0.1:${PORT}/ui/api/config`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', 'x-api-key': KEY },
+    body: JSON.stringify({ stallMs: 120000 }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.config.stallMs, 120000);
+});
+
 test('count_tokens answers without a backend', async () => {
   const res = await fetch(`http://127.0.0.1:${PORT}/v1/messages/count_tokens`, {
     method: 'POST',

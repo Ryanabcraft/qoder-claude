@@ -1,3 +1,4 @@
+import './config.js';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,9 +162,11 @@ function cfgForAccount(cfg, account) {
  */
 async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => true }, runner = run) {
   const accounts = candidateAccounts();
+  const maxAttempts = Math.max(0, Number(process.env.BRIDGE_MAX_ATTEMPTS || 0));
   let last = { text: '', usage: {}, error: 'no account available', account: cfg.account };
 
   for (let i = 0; i < accounts.length; i++) {
+    if (maxAttempts && i >= maxAttempts) break;
     const account = accounts[i];
     const attempt = cfgForAccount(cfg, account);
     if (accounts.length > 1 && process.env.BRIDGE_LOG !== '0') {
@@ -212,6 +215,7 @@ async function handleMessages(req, res, body) {
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const started = Date.now();
   let firstByteAt = 0;
+  let outTokens = 0;
   let usedAccount = cfg.account;
   res.once('finish', () => record({
     model: cfg.model,
@@ -220,6 +224,8 @@ async function handleMessages(req, res, body) {
     ttft: firstByteAt ? firstByteAt - t0 : 0,
     transport: TRANSPORT,
     account: usedAccount,
+    inTokens,
+    outTokens,
   }));
 
   const ac = new AbortController();
@@ -251,6 +257,7 @@ async function handleMessages(req, res, body) {
     } else {
       content.push({ type: 'text', text: stripToolBlocks(out.text) });
     }
+    outTokens = estimate(out.text || '');
     log(`  done transport=${TRANSPORT} ttft=- total=${Date.now() - t0}ms`);
     return send(res, 200, {
       id: msgId,
@@ -366,6 +373,7 @@ async function handleMessages(req, res, body) {
     out = { text: '', error: e.message || String(e), usage: {} };
   }
   clearInterval(keepalive);
+  if (!out.error) outTokens = estimate(out.text || '');
 
   log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms`);
 

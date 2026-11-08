@@ -81,6 +81,10 @@ setInterval(() => {
   }
 }, 60_000).unref?.();
 
+export function sessionCount() {
+  return sessions.size;
+}
+
 export function shutdownSessions() {
   for (const k of [...sessions.keys()]) dropSession(k);
 }

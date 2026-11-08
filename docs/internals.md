@@ -174,6 +174,7 @@ the Qoder side every request carries `context_window: 1000000`; override with
 | `BRIDGE_POOL` | on | `0` disables the pool |
 | `BRIDGE_REQUEST_TIMEOUT_MS` | `300000` | per-request cutoff |
 | `BRIDGE_STALL_MS` | `90000` | abort an attempt after this much upstream silence |
+| `BRIDGE_MAX_ATTEMPTS` | all | stop failover after this many accounts |
 | `QODER_MODELS_TTL_MS` | `600000` | model list cache lifetime |
 | `BRIDGE_MODELS_REFRESH` | on | `0` disables the background model-list refresh |
 | `QODER_NO_EXA` | off | `1` skips adding the Exa MCP server at install/startup |
@@ -197,6 +198,12 @@ the Qoder side every request carries `context_window: 1000000`; override with
 turns are sent. The text-only client version is detected from the installed bundle instead of
 being hardcoded.
 
+`bridge.config.json` (gitignored, next to `package.json`) stores the dashboard settings. Existing
+environment variables win over the file; port, host, API key, transport, pool and log need a
+restart, while timeouts, context, thinking, effort, output cap, retries and max attempts apply to
+the next request. Writes are atomic and keep a `.bak`. `metrics.jsonl` stores one line per minute
+and keeps 7 days; it contains model/account names and token estimates, never prompt text.
+
 ## Endpoints
 
 | method | route | purpose |
@@ -205,6 +212,11 @@ being hardcoded.
 | GET | `/v1/models` | model list |
 | POST | `/v1/messages` | Anthropic Messages |
 | POST | `/v1/messages/count_tokens` | token estimate |
+| GET/PUT | `/ui/api/config` | dashboard config (key masked) |
+| GET | `/ui/api/health` | process, memory and paths |
+| GET | `/ui/api/metrics?range=30m\|24h\|7d` | request analytics |
+| GET/PUT | `/ui/api/claude` | Claude settings (model, 1M) |
+| POST | `/ui/api/web-tools` | re-apply Exa and the allowlist |
 
 ## Dashboard auth
 

@@ -16,3 +16,6 @@ accounts/
 accounts.json
 tools/
 .update-skip
+bridge.config.json
+metrics.jsonl
+metrics.jsonl.tmp
