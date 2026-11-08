@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.20
+
+- The README dashboard preview is a 3-frame GIF (overview, accounts, models) instead of a static PNG.
+
 ## 1.10.19
 
 - Coverage thresholds adjusted for the file set Node 22 measures in CI (55 lines / 60 branches / 45 functions).

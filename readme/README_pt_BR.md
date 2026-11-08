@@ -64,7 +64,7 @@ pula o backup das contas; `--remove-exa` remove o MCP Exa quando a URL é a do q
 
 ## Dashboard
 
-![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.png)
+![dashboard do qoder-claude](https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/dashboard.gif)
 
 ## O que funciona
 
