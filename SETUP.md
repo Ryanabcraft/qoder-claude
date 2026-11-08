@@ -1,12 +1,7 @@
 # SETUP — publish your own copy
 
-To **use** qoder-claude you only need one command:
-
-```bash
-npx -y https://ryanabcraft.github.io/qoder-claude/qoder-claude.tgz
-```
-
-This guide is for maintaining your own fork and publishing it.
+To **use** qoder-claude, install with the command for your platform (see the
+[README](README.md#install)). This guide is for maintaining your own fork and publishing it.
 
 ## 1. Tools
 

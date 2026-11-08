@@ -8,8 +8,7 @@ export type Dict = {
     h1b: string;
     p: string;
     then: string;
-    tabs: { any: string; cmd: string; ps: string; sh: string };
-    anyNote: string;
+    tabs: { cmd: string; ps: string; sh: string };
     copied: string;
     flow: { name: string; note: string }[];
   };
@@ -46,8 +45,7 @@ export const en: Dict = {
     h1b: 'The model changes.',
     p: 'qoder-claude is a local Anthropic Messages API bridge backed by your Qoder plan. Claude Code keeps its tools, its prompts and its effort controls; the tokens come from Qoder.',
     then: 'then open it with',
-    tabs: { any: 'any OS · Node 20+', cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
-    anyNote: 'needs Node 20+ — installs Node, the Qoder CLI, Claude Code and the vision engine',
+    tabs: { cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
     copied: 'copied',
     flow: [
       { name: 'Claude Code', note: 'tools, prompt, effort' },
@@ -132,8 +130,7 @@ export const pt: Dict = {
     h1b: 'O modelo muda.',
     p: 'qoder-claude é uma bridge local da Anthropic Messages API apoiada no seu plano Qoder. O Claude Code mantém as ferramentas, os prompts e os controles de esforço; os tokens vêm do Qoder.',
     then: 'depois abra com',
-    tabs: { any: 'qualquer SO · Node 20+', cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
-    anyNote: 'precisa de Node 20+ — instala Node, Qoder CLI, Claude Code e o motor de visão',
+    tabs: { cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
     copied: 'copiado',
     flow: [
       { name: 'Claude Code', note: 'ferramentas, prompt, esforço' },
@@ -218,8 +215,7 @@ export const es: Dict = {
     h1b: 'El modelo cambia.',
     p: 'qoder-claude es un puente local de Anthropic Messages API apoyado en tu plan de Qoder. Claude Code conserva sus herramientas, sus prompts y sus controles de esfuerzo; los tokens vienen de Qoder.',
     then: 'luego ábrelo con',
-    tabs: { any: 'cualquier SO · Node 20+', cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
-    anyNote: 'necesita Node 20+ — instala Node, Qoder CLI, Claude Code y el motor de visión',
+    tabs: { cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
     copied: 'copiado',
     flow: [
       { name: 'Claude Code', note: 'herramientas, prompt, esfuerzo' },
@@ -304,8 +300,7 @@ export const fr: Dict = {
     h1b: 'Le modèle change.',
     p: 'qoder-claude est un pont local Anthropic Messages API adossé à votre offre Qoder. Claude Code garde ses outils, ses prompts et ses réglages d’effort ; les jetons viennent de Qoder.',
     then: 'puis ouvrez-le avec',
-    tabs: { any: 'tout OS · Node 20+', cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
-    anyNote: 'nécessite Node 20+ — installe Node, Qoder CLI, Claude Code et le moteur de vision',
+    tabs: { cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
     copied: 'copié',
     flow: [
       { name: 'Claude Code', note: 'outils, prompt, effort' },
@@ -390,8 +385,7 @@ export const de: Dict = {
     h1b: 'Das Modell wechselt.',
     p: 'qoder-claude ist eine lokale Anthropic-Messages-API-Bridge auf Basis deines Qoder-Tarifs. Claude Code behält seine Werkzeuge, seine Prompts und seine Effort-Regler; die Tokens kommen von Qoder.',
     then: 'dann öffne es mit',
-    tabs: { any: 'jedes OS · Node 20+', cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
-    anyNote: 'braucht Node 20+ — installiert Node, Qoder CLI, Claude Code und die Vision-Engine',
+    tabs: { cmd: 'Windows · CMD', ps: 'Windows · PowerShell', sh: 'Linux · macOS' },
     copied: 'kopiert',
     flow: [
       { name: 'Claude Code', note: 'Werkzeuge, Prompt, Effort' },
