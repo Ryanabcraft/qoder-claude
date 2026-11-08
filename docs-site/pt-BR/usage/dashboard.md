@@ -26,7 +26,8 @@ dashboard é traduzido no lugar, sem recarregar a página.
 Accounts mostra uma barra de cota real por perfil (créditos usados/total, restante, plano e
 estado), a Home tem um KPI de Créditos e o Analytics ganhou créditos por intervalo, taxa de consumo
 e data prevista de esgotamento. Usage & Logs mostra os créditos e se a linha usou usage real ou
-estimativa; o CSV inclui os dois.
+estimativa; o CSV inclui os dois. A página Accounts também lista a recompensa diária de 100
+créditos por perfil, com botão de resgate quando disponível e a validade quando já resgatada.
 
 ## Settings
 

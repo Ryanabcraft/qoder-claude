@@ -20,8 +20,8 @@ reais; a bridge converte o formato de texto do modelo antes do Claude Code.
 ## API do dashboard
 
 `/ui/api/` expõe status, contas, rotação, modelos, métricas, logs, config, settings do Claude,
-health, teste, stop, ordem/label de contas, quota e histórico de quota. A resposta de config nunca
-inclui a API key nem o token da Qoder.
+health, teste, stop, ordem/label de contas, quota, histórico de quota, recompensas e resgate. A
+resposta de config nunca inclui a API key nem o token da Qoder.
 
 ## Transporte
 

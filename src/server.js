@@ -11,6 +11,7 @@ let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, startModelRefresh } from './models.js';
 import { startQuotaPolling } from './quota.js';
+import { startRewardPolling } from './rewards.js';
 import { handleUi } from './uiApi.js';
 import { record } from './metrics.js';
 import { estimateImageTokens, redactForLog } from './images.js';
@@ -551,4 +552,5 @@ server.listen(PORT, HOST, () => {
   log(`models: ${cachedModels().slice(0, 5).join(', ')}, ...`);
   startModelRefresh();
   startQuotaPolling();
+  startRewardPolling();
 });

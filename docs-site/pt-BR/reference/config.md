@@ -27,6 +27,7 @@ Variáveis de ambiente existentes vencem o arquivo. Valores definidos pelo launc
 | `maxAttempts` | `0` | `0` tenta todas as contas |
 | `quota` | `true` | lê a cota real da Qoder por conta |
 | `quotaPollMs` | `300000` | intervalo da consulta de cota (60s–1h) |
+| `rewardAutoClaim` | `false` | resgata a campanha diária de 100 créditos sozinho |
 | `log` | `true` | access log; restart |
 
 ## Variáveis de ambiente
@@ -46,7 +47,9 @@ Variáveis de ambiente existentes vencem o arquivo. Valores definidos pelo launc
 | `BRIDGE_QUOTA` | on | `0` desliga a consulta de cota |
 | `BRIDGE_QUOTA_POLL_MS` | `300000` | intervalo da consulta |
 | `QODER_QUOTA_ENDPOINT` | `https://openapi.qoder.sh` | host da cota |
+| `QODER_REWARD_ENDPOINT` | igual à cota | host das recompensas |
 | `QODER_QUOTA_TOKEN` | da conta | token bearer explícito (teste/CI) |
+| `BRIDGE_REWARD_AUTO` | off | `1` ativa o resgate automático |
 | `QODER_CONTEXT_WINDOW` | `1000000` | contexto |
 | `QODER_THINKING` | do request | modo de thinking |
 | `QODER_THINKING_BUDGET` | do request | tokens de thinking |

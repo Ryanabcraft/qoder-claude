@@ -7,7 +7,8 @@
 - Requests go only to the Qoder endpoint (`api1.qoder.sh`), the quota endpoint
   (`openapi.qoder.sh`) or the local Qoder CLI. Nothing is forwarded to another host.
 - The account token is sent only as an Authorization header to Qoder; the dashboard never receives
-  it and the logs never contain it.
+  it and the logs never contain it. Reward claims are explicit (a button or `--claim`); auto-claim
+  is off unless you enable it.
 - `bridge.config.json`, `metrics.jsonl` and `quota.jsonl` are local files and gitignored.
 - Claude Code, the Qoder CLI and the account files are never uploaded by the bridge.
 

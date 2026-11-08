@@ -25,6 +25,7 @@ export const DEFAULTS = {
   log: true,
   quota: true,
   quotaPollMs: 300000,
+  rewardAutoClaim: false,
 };
 
 const ENV = {
@@ -46,6 +47,7 @@ const ENV = {
   log: 'BRIDGE_LOG',
   quota: 'BRIDGE_QUOTA',
   quotaPollMs: 'BRIDGE_QUOTA_POLL_MS',
+  rewardAutoClaim: 'BRIDGE_REWARD_AUTO',
 };
 
 export const RESTART_KEYS = ['port', 'host', 'apiKey', 'transport', 'pool', 'poolSize', 'log'];
@@ -61,6 +63,7 @@ const LIVE_KEYS = [
   'maxAttempts',
   'quota',
   'quotaPollMs',
+  'rewardAutoClaim',
 ];
 
 const ORIGINAL_ENV = { ...process.env };
@@ -147,6 +150,9 @@ export function effectiveConfig() {
     log: process.env.BRIDGE_LOG !== undefined ? process.env.BRIDGE_LOG !== '0' : cfg.log,
     quota: process.env.BRIDGE_QUOTA !== undefined ? process.env.BRIDGE_QUOTA !== '0' : cfg.quota,
     quotaPollMs: envNumber('BRIDGE_QUOTA_POLL_MS', cfg.quotaPollMs),
+    rewardAutoClaim: process.env.BRIDGE_REWARD_AUTO !== undefined
+      ? process.env.BRIDGE_REWARD_AUTO !== '0'
+      : cfg.rewardAutoClaim,
   };
 }
 
@@ -165,7 +171,7 @@ export function publicConfig() {
 
 function envValue(key, value) {
   if (key === 'transport') return value === 'auto' ? undefined : value;
-  if (key === 'pool' || key === 'log' || key === 'quota') return value ? '1' : '0';
+  if (key === 'pool' || key === 'log' || key === 'quota' || key === 'rewardAutoClaim') return value ? '1' : '0';
   if (['thinking', 'effort'].includes(key)) return value || undefined;
   if (['thinkingBudget', 'maxOutputTokens', 'maxAttempts', 'modelRetries'].includes(key)) {
     return Number(value) > 0 ? String(value) : undefined;

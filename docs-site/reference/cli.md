@@ -21,6 +21,8 @@ forwarded to `claude`.
 | `qclaude notes [version]` | print the changelog |
 | `qclaude quota [name]` | credits, remaining, burn rate and forecast |
 | `qclaude quota --json` | machine-readable quota snapshot |
+| `qclaude rewards [name]` | daily 100-credit campaign state |
+| `qclaude rewards --claim` | claim the daily reward manually |
 | `qclaude uninstall [flags]` | remove the app, launcher and installer settings |
 | `qclaude account ...` | manage Qoder profiles |
 | `qclaude rotation [on\|off]` | show or change failover |
@@ -51,6 +53,20 @@ qclaude quota --json          # full snapshot
 
 Percentages are computed from `used / total`; Qoder reports fractions (`0.68` = 68%). The token is
 decrypted locally and only sent in the Authorization header to `openapi.qoder.sh`.
+
+## Rewards
+
+```bash
+qclaude rewards               # all accounts
+qclaude rewards Ryan0         # one account
+qclaude rewards --claim       # redeem claimable campaigns
+qclaude rewards --json        # full snapshot
+```
+
+The daily campaign pays 100 credits once per window (10:00–09:59 Singapore time), valid for 30
+days. Claims are idempotent; a repeated claim returns `already`. Qoder restricts claims by device
+identity, so one account per machine is usually eligible. Auto-claim is off by default and lives in
+Settings → Advanced.
 
 ## Uninstall flags
 

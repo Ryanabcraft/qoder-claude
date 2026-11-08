@@ -24,6 +24,7 @@ import { backupAccounts, filterPathEntries, installRoots, stripBridgeSettings } 
 import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } from '../src/selfUpdate.js';
 import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 import { getQuota, quotaSnapshot } from '../src/quota.js';
+import { claimReward, rewardsSnapshot } from '../src/rewards.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -763,28 +764,69 @@ if (args[0] === 'quota') {
   const snapshot = await quotaSnapshot({ refresh });
   if (name && !snapshot.accounts[name]) {
     console.error(`qclaude: account not found: ${name}`);
-    process.exit(1);
-  }
-  if (json) {
+    process.exitCode = 1;
+  } else if (json) {
     console.log(JSON.stringify(name ? snapshot.accounts[name] : snapshot, null, 2));
-    process.exit(0);
-  }
-  const rows = name ? [snapshot.accounts[name]] : Object.values(snapshot.accounts);
-  for (const row of rows) {
-    console.log(`${row.label || row.name}${row.active ? ' (active)' : ''}`);
-    if (row.status !== 'ok') {
-      console.log(`  quota : ${row.status}${row.reason ? ` (${row.reason})` : ''}`);
-      continue;
+  } else {
+    const rows = name ? [snapshot.accounts[name]] : Object.values(snapshot.accounts);
+    for (const row of rows) {
+      console.log(`${row.label || row.name}${row.active ? ' (active)' : ''}`);
+      if (row.status !== 'ok') {
+        console.log(`  quota : ${row.status}${row.reason ? ` (${row.reason})` : ''}`);
+        continue;
+      }
+      const percent = Math.round(row.percent);
+      console.log(`  quota : ${percent}% used · ${row.used}/${row.total} ${row.unit} · ${row.remaining} left${row.exceeded ? ' · EXCEEDED' : ''}`);
+      console.log(`  plan  : ${row.plan || '—'}${row.expiresAt ? ` · expires ${new Date(row.expiresAt).toLocaleDateString()}` : ' · no expiry'}`);
+      if (row.burnPerDay !== null && row.burnPerDay !== undefined) {
+        const forecast = row.forecastAt ? new Date(row.forecastAt).toLocaleDateString() : '—';
+        console.log(`  burn  : ${row.burnPerDay.toFixed(2)} ${row.unit}/day · forecast ${forecast}`);
+      }
     }
-    const percent = Math.round(row.percent);
-    console.log(`  quota : ${percent}% used · ${row.used}/${row.total} ${row.unit} · ${row.remaining} left${row.exceeded ? ' · EXCEEDED' : ''}`);
-    console.log(`  plan  : ${row.plan || '—'}${row.expiresAt ? ` · expires ${new Date(row.expiresAt).toLocaleDateString()}` : ' · no expiry'}`);
-    if (row.burnPerDay !== null && row.burnPerDay !== undefined) {
-      const forecast = row.forecastAt ? new Date(row.forecastAt).toLocaleDateString() : '—';
-      console.log(`  burn  : ${row.burnPerDay.toFixed(2)} ${row.unit}/day · forecast ${forecast}`);
-    }
+    process.exitCode = 0;
   }
-  process.exitCode = 0;
+}
+
+if (args[0] === 'rewards') {
+  const json = args.includes('--json');
+  const claim = args.includes('--claim');
+  const name = args.slice(1).find((arg) => !arg.startsWith('-'));
+  const snapshot = await rewardsSnapshot({ refresh: true });
+  const rotation = rotationSnapshot();
+  const dirFor = (account) => rotation.accounts.find((row) => row.name === account)?.dir || '';
+  if (name && !snapshot.accounts[name]) {
+    console.error(`qclaude: account not found: ${name}`);
+    process.exitCode = 1;
+  } else {
+    const rows = name ? [snapshot.accounts[name]] : Object.values(snapshot.accounts);
+    if (claim) {
+      for (const row of rows) {
+        if (row.status !== 'claimable' || !row.campaign?.id) continue;
+        row.lastClaim = await claimReward(dirFor(row.name), row.campaign.id, { account: row.name });
+      }
+    }
+    if (json) {
+      console.log(JSON.stringify(name ? snapshot.accounts[name] : snapshot, null, 2));
+    } else {
+      for (const row of rows) {
+        console.log(`${row.label || row.name}${row.active ? ' (active)' : ''}`);
+        if (row.status === 'claimable') {
+          const ends = row.campaign.endAt ? new Date(row.campaign.endAt).toLocaleString() : '—';
+          console.log(`  reward: ${row.campaign.amount} credits available · ends ${ends}`);
+          console.log('  claim : qclaude rewards --claim');
+        } else if (row.status === 'claimed') {
+          const expires = row.campaign.expiresAt ? new Date(row.campaign.expiresAt).toLocaleDateString() : '—';
+          console.log(`  reward: ${row.campaign.amount} credits claimed · expires ${expires}`);
+        } else if (row.status === 'none') {
+          console.log('  reward: no campaign available for this account');
+        } else {
+          console.log(`  reward: ${row.status}${row.reason ? ` (${row.reason})` : ''}`);
+        }
+        if (row.lastClaim) console.log(`  result: ${row.lastClaim.status}${row.lastClaim.reason ? ` (${row.lastClaim.reason})` : ''}`);
+      }
+    }
+    process.exitCode = 0;
+  }
 }
 
 if (args[0] === '--help' || args[0] === '-h') {
@@ -803,6 +845,8 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude notes [version]    prints the changelog for this install
   qclaude quota [name]       shows Qoder credits, burn rate and forecast
   qclaude quota --json       machine-readable quota snapshot
+  qclaude rewards [name]     shows the daily 100-credit campaign
+  qclaude rewards --claim    claims it (manual; never automatic by default)
   qclaude uninstall          removes qclaude, the launcher and its Claude settings
   qclaude uninstall --dry-run  lists what would be removed, changes nothing
   qclaude --stop             stops the server
@@ -892,7 +936,7 @@ if (args[0] === '--window') {
   process.exit(1);
 }
 
-if (!['quota', '--status'].includes(args[0])) {
+if (!['quota', 'rewards', '--status'].includes(args[0])) {
 if (args[0] === '--serve') {
   const child = await startServer({ window: false });
   if (!child) {

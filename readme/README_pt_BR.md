@@ -56,6 +56,8 @@ notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 | `qclaude notes [versão]` | mostra o changelog desta instalação |
 | `qclaude quota` | créditos usados/restantes, consumo e previsão |
 | `qclaude quota --json` | snapshot de cota legível por máquina |
+| `qclaude rewards` | mostra a campanha diária de 100 créditos |
+| `qclaude rewards --claim` | resgata manualmente (nunca automático por padrão) |
 | `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |
 | `qclaude uninstall --dry-run` | lista o que seria removido |
 | `qclaude --no-update` | pula a checagem de atualização |
@@ -103,6 +105,13 @@ perdida pausam aquela conta e a mesma requisição roda na próxima.
 `qclaude quota` lê o endpoint de cota da Qoder por conta e mostra créditos usados, restantes,
 plano, consumo por dia e a data prevista de esgotamento. O dashboard repete os dados numa barra em
 cada card de conta, num KPI de Créditos na Home e num card de previsão no Analytics.
+
+A Qoder também roda uma campanha diária: 100 créditos por conta, uma vez por janela (10:00–09:59 de
+Singapura), válidos por 30 dias. `qclaude rewards` mostra a campanha por conta e
+`qclaude rewards --claim` resgata. O dashboard tem a mesma lista com botão de resgate; o auto-claim
+é um toggle em Settings, **desligado por padrão**, e só dispara quando a campanha está disponível.
+A Qoder limita o resgate por identidade de dispositivo, então normalmente só uma conta por máquina
+é elegível.
 
 O `usage` real da Qoder (tokens de entrada/saída/cache e créditos) é repassado ao Claude Code e
 gravado no `metrics.jsonl`; quando o upstream não manda, a bridge usa estimativa e marca a linha

@@ -21,6 +21,8 @@ O `qclaude` sobe a bridge, abre o dashboard e abre o Claude Code. Argumentos ext
 | `qclaude notes [versão]` | imprime o changelog |
 | `qclaude quota [nome]` | créditos, restante, consumo e previsão |
 | `qclaude quota --json` | snapshot de cota legível por máquina |
+| `qclaude rewards [nome]` | estado da campanha diária de 100 créditos |
+| `qclaude rewards --claim` | resgata a recompensa diária manualmente |
 | `qclaude uninstall [flags]` | remove app, launcher e settings do instalador |
 | `qclaude account ...` | gerencia perfis Qoder |
 | `qclaude rotation [on\|off]` | mostra ou muda o failover |
@@ -51,6 +53,20 @@ qclaude quota --json          # snapshot completo
 
 As porcentagens vêm de `used / total`; a Qoder manda frações (`0.68` = 68%). O token é decifrado
 localmente e só vai no header Authorization para `openapi.qoder.sh`.
+
+## Recompensas
+
+```bash
+qclaude rewards               # todas as contas
+qclaude rewards Ryan0         # uma conta
+qclaude rewards --claim       # resgata campanhas disponíveis
+qclaude rewards --json        # snapshot completo
+```
+
+A campanha diária paga 100 créditos uma vez por janela (10:00–09:59 de Singapura), válidos por 30
+dias. O resgate é idempotente; repetir retorna `already`. A Qoder restringe por identidade de
+dispositivo, então normalmente só uma conta por máquina é elegível. O auto-claim fica em
+Settings → Advanced e vem desligado.
 
 ## Flags do uninstall
 

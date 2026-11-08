@@ -28,7 +28,8 @@ dashboard re-renders in place without a page reload.
 Accounts show a real quota meter per profile (used/total credits, remaining, plan, state), Home
 has a Credits KPI and Analytics adds credits per bucket, burn rate and a projected empty date.
 Usage & Logs shows the credits and whether each row used real upstream usage or an estimate; CSV
-export includes both.
+export includes both. The Accounts page also lists the daily 100-credit reward per profile, with a
+Claim button when the campaign is claimable and its expiry when already claimed.
 
 ## Settings
 
