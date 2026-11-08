@@ -6,6 +6,8 @@ that keep their shape, streaming and a statusline that shows which model answere
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
 
+**Made by:** [Ryanabcraft](https://github.com/Ryanabcraft)
+
 **Contents:** [Installation](#installation) · [Open it](#open-it) · [Accounts](#accounts) ·
 [Configuration](#configuration) · [How it works](#how-it-works) · [Limitations](#limitations)
 

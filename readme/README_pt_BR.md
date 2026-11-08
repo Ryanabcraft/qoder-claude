@@ -6,6 +6,8 @@ que mantêm a forma, streaming e uma statusline mostrando o modelo em uso.
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
 
+**Made by:** [Ryanabcraft](https://github.com/Ryanabcraft)
+
 **Índice:** [Instalação](#instalação) · [Abrir](#abrir) · [Contas](#contas) ·
 [Configuração](#configuração) · [Como funciona](#como-funciona) · [Limites](#limites)
 
