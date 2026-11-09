@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.15.3
+
+- The English and Portuguese READMEs open with a wide qoder-claude banner, served from `docs/assets/` so the dashboard bundle keeps only its compact logo.
+- The repository has a stable community entry point at `/qoder-claude/discord/`, redirecting to the Discord invite so the link never dies; landing nav, footer, docs icon and README badges all point to it.
+
 ## 1.15.2
 
 - Bugs Fixed
