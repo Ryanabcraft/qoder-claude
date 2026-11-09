@@ -8,8 +8,6 @@ on:
       - 'CHANGELOG.md'
       - 'scripts/discord-release.mjs'
       - '.github/workflows/discord-release.yml'
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
