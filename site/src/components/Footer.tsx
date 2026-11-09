@@ -1,5 +1,5 @@
 import { Github } from 'lucide-react';
-import { DOCS, REPO } from '@/data/content';
+import { DISCORD, DOCS, REPO } from '@/data/content';
 import { useI18n } from '@/i18n';
 
 export function Footer() {
@@ -29,6 +29,9 @@ export function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+            <a href={DISCORD} className="transition-colors hover:text-foreground">
+              {t.nav.discord}
+            </a>
             <a href={DOCS} className="transition-colors hover:text-foreground">
               {t.footer.docs}
             </a>
