@@ -5,11 +5,14 @@
 [![unix install](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml/badge.svg)](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml)
 [![version](https://img.shields.io/github/package-json/v/Ryanabcraft/qoder-claude)](https://github.com/Ryanabcraft/qoder-claude/blob/main/package.json)
 [![license](https://img.shields.io/github/license/Ryanabcraft/qoder-claude)](LICENSE)
+[![community](https://img.shields.io/badge/community-Discord-5865F2?logo=discord&logoColor=white)](https://ryanabcraft.github.io/qoder-claude/discord/)
 
 Rode o **Claude Code** nos modelos do **Qoder**. Uma API local compatível com a Anthropic que
 mantém suas ferramentas, prompts e atalhos, e manda o tráfego do modelo para o seu plano Qoder.
 
 **Site:** https://ryanabcraft.github.io/qoder-claude/
+
+**Comunidade:** https://ryanabcraft.github.io/qoder-claude/discord/ (link estável para o Discord)
 
 **Made by:** [Ryanabcraft](https://github.com/Ryanabcraft)
 

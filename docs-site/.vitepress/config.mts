@@ -94,7 +94,10 @@ export default defineConfig({
         detailedView: true,
       },
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/Ryanabcraft/qoder-claude' }],
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/Ryanabcraft/qoder-claude' },
+      { icon: 'discord', link: 'https://ryanabcraft.github.io/qoder-claude/discord/' },
+    ],
     editLink: {
       pattern: 'https://github.com/Ryanabcraft/qoder-claude/edit/main/docs-site/:path',
       text: 'Edit this page',

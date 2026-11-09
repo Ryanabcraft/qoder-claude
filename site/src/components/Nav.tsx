@@ -1,6 +1,6 @@
 import { Github, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { DOCS, REPO } from '@/data/content';
+import { DISCORD, DOCS, REPO } from '@/data/content';
 import { useI18n } from '@/i18n';
 import { LangMenu } from './LangMenu';
 
@@ -17,6 +17,7 @@ export function Nav() {
     { href: '#how', label: t.nav.how },
     { href: '#limits', label: t.nav.limits },
     { href: DOCS, label: t.nav.docs },
+    { href: DISCORD, label: t.nav.discord },
   ];
 
   return (

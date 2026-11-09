@@ -1,7 +1,7 @@
 export type Dict = {
   langName: string;
   langCode: string;
-  nav: { how: string; limits: string; docs: string; github: string };
+  nav: { how: string; limits: string; docs: string; github: string; discord: string };
   hero: {
     badge: string;
     getStarted: string;
@@ -40,7 +40,7 @@ export type Dict = {
 export const en: Dict = {
   langName: 'English',
   langCode: 'EN',
-  nav: { how: 'how it works', limits: 'limits', docs: 'Docs', github: 'GitHub' },
+  nav: { how: 'how it works', limits: 'limits', docs: 'Docs', github: 'GitHub', discord: 'Discord' },
   hero: {
     badge: 'open source · MIT · zero runtime dependencies',
     getStarted: 'Get started',
@@ -132,7 +132,7 @@ export const en: Dict = {
 export const pt: Dict = {
   langName: 'Português (BR)',
   langCode: 'PT',
-  nav: { how: 'como funciona', limits: 'limites', docs: 'Docs', github: 'GitHub' },
+  nav: { how: 'como funciona', limits: 'limites', docs: 'Docs', github: 'GitHub', discord: 'Discord' },
   hero: {
     badge: 'código aberto · MIT · zero dependências de runtime',
     getStarted: 'Começar',
@@ -224,7 +224,7 @@ export const pt: Dict = {
 export const es: Dict = {
   langName: 'Español',
   langCode: 'ES',
-  nav: { how: 'cómo funciona', limits: 'límites', docs: 'Docs', github: 'GitHub' },
+  nav: { how: 'cómo funciona', limits: 'límites', docs: 'Docs', github: 'GitHub', discord: 'Discord' },
   hero: {
     badge: 'código abierto · MIT · sin dependencias de ejecución',
     getStarted: 'Empezar',
@@ -316,7 +316,7 @@ export const es: Dict = {
 export const fr: Dict = {
   langName: 'Français',
   langCode: 'FR',
-  nav: { how: 'fonctionnement', limits: 'limites', docs: 'Docs', github: 'GitHub' },
+  nav: { how: 'fonctionnement', limits: 'limites', docs: 'Docs', github: 'GitHub', discord: 'Discord' },
   hero: {
     badge: 'open source · MIT · aucune dépendance à l’exécution',
     getStarted: 'Commencer',
@@ -408,7 +408,7 @@ export const fr: Dict = {
 export const de: Dict = {
   langName: 'Deutsch',
   langCode: 'DE',
-  nav: { how: 'funktionsweise', limits: 'grenzen', docs: 'Docs', github: 'GitHub' },
+  nav: { how: 'funktionsweise', limits: 'grenzen', docs: 'Docs', github: 'GitHub', discord: 'Discord' },
   hero: {
     badge: 'open source · MIT · keine Laufzeitabhängigkeiten',
     getStarted: 'Loslegen',
