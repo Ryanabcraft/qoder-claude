@@ -1,6 +1,8 @@
 # qoder-claude
 
-<img src="https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/logo.png" alt="qoder-claude" width="72" align="right" />
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Ryanabcraft/qoder-claude/main/docs/assets/banner.png" alt="qoder-claude" width="820" />
+</p>
 
 [![unix install](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml/badge.svg)](https://github.com/Ryanabcraft/qoder-claude/actions/workflows/unix-install.yml)
 [![version](https://img.shields.io/github/package-json/v/Ryanabcraft/qoder-claude)](https://github.com/Ryanabcraft/qoder-claude/blob/main/package.json)
