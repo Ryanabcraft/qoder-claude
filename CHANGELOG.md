@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.4
+
+- Links to the site now expand into a proper card in Discord, X, Slack, Reddit and WhatsApp: `og:image`, `og:url` and `twitter:card` are declared and a 1200×630 banner is served from the Pages root.
+- The README dashboard shot is retaken from a current build, so it shows credits, quota and the reward card instead of the 1.11.1 layout.
+- First tagged release (`v1.15.4`), giving the project a stable page to link at instead of a bare commit.
+- Repository topics expanded, so the project is findable as a Claude Code bridge rather than only by name.
+
 ## 1.15.3
 
 - The English and Portuguese READMEs open with a wide qoder-claude banner, served from `docs/assets/` so the dashboard bundle keeps only its compact logo.
