@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.2
+
+- Bugs Fixed
+
 ## 1.15.1
 
 - GitHub Actions announces new versions to the community Discord `#releases` channel through a webhook, using the changelog entry for the released version.
