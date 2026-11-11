@@ -64,6 +64,9 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 | `qclaude models` | model list with its source and age |
 | `qclaude models --refresh` | asks Qoder for the current list (CLI, desktop catalog, public docs) |
 | `qclaude models --apply` | writes the current list into the Claude Code picker |
+| `qclaude integrations` | detects Claude Code, OpenCode and OpenBot, and offers to wire the bridge |
+| `qclaude opencode` | starts the bridge, then opens OpenCode |
+| `qclaude openbot` | starts the bridge, then opens OpenBot |
 | `qclaude rewards` | shows the daily 100-credit campaign |
 | `qclaude rewards --claim` | claims it manually (never automatic by default) |
 | `qclaude uninstall` | removes the app, launcher and settings (asks first) |

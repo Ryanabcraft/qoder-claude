@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.18.0
+
+- `qclaude integrations` detects Claude Code, OpenCode and OpenBot, tells you where each one lives, and offers to wire the bridge into the ones it can write to safely.
+- OpenCode gets a real provider block: `qoder-claude` with `@ai-sdk/openai-compatible`, base URL `http://127.0.0.1:8787/v1` and every model the bridge lists. Verified with `opencode models`, which now shows `qoder-claude/Auto` and the rest.
+- `qclaude opencode [args]` starts the bridge and then opens OpenCode, so the models are live when the editor comes up; `qclaude openbot` does the same and launches the OpenBot app.
+- OpenBot is detected but not edited from here: it keeps its provider list inside its own database, so the command prints the four fields to paste instead of writing into an app that may be running.
+
 ## 1.17.0
 
 - The bridge is now an OpenAI-compatible API: `POST /v1/chat/completions` with streaming (`stream: true`), native `tool_calls`, and `GET /v1/models` in the OpenAI shape. OpenBot's custom OpenAI-compatible provider can point at `http://127.0.0.1:8787/v1`.

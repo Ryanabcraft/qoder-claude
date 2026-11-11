@@ -25,8 +25,9 @@ import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } f
 import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 import { getQuota, quotaSnapshot } from '../src/quota.js';
 import { claimReward, rewardsSnapshot } from '../src/rewards.js';
-import { modelsStatus, refreshModels, refreshRemote } from '../src/models.js';
+import { cachedModels, modelsStatus, refreshModels, refreshRemote } from '../src/models.js';
 import { applyModelPicker } from '../src/claudePicker.js';
+import { applyOpenCode, detect, paths } from '../src/integrations.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -812,6 +813,83 @@ if (args[0] === 'models') {
   process.exitCode = 0;
 }
 
+if (args[0] === 'integrations') {
+  const state = detect();
+  const label = (ok) => (ok ? 'installed' : 'not found');
+  console.log('qoder-claude integrations');
+  console.log('');
+  console.log(`  Claude Code  ${label(state.claude.installed)}  ${state.claude.path}`);
+  console.log(`  OpenCode     ${label(state.opencode.installed)}  ${state.opencode.path}`);
+  console.log(`  OpenBot      ${label(state.openbot.installed)}  ${state.openbot.path}`);
+
+  const target = args.slice(1).find((arg) => !arg.startsWith('-'));
+  const yes = args.includes('--apply') || args.includes('--yes');
+  let choice = target;
+  if (!choice && yes) choice = 'all';
+  if (!choice && process.stdin.isTTY) {
+    const { createInterface } = await import('node:readline/promises');
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    if (state.opencode.installed) {
+      const answer = (await rl.question('Add qoder-claude to OpenCode? [y/N] ')).trim().toLowerCase();
+      if (answer === 'y' || answer === 'yes') choice = 'opencode';
+    }
+    rl.close();
+  }
+
+  if (choice === 'opencode' || choice === 'all') {
+    if (!state.opencode.installed) {
+      console.error('qclaude: OpenCode config not found; open OpenCode once, then run this again.');
+    } else {
+      await refreshRemote().catch(() => false);
+      await refreshModels().catch(() => false);
+      const result = applyOpenCode({ models: cachedModels(), setDefault: false });
+      if (!result.ok) console.error(`qclaude: ${result.error}`);
+      else console.log(result.changed
+        ? `
+OpenCode: provider "qoder-claude" written (${result.models.length} models) -> ${result.path}`
+        : `
+OpenCode: provider "qoder-claude" already up to date -> ${result.path}`);
+    }
+  }
+
+  if (choice === 'openbot' || choice === 'all') {
+    console.log('');
+    console.log('OpenBot: add a custom OpenAI-compatible provider with');
+    console.log(`  base URL : http://127.0.0.1:${PORT}/v1`);
+    console.log('  API key  : any value');
+    console.log('  models   : GET /v1/models (Auto, Ultimate, Qwen3.8-Max, ...)');
+    console.log('  launcher : qclaude openbot   (starts the bridge, then opens OpenBot)');
+  }
+
+  if (!choice) {
+    console.log('');
+    console.log('Nothing changed. Run:');
+    console.log('  qclaude integrations opencode   # write the provider into OpenCode');
+    console.log('  qclaude opencode                # start the bridge, then open OpenCode');
+    console.log('  qclaude openbot                 # start the bridge, then open OpenBot');
+  }
+  process.exit(0);
+}
+
+if (args[0] === 'opencode') {
+  await startServer({ window: false });
+  const child = spawn('opencode', args.slice(1), { stdio: 'inherit', shell: true, env: process.env });
+  child.on('exit', (code) => process.exit(code ?? 0));
+  child.on('error', (e) => { console.error(`qclaude: opencode failed: ${e.message}`); process.exit(1); });
+} else if (args[0] === 'openbot') {
+  const exe = paths().openbotExe;
+  if (!exe || !fs.existsSync(exe)) {
+    console.error('qclaude: OpenBot not found. Install it, or open it once so its folder exists.');
+    process.exit(1);
+  }
+  await startServer({ window: false });
+  const child = spawn(exe, [], { detached: true, stdio: 'ignore' });
+  child.unref();
+  console.log(`qclaude: bridge up at http://127.0.0.1:${PORT}/v1, OpenBot launched.`);
+  console.log('qclaude: in OpenBot, use a custom OpenAI-compatible provider with that base URL.');
+  process.exit(0);
+}
+
 if (args[0] === 'rewards') {
   const json = args.includes('--json');
   const claim = args.includes('--claim');
@@ -873,6 +951,9 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude models             lists the models, where they came from and how old
   qclaude models --refresh   asks the Qoder CLI for the current list
   qclaude models --json      machine-readable model status
+  qclaude integrations       shows Claude Code, OpenCode and OpenBot, and offers to wire them
+  qclaude opencode [args]    starts the bridge, then opens OpenCode
+  qclaude openbot            starts the bridge, then opens OpenBot
   qclaude rewards [name]     shows the daily 100-credit campaign
   qclaude rewards --claim    claims it (manual; never automatic by default)
   qclaude uninstall          removes qclaude, the launcher and its Claude settings
@@ -964,7 +1045,7 @@ if (args[0] === '--window') {
   process.exit(1);
 }
 
-if (!['quota', 'rewards', 'models', '--status'].includes(args[0])) {
+if (!['quota', 'rewards', 'models', 'integrations', 'opencode', 'openbot', '--status'].includes(args[0])) {
 if (args[0] === '--serve') {
   const child = await startServer({ window: false });
   if (!child) {

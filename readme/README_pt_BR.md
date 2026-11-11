@@ -64,6 +64,9 @@ notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 | `qclaude models` | lista de modelos com a fonte e a idade |
 | `qclaude models --refresh` | pede a lista atual ao Qoder (CLI, catálogo do app, docs públicas) |
 | `qclaude models --apply` | grava a lista atual no seletor do Claude Code |
+| `qclaude integrations` | detecta Claude Code, OpenCode e OpenBot, e oferece a ponte |
+| `qclaude opencode` | sobe a ponte e abre o OpenCode |
+| `qclaude openbot` | sobe a ponte e abre o OpenBot |
 | `qclaude rewards` | mostra a campanha diária de 100 créditos |
 | `qclaude rewards --claim` | resgata manualmente (nunca automático por padrão) |
 | `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |
