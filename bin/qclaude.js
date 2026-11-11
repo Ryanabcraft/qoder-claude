@@ -59,7 +59,7 @@ async function isUp() {
   } catch {
     return false;
   }
-}async function startServer({ window = true } = {}) {
+}async function startServer({ window = true, persist = false } = {}) {
   if (await isUp()) return null;
   if (!fs.existsSync(serverEntry)) {
     console.error(`qclaude: server not found at ${serverEntry}`);
@@ -79,7 +79,8 @@ async function isUp() {
   }
 
   const out = fs.openSync(LOG, 'a');
-  const env = { ...process.env, BRIDGE_PARENT_PID: String(process.pid) };
+  const env = { ...process.env };
+  if (!persist) env.BRIDGE_PARENT_PID = String(process.pid);
   delete env.BRIDGE_LOG_FILE;
   const child = spawn(process.execPath, [serverEntry], {
     cwd: ROOT,
@@ -872,7 +873,8 @@ OpenCode: provider "qoder-claude" already up to date -> ${result.path}`);
 }
 
 if (args[0] === 'opencode') {
-  await startServer({ window: false });
+  await startServer({ window: true, persist: true });
+  openDashboard();
   const child = spawn('opencode', args.slice(1), { stdio: 'inherit', shell: true, env: process.env });
   child.on('exit', (code) => process.exit(code ?? 0));
   child.on('error', (e) => { console.error(`qclaude: opencode failed: ${e.message}`); process.exit(1); });
@@ -882,7 +884,8 @@ if (args[0] === 'opencode') {
     console.error('qclaude: OpenBot not found. Install it, or open it once so its folder exists.');
     process.exit(1);
   }
-  await startServer({ window: false });
+  await startServer({ window: true, persist: true });
+  openDashboard();
   const child = spawn(exe, [], { detached: true, stdio: 'ignore' });
   child.unref();
   console.log(`qclaude: bridge up at http://127.0.0.1:${PORT}/v1, OpenBot launched.`);

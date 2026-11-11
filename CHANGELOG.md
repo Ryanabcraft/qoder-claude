@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.18.1
+
+- `qclaude openbot` and `qclaude opencode` left the bridge watching the launcher's process id, so the server shut down three seconds after the command returned. Both now start it in a console window that stays open, independent of the launcher.
+- Both commands open the dashboard in the browser after the bridge is up.
+- Verified end to end: `qclaude openbot` returns, `/health` still answers 200, and `POST /v1/chat/completions` with `model: "DeepSeek-V4-Flash"` answers normally.
+
 ## 1.18.0
 
 - `qclaude integrations` detects Claude Code, OpenCode and OpenBot, tells you where each one lives, and offers to wire the bridge into the ones it can write to safely.
