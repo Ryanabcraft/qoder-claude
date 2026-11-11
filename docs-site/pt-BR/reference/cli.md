@@ -24,6 +24,7 @@ O `qclaude` sobe a bridge, abre o dashboard e abre o Claude Code. Argumentos ext
 | `qclaude models` | lista de modelos com a fonte e a idade |
 | `qclaude models --refresh` | pede a lista atual ao CLI do Qoder |
 | `qclaude models --json` | status dos modelos legível por máquina |
+| `qclaude models --apply` | grava a lista atual no seletor do Claude Code |
 | `qclaude rewards [nome]` | estado da campanha diária de 100 créditos |
 | `qclaude rewards --claim` | resgata a recompensa diária manualmente |
 | `qclaude uninstall [flags]` | remove app, launcher e settings do instalador |

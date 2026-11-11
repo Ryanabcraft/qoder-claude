@@ -1399,6 +1399,19 @@ function bind() {
   $('#usage-transport').addEventListener('change', (e) => { state.usage.transport = e.target.value; renderUsage(); });
   $('#usage-source').addEventListener('change', (e) => { state.usage.source = e.target.value; renderUsage(); });
   $('#health-refresh').addEventListener('click', () => loadHealth().catch((e) => toast(e.message, 'err')));
+  $('#models-apply').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const result = await api('models/apply', { method: 'POST' });
+      toast(result.changed ? t('Claude picker updated ({n})', { n: result.count }) : t('Claude picker already up to date'), 'ok');
+    } catch (err) {
+      toast(err.message, 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   $('#models-refresh').addEventListener('click', (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;

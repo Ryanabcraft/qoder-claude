@@ -17,6 +17,7 @@ import {
   useAccount,
 } from './accounts.js';
 import { cachedModels, modelsStatus, refreshModels, refreshRemote } from './models.js';
+import { applyModelPicker } from './claudePicker.js';
 import { resolveCli } from './cliPath.js';
 import { snapshot } from './metrics.js';
 import { publicConfig, saveConfig } from './config.js';
@@ -289,6 +290,11 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
 
   if (req.method === 'GET' && route === 'metrics') {
     return sendJson(res, 200, snapshot(url.searchParams.get('range') || '30m')), true;
+  }
+
+  if (req.method === 'POST' && route === 'models/apply') {
+    const result = applyModelPicker();
+    return sendJson(res, result.ok ? 200 : 500, result), true;
   }
 
   if (req.method === 'GET' && route === 'models') {

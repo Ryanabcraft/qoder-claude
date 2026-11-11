@@ -26,6 +26,7 @@ import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 import { getQuota, quotaSnapshot } from '../src/quota.js';
 import { claimReward, rewardsSnapshot } from '../src/rewards.js';
 import { modelsStatus, refreshModels, refreshRemote } from '../src/models.js';
+import { applyModelPicker } from '../src/claudePicker.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -793,6 +794,11 @@ if (args[0] === 'models') {
   if (args.includes('--refresh')) {
     console.log('qclaude: asking Qoder for the current model list…');
     await Promise.all([refreshModels({ force: true }), refreshRemote({ force: true })]);
+  }
+  if (args.includes('--apply')) {
+    const applied = applyModelPicker();
+    if (!applied.ok) console.error(`qclaude: could not update the Claude picker: ${applied.error}`);
+    else console.log(applied.changed ? `qclaude: Claude picker updated (${applied.count} models).` : 'qclaude: Claude picker already up to date.');
   }
   const status = modelsStatus();
   if (json) {

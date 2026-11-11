@@ -9,7 +9,8 @@ import { mergeUsage } from './usage.js';
 import { runCompletion, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
-import { cachedModels, startModelRefresh } from './models.js';
+import { cachedModels, onModelsChanged, refreshRemote, startModelRefresh } from './models.js';
+import { applyModelPicker } from './claudePicker.js';
 import { startQuotaPolling } from './quota.js';
 import { startRewardPolling } from './rewards.js';
 import { handleUi } from './uiApi.js';
@@ -550,6 +551,18 @@ server.listen(PORT, HOST, () => {
   log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');
   log('close this window or press Ctrl+C to stop.');
   log(`models: ${cachedModels().slice(0, 5).join(', ')}, ...`);
+  if (process.env.CLAUDE_PICKER_SYNC !== '0') {
+    onModelsChanged(() => {
+      const result = applyModelPicker();
+      if (result.changed) log(`claude picker: ${result.count} models`);
+    });
+    refreshRemote()
+      .catch(() => {})
+      .finally(() => {
+        const first = applyModelPicker();
+        if (first.changed) log(`claude picker: ${first.count} models`);
+      });
+  }
   startModelRefresh();
   startQuotaPolling();
   startRewardPolling();

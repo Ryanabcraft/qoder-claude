@@ -24,6 +24,7 @@ forwarded to `claude`.
 | `qclaude models` | model list with its source and age |
 | `qclaude models --refresh` | asks the Qoder CLI for the current list |
 | `qclaude models --json` | machine-readable model status |
+| `qclaude models --apply` | writes the current list into the Claude Code picker |
 | `qclaude rewards [name]` | daily 100-credit campaign state |
 | `qclaude rewards --claim` | claim the daily reward manually |
 | `qclaude uninstall [flags]` | remove the app, launcher and installer settings |

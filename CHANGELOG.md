@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.0
+
+- The Claude Code `/model` picker now follows the live list. The bridge rewrites `modelPicker` in `~/.claude/settings.json` on boot and every time the model list changes, keeping a timestamped backup and leaving the rest of the settings alone.
+- The installer used to build the picker from `spawnSync --list-models`, which returns nothing on some accounts, so a fresh install could land with the built-in list. It now asks Qoder first — CLI, then the model API — before writing.
+- `qclaude models --apply` and an **Apply to Claude** button on the Models page push the current list into the picker on demand.
+
 ## 1.15.9
 
 - The model list now comes from the same endpoint Qoder's own app uses: `GET /api/v2/model/list` on the inference host, signed by the same WASM context the bridge already uses for chat. It returns the real catalog with keys, display names, enable flags and context tiers per scene.

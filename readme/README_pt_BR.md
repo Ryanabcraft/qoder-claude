@@ -63,6 +63,7 @@ notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 | `qclaude quota --json` | snapshot de cota legível por máquina |
 | `qclaude models` | lista de modelos com a fonte e a idade |
 | `qclaude models --refresh` | pede a lista atual ao Qoder (CLI, catálogo do app, docs públicas) |
+| `qclaude models --apply` | grava a lista atual no seletor do Claude Code |
 | `qclaude rewards` | mostra a campanha diária de 100 créditos |
 | `qclaude rewards --claim` | resgata manualmente (nunca automático por padrão) |
 | `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |

@@ -63,6 +63,7 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 | `qclaude quota --json` | machine-readable quota snapshot |
 | `qclaude models` | model list with its source and age |
 | `qclaude models --refresh` | asks Qoder for the current list (CLI, desktop catalog, public docs) |
+| `qclaude models --apply` | writes the current list into the Claude Code picker |
 | `qclaude rewards` | shows the daily 100-credit campaign |
 | `qclaude rewards --claim` | claims it manually (never automatic by default) |
 | `qclaude uninstall` | removes the app, launcher and settings (asks first) |

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { detectModels } from '../src/models.js';
+import { cachedModels, refreshModels, refreshRemote } from '../src/models.js';
+import { pickerFor } from '../src/claudePicker.js';
 import { ensureExa, EXA_URL } from '../src/exaSetup.js';
 import { withWebTools } from '../src/claudeSettings.js';
 
@@ -23,7 +24,6 @@ if (fs.existsSync(file)) {
 const CAPS = 'effort,xhigh_effort,thinking,adaptive_thinking,interleaved_thinking';
 // A model ID Claude Code knows, so custom Qoder ids inherit its client-side
 // profile (1M window, effort defaults) without changing what is sent upstream.
-const BEHAVES_AS = process.env.QODER_BEHAVES_AS || 'claude-opus-4-8';
 
 current.env = {
   ...(current.env || {}),
@@ -44,16 +44,10 @@ delete current.env.ANTHROPIC_DEFAULT_FABLE_MODEL;
 
 current.model = process.env.QODER_DEFAULT_MODEL || 'Auto';
 
-const models = detectModels();
-current.modelPicker = {
-  replaceBuiltInOptions: true,
-  options: models.map((m) => ({
-    model: m,
-    label: `Qoder · ${m}`,
-    description: `${m} via Qoder CLI`,
-    behavesAs: BEHAVES_AS,
-  })),
-};
+// Ask Qoder first: the CLI, then its model API. Only then fall back.
+await refreshRemote({ force: true });
+await refreshModels({ force: true });
+current.modelPicker = pickerFor(cachedModels());
 
 current.statusLine = {
   type: 'command',

@@ -49,6 +49,20 @@ let refreshing = null;
 let remotePromise = null;
 let remoteAt = 0;
 let timer = null;
+let modelsListener = null;
+
+const sameList = (a, b) => a.length === b.length && a.every((model, i) => model === b[i]);
+
+export function onModelsChanged(fn) {
+  modelsListener = typeof fn === 'function' ? fn : null;
+}
+
+function notifyChanged(before) {
+  if (!modelsListener || sameList(before, state.list)) return;
+  try {
+    modelsListener({ models: [...state.list], source: state.source, before });
+  } catch {}
+}
 
 export function parseModels(out) {
   const list = [];
@@ -128,9 +142,11 @@ function applyCatalog() {
   if (catalog.at <= state.catalogAt) return false;
   state.catalogAt = catalog.at;
   if (!state.list.length || state.fetchedAt < catalog.at) {
+    const before = state.list;
     state.list = catalog.models;
     state.source = 'catalog';
     state.fetchedAt = catalog.at;
+    notifyChanged(before);
   }
   return true;
 }
@@ -206,9 +222,11 @@ export async function refreshRemote({ force = false, fetchImpl = fetch, signer =
       for (const model of [...state.list, ...QODER_MODELS]) if (!merged.includes(model)) merged.push(model);
       const catalogStale = state.source === 'catalog' && Date.now() - state.fetchedAt > 14 * 24 * 60 * 60 * 1000;
       if (state.source !== 'cli' || catalogStale) {
+        const before = state.list;
         state.list = orderModels(merged);
         state.source = source;
         state.fetchedAt = Date.now();
+        notifyChanged(before);
       }
     };
     try {
@@ -249,6 +267,7 @@ function backoffMs(failures) {
 
 function applySuccess(models) {
   const now = Date.now();
+  const before = state.list;
   state.list = models;
   state.source = 'cli';
   state.fetchedAt = now;
@@ -257,6 +276,7 @@ function applySuccess(models) {
   state.failures = 0;
   state.nextAttempt = 0;
   writeCache(models, now);
+  notifyChanged(before);
 }
 
 function applyFailure(message) {
