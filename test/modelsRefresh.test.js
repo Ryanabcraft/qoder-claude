@@ -189,3 +189,45 @@ test('the docs source never overrides a working CLI answer', async () => {
   assert.equal(models.modelsStatus().source, 'cli');
   assert.deepEqual(models.modelsStatus().models, ['Auto', 'Cli-Only']);
 });
+
+test('the API catalog is normalized across the CLI scenes', async () => {
+  const { normalizeApiCatalog } = await import('../src/models.js');
+  const catalog = {
+    assistant: [
+      { key: 'auto', display_name: 'Auto', enable: false },
+      { key: 'x1', display_name: 'Tier-One', enable: true },
+      { key: 'x2', display_name: 'Tier-Two', enable: false },
+    ],
+    chat: [
+      { key: 'x1', display_name: 'Tier-One', enable: true },
+      { key: 'bad', display_name: 'no spaces allowed', enable: true },
+    ],
+    qwork: [{ key: 'q', display_name: 'Other-Product', enable: true }],
+  };
+  assert.deepEqual(normalizeApiCatalog(catalog), ['Tier-One']);
+  assert.equal(normalizeApiCatalog({}), null);
+});
+
+test('the signed API answer wins over the docs and never shrinks the list', async () => {
+  const dir = sandbox('qc-models-api-');
+  const cli = fixture(dir, 'bad.js', "process.stderr.write(['no models'].join(''));\n");
+  const models = await loadModels({ home: dir, cliBin: cli, configDir: path.join(dir, 'nope') });
+
+  const payload = { assistant: [{ key: 'auto', display_name: 'Api-Model-1', enable: true }] };
+  const ok = await models.refreshRemote({
+    force: true,
+    signer: (host, path) => ({ url: host + path, headers: {} }),
+    fetchImpl: async (url) => {
+      if (String(url).includes('/api/v2/model/list')) {
+        return { ok: true, status: 200, json: async () => payload, text: async () => JSON.stringify(payload) };
+      }
+      return { ok: true, status: 200, text: async () => '### Frontier Models\n| Model Name | x |\n| --- | --- |\n| Doc-Model | y |\n' };
+    },
+  });
+  const status = models.modelsStatus();
+  assert.equal(ok, true);
+  assert.equal(status.source, 'api');
+  assert.ok(status.models.includes('Api-Model-1'));
+  assert.ok(!status.models.includes('Doc-Model'), 'the docs are not consulted once the API answers');
+  for (const model of models.QODER_MODELS) assert.ok(status.models.includes(model));
+});

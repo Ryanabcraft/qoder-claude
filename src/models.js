@@ -3,6 +3,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolveCli } from './cliPath.js';
+import { context } from './qoderAuth.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(HERE, '..');
@@ -11,6 +12,8 @@ const CACHE_PATH = path.join(ROOT, 'models.cache.json');
 const CONFIG_DIR = process.env.QODER_CONFIG_DIR || path.join(process.env.USERPROFILE || process.env.HOME || '', '.qoder');
 const TEXTS_PATH = path.join(CONFIG_DIR, '.auth', 'dynamic-texts.json');
 const DOC_URL = process.env.QODER_MODELS_DOC_URL || 'https://docs.qoder.com/cli/model.md';
+const API_HOST = process.env.QODER_MODEL_LIST_ENDPOINT || 'https://api1.qoder.sh';
+const API_PATH = '/api/v2/model/list?Encode=1';
 const REMOTE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const TTL_MS = Number(process.env.QODER_MODELS_TTL_MS || 10 * 60 * 1000);
@@ -153,26 +156,74 @@ export function parseDocModels(markdown) {
   return models.length > 4 ? models : [];
 }
 
-export async function refreshRemote({ force = false, fetchImpl = fetch } = {}) {
+export function normalizeApiCatalog(json) {
+  const scenes = ['assistant', 'chat', 'app', 'qwake', 'quest', 'inline'];
+  const pool = [];
+  for (const scene of scenes) {
+    const rows = Array.isArray(json?.[scene]) ? json[scene] : [];
+    for (const row of rows) if (row && typeof row === 'object') pool.push(row);
+  }
+  if (!pool.length) return null;
+  const enabled = pool.filter((row) => row.enable !== false);
+  const usable = enabled.length ? enabled : pool;
+  const names = [];
+  for (const row of usable) {
+    const name = String(row.display_name || row.key || '').trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) || /dogfood/i.test(name)) continue;
+    if (!names.includes(name)) names.push(name);
+  }
+  return names.length ? orderModels(names) : null;
+}
+
+export async function fetchApiModels({ fetchImpl = fetch, timeoutMs = 12000, signer = null } = {}) {
+  let req;
+  if (signer) {
+    req = signer(API_HOST, API_PATH);
+    if (!req) return null;
+  } else {
+    let ctx;
+    try {
+      ({ ctx } = context());
+    } catch {
+      return null;
+    }
+    req = ctx.prepareRequest(API_HOST, API_PATH, 'GET', 'auth', undefined, undefined);
+  }
+  const signal = AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined;
+  const raw = req.headers || {};
+  const headers = typeof raw[Symbol.iterator] === 'function' ? Object.fromEntries(raw) : raw;
+  const res = await fetchImpl(req.url, { method: 'GET', headers, signal });
+  if (!res.ok) return null;
+  return normalizeApiCatalog(await res.json());
+}
+
+export async function refreshRemote({ force = false, fetchImpl = fetch, signer = null } = {}) {
   if (!force && Date.now() - remoteAt < REMOTE_TTL_MS) return false;
   if (remotePromise) return remotePromise;
   remotePromise = (async () => {
+    const apply = (list, source) => {
+      const merged = [...list];
+      for (const model of [...state.list, ...QODER_MODELS]) if (!merged.includes(model)) merged.push(model);
+      const catalogStale = state.source === 'catalog' && Date.now() - state.fetchedAt > 14 * 24 * 60 * 60 * 1000;
+      if (state.source !== 'cli' || catalogStale) {
+        state.list = orderModels(merged);
+        state.source = source;
+        state.fetchedAt = Date.now();
+      }
+    };
     try {
+      const api = await fetchApiModels({ fetchImpl, signer }).catch(() => null);
+      remoteAt = Date.now();
+      if (api && api.length) {
+        apply(api, 'api');
+        return true;
+      }
       const signal = AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined;
       const res = await fetchImpl(DOC_URL, { headers: { accept: 'text/markdown, text/plain, */*' }, signal });
       if (!res.ok) return false;
       const parsed = parseDocModels(await res.text());
-      remoteAt = Date.now();
       if (!parsed.length) return false;
-      const merged = [...parsed];
-      for (const model of QODER_MODELS) if (!merged.includes(model)) merged.push(model);
-      const list = orderModels(merged);
-      const catalogStale = state.source === 'catalog' && Date.now() - state.fetchedAt > 14 * 24 * 60 * 60 * 1000;
-      if (!state.list.length || state.source === 'builtin' || state.source === 'remote' || catalogStale) {
-        state.list = list;
-        state.source = 'remote';
-        state.fetchedAt = Date.now();
-      }
+      apply(parsed, 'remote');
       return true;
     } catch {
       return false;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.9
+
+- The model list now comes from the same endpoint Qoder's own app uses: `GET /api/v2/model/list` on the inference host, signed by the same WASM context the bridge already uses for chat. It returns the real catalog with keys, display names, enable flags and context tiers per scene.
+- Source order is the Qoder CLI, then the Qoder API, then the desktop catalog, then the public docs, then the last good list and the built-in list, merged so a model is never dropped.
+- The API answer carries scenes the desktop app uses (`assistant`, `chat`, `app`, `qwake`, `quest`, `inline`); other products' tiers such as `Premium` and `Standard` are left out of the Claude Code picker.
+
 ## 1.15.8
 
 - The public docs list is a curated subset — it names 14 models where the desktop catalog has 22 — so the docs source is now merged with the built-in floor instead of replacing it. A machine with no CLI and no desktop app shows 27 models, and a model is never dropped because the docs stopped mentioning it.

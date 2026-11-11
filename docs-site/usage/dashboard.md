@@ -15,7 +15,7 @@ address bar.
 | Analytics | 30m/24h/7d, requests, latency, tokens, activity heatmap, top models/accounts |
 | Usage & Logs | request filters and table, log tail with search and download |
 | Health | uptime, memory, PID, Node, sessions, pool, paths, last error |
-| Models | live model grid, default model, copy ids, and where the list came from — Qoder CLI, the desktop catalog, Qoder's public docs, the last good list saved on disk, or the built-in fallback — with **Refresh** asking for a new one |
+| Models | live model grid, default model, copy ids, and where the list came from — Qoder CLI, Qoder's own model API (`/api/v2/model/list`), the desktop catalog, Qoder's public docs, the last good list saved on disk, or the built-in fallback — with **Refresh** asking for a new one |
 | Settings | General, AI, Security, Routing, Resilience, Advanced |
 
 Dark, light and system themes are available. The layout collapses the sidebar to an icon rail under
