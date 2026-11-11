@@ -61,6 +61,8 @@ notas da versão nova, no máximo 10 linhas, com `...` quando houver mais.
 | `qclaude notes [versão]` | mostra o changelog desta instalação |
 | `qclaude quota` | créditos usados/restantes, consumo e previsão |
 | `qclaude quota --json` | snapshot de cota legível por máquina |
+| `qclaude models` | lista de modelos com a fonte e a idade |
+| `qclaude models --refresh` | pede a lista atual ao CLI do Qoder |
 | `qclaude rewards` | mostra a campanha diária de 100 créditos |
 | `qclaude rewards --claim` | resgata manualmente (nunca automático por padrão) |
 | `qclaude uninstall` | remove o app, o launcher e os settings (pergunta antes) |

@@ -21,6 +21,9 @@ forwarded to `claude`.
 | `qclaude notes [version]` | print the changelog |
 | `qclaude quota [name]` | credits, remaining, burn rate and forecast |
 | `qclaude quota --json` | machine-readable quota snapshot |
+| `qclaude models` | model list with its source and age |
+| `qclaude models --refresh` | asks the Qoder CLI for the current list |
+| `qclaude models --json` | machine-readable model status |
 | `qclaude rewards [name]` | daily 100-credit campaign state |
 | `qclaude rewards --claim` | claim the daily reward manually |
 | `qclaude uninstall [flags]` | remove the app, launcher and installer settings |

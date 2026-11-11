@@ -25,6 +25,7 @@ import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } f
 import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 import { getQuota, quotaSnapshot } from '../src/quota.js';
 import { claimReward, rewardsSnapshot } from '../src/rewards.js';
+import { modelsStatus, refreshModels } from '../src/models.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -787,6 +788,24 @@ if (args[0] === 'quota') {
   }
 }
 
+if (args[0] === 'models') {
+  const json = args.includes('--json');
+  if (args.includes('--refresh')) {
+    console.log('qclaude: asking the Qoder CLI for the current model list…');
+    await refreshModels({ force: true });
+  }
+  const status = modelsStatus();
+  if (json) {
+    console.log(JSON.stringify(status, null, 2));
+  } else {
+    const when = status.fetchedAt ? new Date(status.fetchedAt).toLocaleString() : 'never';
+    console.log(`${status.models.length} models · source: ${status.source} · updated: ${when}`);
+    for (const model of status.models) console.log(`  ${model}`);
+    if (status.lastError && status.source !== 'cli') console.log(`  note: ${status.lastError}`);
+  }
+  process.exitCode = 0;
+}
+
 if (args[0] === 'rewards') {
   const json = args.includes('--json');
   const claim = args.includes('--claim');
@@ -845,6 +864,9 @@ if (args[0] === '--help' || args[0] === '-h') {
   qclaude notes [version]    prints the changelog for this install
   qclaude quota [name]       shows Qoder credits, burn rate and forecast
   qclaude quota --json       machine-readable quota snapshot
+  qclaude models             lists the models, where they came from and how old
+  qclaude models --refresh   asks the Qoder CLI for the current list
+  qclaude models --json      machine-readable model status
   qclaude rewards [name]     shows the daily 100-credit campaign
   qclaude rewards --claim    claims it (manual; never automatic by default)
   qclaude uninstall          removes qclaude, the launcher and its Claude settings
@@ -936,7 +958,7 @@ if (args[0] === '--window') {
   process.exit(1);
 }
 
-if (!['quota', 'rewards', '--status'].includes(args[0])) {
+if (!['quota', 'rewards', 'models', '--status'].includes(args[0])) {
 if (args[0] === '--serve') {
   const child = await startServer({ window: false });
   if (!child) {

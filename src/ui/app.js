@@ -63,6 +63,7 @@ const state = {
   status: null,
   accounts: null,
   models: [],
+  modelsMeta: null,
   config: null,
   claude: null,
   health: null,
@@ -1026,14 +1027,40 @@ function addKv(box, key, value) {
   box.append(row);
 }
 
-async function loadModels() {
-  const [models, claude] = await Promise.all([api('models'), api('claude')]);
+async function loadModels(force = false) {
+  const [models, claude] = await Promise.all([api(force ? 'models?refresh=1' : 'models'), api('claude')]);
   state.models = models.models || [];
+  state.modelsMeta = models;
   state.claude = claude;
   renderModels();
 }
 
+function agoLabel(span) {
+  if (!span || span < 0) return t('never refreshed');
+  const minutes = Math.round(span / 60000);
+  if (minutes < 1) return t('just now');
+  if (minutes < 60) return t('{n} min ago', { n: minutes });
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return t('{n} h ago', { n: hours });
+  return t('{n} d ago', { n: Math.round(hours / 24) });
+}
+
+function renderModelsSource() {
+  const meta = state.modelsMeta || {};
+  const source = meta.source === 'cli' ? t('Qoder CLI') : meta.source === 'cache' ? t('last good list') : t('built-in list');
+  const at = meta.fetchedAt || (meta.source === 'builtin' ? null : meta.lastAttempt);
+  const line = $('#models-source');
+  if (line) line.textContent = `${source} · ${agoLabel(at ? Date.now() - at : 0)}`;
+  const box = $('#models-error');
+  const text = $('#models-error-text');
+  if (!box || !text) return;
+  const failed = meta.lastError && meta.source !== 'cli';
+  box.classList.toggle('hidden', !failed);
+  if (failed) text.textContent = `${t('Update failed')}: ${meta.lastError}`;
+}
+
 function renderModels() {
+  renderModelsSource();
   const grid = $('#models-grid');
   grid.textContent = '';
   const needle = state.search.trim().toLowerCase();
@@ -1368,7 +1395,11 @@ function bind() {
   $('#usage-transport').addEventListener('change', (e) => { state.usage.transport = e.target.value; renderUsage(); });
   $('#usage-source').addEventListener('change', (e) => { state.usage.source = e.target.value; renderUsage(); });
   $('#health-refresh').addEventListener('click', () => loadHealth().catch((e) => toast(e.message, 'err')));
-  $('#models-refresh').addEventListener('click', () => loadModels().catch((e) => toast(e.message, 'err')));
+  $('#models-refresh').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    loadModels(true).catch((err) => toast(err.message, 'err')).finally(() => { btn.disabled = false; });
+  });
   $('#models-open-settings').addEventListener('click', () => { showPage('settings'); switchSettingsTab('ai'); });
   $('#theme-seg').addEventListener('click', (e) => { const b = e.target.closest('[data-theme-choice]'); if (b) setTheme(b.dataset.themeChoice); });
   $$('#settings-tabs button').forEach((button) => button.addEventListener('click', () => switchSettingsTab(button.dataset.tab)));

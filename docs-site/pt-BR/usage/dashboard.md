@@ -14,7 +14,7 @@ chave no fragmento da URL; a página guarda em `sessionStorage` e limpa a barra 
 | Analytics | 30m/24h/7d, requests, latência, tokens, heatmap, top modelos/contas |
 | Usage & Logs | filtros e tabela de requests, log com busca e download |
 | Health | uptime, memória, PID, Node, sessões, pool, caminhos, último erro |
-| Models | grid de modelos, modelo padrão, copiar ids |
+| Models | grid de modelos, modelo padrão, copiar ids e a origem da lista — CLI do Qoder, última lista boa salva em disco ou a embutida — com **Refresh** pedindo uma nova ao CLI |
 | Settings | General, AI, Security, Routing, Resilience, Advanced |
 
 Temas dark, light e system. O layout vira rail de ícones abaixo de 1100 px e drawer abaixo de 760 px.

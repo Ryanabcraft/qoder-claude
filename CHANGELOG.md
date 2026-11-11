@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.15.5
+
+- The model list now carries its provenance. The Models page and `qclaude models` say whether the list came from the Qoder CLI, from the last good list saved on disk, or from the built-in fallback, and how old it is.
+- When the CLI reports no models for the account, that reason is shown instead of a silent fallback, and repeated failures back off instead of spawning the CLI every minute.
+- The last good list is persisted to `models.cache.json` and survives a restart; a successful refresh replaces it and becomes the source.
+- The Models **Refresh** button now really asks the CLI (`/ui/api/models?refresh=1`); before it only re-read the server cache.
+- `qclaude models`, `qclaude models --refresh` and `qclaude models --json`.
+- The built-in list moved to `src/models.json` with the date it was last reviewed, so updating it is a data change.
+
 ## 1.15.4
 
 - Links to the site now expand into a proper card in Discord, X, Slack, Reddit and WhatsApp: `og:image`, `og:url` and `twitter:card` are declared and a 1200×630 banner is served from the Pages root.
