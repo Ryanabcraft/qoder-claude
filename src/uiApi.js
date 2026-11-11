@@ -16,7 +16,7 @@ import {
   setRotation,
   useAccount,
 } from './accounts.js';
-import { cachedModels, modelsStatus, refreshModels } from './models.js';
+import { cachedModels, modelsStatus, refreshModels, refreshRemote } from './models.js';
 import { resolveCli } from './cliPath.js';
 import { snapshot } from './metrics.js';
 import { publicConfig, saveConfig } from './config.js';
@@ -292,7 +292,9 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
   }
 
   if (req.method === 'GET' && route === 'models') {
-    if (url.searchParams.get('refresh') === '1') await refreshModels({ force: true });
+    if (url.searchParams.get('refresh') === '1') {
+      await Promise.all([refreshModels({ force: true }), refreshRemote({ force: true })]);
+    }
     return sendJson(res, 200, modelsStatus()), true;
   }
 

@@ -10,6 +10,8 @@ const BUILTIN_PATH = path.join(HERE, 'models.json');
 const CACHE_PATH = path.join(ROOT, 'models.cache.json');
 const CONFIG_DIR = process.env.QODER_CONFIG_DIR || path.join(process.env.USERPROFILE || process.env.HOME || '', '.qoder');
 const TEXTS_PATH = path.join(CONFIG_DIR, '.auth', 'dynamic-texts.json');
+const DOC_URL = process.env.QODER_MODELS_DOC_URL || 'https://docs.qoder.com/cli/model.md';
+const REMOTE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const TTL_MS = Number(process.env.QODER_MODELS_TTL_MS || 10 * 60 * 1000);
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -41,6 +43,8 @@ const state = {
 };
 
 let refreshing = null;
+let remotePromise = null;
+let remoteAt = 0;
 let timer = null;
 
 export function parseModels(out) {
@@ -122,6 +126,54 @@ function applyCatalog() {
     state.fetchedAt = catalog.at;
   }
   return true;
+}
+
+export function parseDocModels(markdown) {
+  const text = String(markdown || '');
+  const models = ['Auto', 'Ultimate', 'Performance', 'Efficient'];
+  let table = text;
+  const heading = text.match(/^#{2,4}[^\n]*Frontier Models[^\n]*$/im);
+  if (heading) {
+    const rest = text.slice(heading.index + heading[0].length);
+    const next = rest.search(/^#{1,4}\s/m);
+    table = next >= 0 ? rest.slice(0, next) : rest;
+  }
+  for (const line of table.split(/\r?\n/)) {
+    const cell = line.split('|')[1];
+    if (!cell) continue;
+    const name = cell.trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) continue;
+    if (/^model name$/i.test(name)) continue;
+    if (!models.includes(name)) models.push(name);
+  }
+  return models.length > 4 ? models : [];
+}
+
+export async function refreshRemote({ force = false, fetchImpl = fetch } = {}) {
+  if (!force && Date.now() - remoteAt < REMOTE_TTL_MS) return false;
+  if (remotePromise) return remotePromise;
+  remotePromise = (async () => {
+    try {
+      const signal = AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined;
+      const res = await fetchImpl(DOC_URL, { headers: { accept: 'text/markdown, text/plain, */*' }, signal });
+      if (!res.ok) return false;
+      const list = parseDocModels(await res.text());
+      remoteAt = Date.now();
+      if (!list.length) return false;
+      const catalogStale = state.source === 'catalog' && Date.now() - state.fetchedAt > 14 * 24 * 60 * 60 * 1000;
+      if (!state.list.length || state.source === 'builtin' || state.source === 'remote' || catalogStale) {
+        state.list = list;
+        state.source = 'remote';
+        state.fetchedAt = Date.now();
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      remotePromise = null;
+    }
+  })();
+  return remotePromise;
 }
 
 restoreCache();
@@ -241,8 +293,10 @@ function due() {
 export function startModelRefresh() {
   if (process.env.BRIDGE_MODELS_REFRESH === '0' || timer) return;
   refreshModels();
+  refreshRemote();
   timer = setInterval(() => {
     applyCatalog();
+    refreshRemote();
     if (due()) refreshModels();
   }, Math.min(TTL_MS, 60_000));
   timer.unref?.();

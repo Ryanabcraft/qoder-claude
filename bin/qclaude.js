@@ -25,7 +25,7 @@ import { applyUpdate, checkUpdate, localVersion, skippedVersion, skipVersion } f
 import { showReleaseNotes, showVersionNotes } from '../src/releaseNotes.js';
 import { getQuota, quotaSnapshot } from '../src/quota.js';
 import { claimReward, rewardsSnapshot } from '../src/rewards.js';
-import { modelsStatus, refreshModels } from '../src/models.js';
+import { modelsStatus, refreshModels, refreshRemote } from '../src/models.js';
 
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.BRIDGE_PORT || '8787';
@@ -791,8 +791,8 @@ if (args[0] === 'quota') {
 if (args[0] === 'models') {
   const json = args.includes('--json');
   if (args.includes('--refresh')) {
-    console.log('qclaude: asking the Qoder CLI for the current model list…');
-    await refreshModels({ force: true });
+    console.log('qclaude: asking Qoder for the current model list…');
+    await Promise.all([refreshModels({ force: true }), refreshRemote({ force: true })]);
   }
   const status = modelsStatus();
   if (json) {

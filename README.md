@@ -62,7 +62,7 @@ update it prints the changelog notes for the new version, capped at 10 lines wit
 | `qclaude quota` | credits used/left, burn rate and forecast |
 | `qclaude quota --json` | machine-readable quota snapshot |
 | `qclaude models` | model list with its source and age |
-| `qclaude models --refresh` | asks the Qoder CLI for the current list |
+| `qclaude models --refresh` | asks Qoder for the current list (CLI, desktop catalog, public docs) |
 | `qclaude rewards` | shows the daily 100-credit campaign |
 | `qclaude rewards --claim` | claims it manually (never automatic by default) |
 | `qclaude uninstall` | removes the app, launcher and settings (asks first) |

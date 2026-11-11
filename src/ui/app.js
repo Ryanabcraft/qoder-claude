@@ -1049,7 +1049,8 @@ function renderModelsSource() {
   const meta = state.modelsMeta || {};
   const source = meta.source === 'cli' ? t('Qoder CLI')
     : meta.source === 'catalog' ? t('Qoder catalog')
-      : meta.source === 'cache' ? t('last good list') : t('built-in list');
+      : meta.source === 'remote' ? t('Qoder docs')
+        : meta.source === 'cache' ? t('last good list') : t('built-in list');
   const at = meta.fetchedAt || (meta.source === 'builtin' ? null : meta.lastAttempt);
   const line = $('#models-source');
   if (line) line.textContent = `${source} · ${agoLabel(at ? Date.now() - at : 0)}`;

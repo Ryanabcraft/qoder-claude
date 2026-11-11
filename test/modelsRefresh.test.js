@@ -138,3 +138,53 @@ test('a fresh CLI answer beats the catalog', async () => {
   assert.equal(status.source, 'cli');
   assert.deepEqual(status.models, ['Auto', 'Qwen-New']);
 });
+
+test('the public docs table is parsed into a model list', async () => {
+  const { parseDocModels } = await import('../src/models.js');
+  const md = [
+    '### Frontier Models (New Models)',
+    '',
+    '| Model Name | Capabilities | Credits |',
+    '| --- | --- | --- |',
+    '| Qwen3.8-Max | Reasoning | 0.5x |',
+    '| Kimi-K3 | Vision | 0.8x |',
+    '| not a model! | nope | 0x |',
+    '',
+    '### Custom Models (Custom)',
+    '| Something-Else | x | 1x |',
+  ].join('\n');
+  const list = parseDocModels(md);
+  assert.deepEqual(list, ['Auto', 'Ultimate', 'Performance', 'Efficient', 'Qwen3.8-Max', 'Kimi-K3']);
+  assert.deepEqual(parseDocModels('# nothing here'), []);
+});
+
+test('the docs source fills in when there is no CLI and no catalog', async () => {
+  const dir = sandbox('qc-models-remote-');
+  const cli = fixture(dir, 'bad.js', "process.stderr.write(['no models'].join(''));\n");
+  const models = await loadModels({ home: dir, cliBin: cli, configDir: path.join(dir, 'nope') });
+  await models.refreshModels({ force: true });
+  assert.equal(models.modelsStatus().source, 'builtin');
+
+  const body = '### Frontier Models\n| Model Name | x |\n| --- | --- |\n| Remote-Model-1 | y |\n';
+  const ok = await models.refreshRemote({
+    force: true,
+    fetchImpl: async () => ({ ok: true, status: 200, text: async () => body }),
+  });
+  const status = models.modelsStatus();
+  assert.equal(ok, true);
+  assert.equal(status.source, 'remote');
+  assert.ok(status.models.includes('Remote-Model-1'));
+});
+
+test('the docs source never overrides a working CLI answer', async () => {
+  const dir = sandbox('qc-models-remote-skip-');
+  const cli = fixture(dir, 'good.js', "process.stdout.write(['Auto','Cli-Only'].join(String.fromCharCode(10)));\n");
+  const models = await loadModels({ home: dir, cliBin: cli, configDir: path.join(dir, 'nope') });
+  await models.refreshModels({ force: true });
+  assert.equal(models.modelsStatus().source, 'cli');
+
+  const body = '### Frontier Models\n| Model Name | x |\n| --- | --- |\n| Remote-Model-1 | y |\n';
+  await models.refreshRemote({ force: true, fetchImpl: async () => ({ ok: true, status: 200, text: async () => body }) });
+  assert.equal(models.modelsStatus().source, 'cli');
+  assert.deepEqual(models.modelsStatus().models, ['Auto', 'Cli-Only']);
+});

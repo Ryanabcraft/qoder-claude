@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.7
+
+- The model list no longer depends on another app's cache. When the CLI has nothing to list and Qoder Desktop is not installed, the bridge reads Qoder's public model documentation over HTTP and builds the list from it — a fresh machine shows the current roster with nothing local to seed it.
+- Source order is now: Qoder CLI, desktop catalog, public docs, last good list on disk, built-in list. The Models page names the one in use and its age.
+- A desktop catalog older than 14 days is replaced by the public docs, so a machine with an abandoned Qoder install does not keep an old list forever.
+- The built-in list grew to the 27 names across both sources and keeps its review date.
+
 ## 1.15.6
 
 - The model list now reads the catalog Qoder Desktop keeps at `~/.qoder/.auth/dynamic-texts.json`, refreshed from Qoder's server. It is read from disk, so the list follows Qoder without spawning the CLI — which matters when the CLI reports no models for an account the bridge is already using for inference.
