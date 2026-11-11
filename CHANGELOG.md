@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.15.8
+
+- The public docs list is a curated subset — it names 14 models where the desktop catalog has 22 — so the docs source is now merged with the built-in floor instead of replacing it. A machine with no CLI and no desktop app shows 27 models, and a model is never dropped because the docs stopped mentioning it.
+- The merged order is stable: tiers first (Auto, Ultimate, Fast, Efficient, Lite, Performance), then alphabetical.
+
 ## 1.15.7
 
 - The model list no longer depends on another app's cache. When the CLI has nothing to list and Qoder Desktop is not installed, the bridge reads Qoder's public model documentation over HTTP and builds the list from it — a fresh machine shows the current roster with nothing local to seed it.

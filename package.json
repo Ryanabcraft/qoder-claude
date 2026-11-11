@@ -1,6 +1,6 @@
 {
   "name": "qoder-claude",
-  "version": "1.15.7",
+  "version": "1.15.8",
   "private": true,
   "type": "module",
   "description": "Anthropic-compatible local bridge backed by the Qoder CLI",

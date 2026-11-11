@@ -86,6 +86,17 @@ function restoreCache() {
   } catch {}
 }
 
+const TIER_ORDER = ['Auto', 'Ultimate', 'Fast', 'Efficient', 'Lite', 'Performance'];
+
+function orderModels(list) {
+  return [...list].sort((a, b) => {
+    const ia = TIER_ORDER.indexOf(a);
+    const ib = TIER_ORDER.indexOf(b);
+    if (ia >= 0 || ib >= 0) return (ia < 0 ? TIER_ORDER.length : ia) - (ib < 0 ? TIER_ORDER.length : ib);
+    return a.localeCompare(b);
+  });
+}
+
 export function readCatalog(file = TEXTS_PATH) {
   let raw;
   let at;
@@ -97,7 +108,6 @@ export function readCatalog(file = TEXTS_PATH) {
   }
   const locales = raw?.locales || {};
   const dict = locales.en || Object.values(locales)[0] || {};
-  const order = ['Auto', 'Ultimate', 'Fast', 'Efficient', 'Lite', 'Performance'];
   const models = [];
   for (const [key, value] of Object.entries(dict)) {
     if (!key.startsWith('modelSelector.item.') || /description/i.test(key)) continue;
@@ -106,13 +116,7 @@ export function readCatalog(file = TEXTS_PATH) {
     if (!models.includes(name)) models.push(name);
   }
   if (!models.length) return null;
-  models.sort((a, b) => {
-    const ia = order.indexOf(a);
-    const ib = order.indexOf(b);
-    if (ia >= 0 || ib >= 0) return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
-    return a.localeCompare(b);
-  });
-  return { models, at };
+  return { models: orderModels(models), at };
 }
 
 function applyCatalog() {
@@ -157,9 +161,12 @@ export async function refreshRemote({ force = false, fetchImpl = fetch } = {}) {
       const signal = AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined;
       const res = await fetchImpl(DOC_URL, { headers: { accept: 'text/markdown, text/plain, */*' }, signal });
       if (!res.ok) return false;
-      const list = parseDocModels(await res.text());
+      const parsed = parseDocModels(await res.text());
       remoteAt = Date.now();
-      if (!list.length) return false;
+      if (!parsed.length) return false;
+      const merged = [...parsed];
+      for (const model of QODER_MODELS) if (!merged.includes(model)) merged.push(model);
+      const list = orderModels(merged);
       const catalogStale = state.source === 'catalog' && Date.now() - state.fetchedAt > 14 * 24 * 60 * 60 * 1000;
       if (!state.list.length || state.source === 'builtin' || state.source === 'remote' || catalogStale) {
         state.list = list;

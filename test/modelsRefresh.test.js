@@ -174,6 +174,7 @@ test('the docs source fills in when there is no CLI and no catalog', async () =>
   assert.equal(ok, true);
   assert.equal(status.source, 'remote');
   assert.ok(status.models.includes('Remote-Model-1'));
+  for (const model of models.QODER_MODELS) assert.ok(status.models.includes(model), `the built-in floor keeps ${model}`);
 });
 
 test('the docs source never overrides a working CLI answer', async () => {
