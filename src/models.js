@@ -8,6 +8,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.QODER_BRIDGE_HOME || path.resolve(HERE, '..');
 const BUILTIN_PATH = path.join(HERE, 'models.json');
 const CACHE_PATH = path.join(ROOT, 'models.cache.json');
+const CONFIG_DIR = process.env.QODER_CONFIG_DIR || path.join(process.env.USERPROFILE || process.env.HOME || '', '.qoder');
+const TEXTS_PATH = path.join(CONFIG_DIR, '.auth', 'dynamic-texts.json');
 
 const TTL_MS = Number(process.env.QODER_MODELS_TTL_MS || 10 * 60 * 1000);
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -35,6 +37,7 @@ const state = {
   lastError: '',
   failures: 0,
   nextAttempt: 0,
+  catalogAt: 0,
 };
 
 let refreshing = null;
@@ -79,7 +82,50 @@ function restoreCache() {
   } catch {}
 }
 
+export function readCatalog(file = TEXTS_PATH) {
+  let raw;
+  let at;
+  try {
+    at = fs.statSync(file).mtimeMs;
+    raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+  const locales = raw?.locales || {};
+  const dict = locales.en || Object.values(locales)[0] || {};
+  const order = ['Auto', 'Ultimate', 'Fast', 'Efficient', 'Lite', 'Performance'];
+  const models = [];
+  for (const [key, value] of Object.entries(dict)) {
+    if (!key.startsWith('modelSelector.item.') || /description/i.test(key)) continue;
+    const name = String(value || '').trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) || /dogfood/i.test(name)) continue;
+    if (!models.includes(name)) models.push(name);
+  }
+  if (!models.length) return null;
+  models.sort((a, b) => {
+    const ia = order.indexOf(a);
+    const ib = order.indexOf(b);
+    if (ia >= 0 || ib >= 0) return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+    return a.localeCompare(b);
+  });
+  return { models, at };
+}
+
+function applyCatalog() {
+  const catalog = readCatalog();
+  if (!catalog) return false;
+  if (catalog.at <= state.catalogAt) return false;
+  state.catalogAt = catalog.at;
+  if (!state.list.length || state.fetchedAt < catalog.at) {
+    state.list = catalog.models;
+    state.source = 'catalog';
+    state.fetchedAt = catalog.at;
+  }
+  return true;
+}
+
 restoreCache();
+applyCatalog();
 
 function cleanError(text) {
   const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -175,6 +221,7 @@ function fetchModels() {
 }
 
 export function refreshModels({ force = false } = {}) {
+  applyCatalog();
   if (refreshing) return refreshing;
   if (force) {
     state.failures = 0;
@@ -194,7 +241,10 @@ function due() {
 export function startModelRefresh() {
   if (process.env.BRIDGE_MODELS_REFRESH === '0' || timer) return;
   refreshModels();
-  timer = setInterval(() => { if (due()) refreshModels(); }, Math.min(TTL_MS, 60_000));
+  timer = setInterval(() => {
+    applyCatalog();
+    if (due()) refreshModels();
+  }, Math.min(TTL_MS, 60_000));
   timer.unref?.();
 }
 

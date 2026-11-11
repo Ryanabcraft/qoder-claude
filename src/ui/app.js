@@ -1047,14 +1047,16 @@ function agoLabel(span) {
 
 function renderModelsSource() {
   const meta = state.modelsMeta || {};
-  const source = meta.source === 'cli' ? t('Qoder CLI') : meta.source === 'cache' ? t('last good list') : t('built-in list');
+  const source = meta.source === 'cli' ? t('Qoder CLI')
+    : meta.source === 'catalog' ? t('Qoder catalog')
+      : meta.source === 'cache' ? t('last good list') : t('built-in list');
   const at = meta.fetchedAt || (meta.source === 'builtin' ? null : meta.lastAttempt);
   const line = $('#models-source');
   if (line) line.textContent = `${source} · ${agoLabel(at ? Date.now() - at : 0)}`;
   const box = $('#models-error');
   const text = $('#models-error-text');
   if (!box || !text) return;
-  const failed = meta.lastError && meta.source !== 'cli';
+  const failed = meta.lastError && (meta.source === 'builtin' || meta.source === 'cache');
   box.classList.toggle('hidden', !failed);
   if (failed) text.textContent = `${t('Update failed')}: ${meta.lastError}`;
 }

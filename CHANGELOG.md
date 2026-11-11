@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.6
+
+- The model list now reads the catalog Qoder Desktop keeps at `~/.qoder/.auth/dynamic-texts.json`, refreshed from Qoder's server. It is read from disk, so the list follows Qoder without spawning the CLI — which matters when the CLI reports no models for an account the bridge is already using for inference.
+- Source precedence is: a fresh CLI answer, then the desktop catalog, then the last good list on disk, then the built-in list. The Models page names the one in use and its age.
+- A failed CLI listing no longer wins over a newer catalog: the fresher source is what shows.
+- The built-in list was refreshed to the 22 models Qoder ships today, including GLM-5.2, Qwen3.5-Plus, Qwen3.7-Plus, Qwen3.8-Max-Preview, Qwen4-Max-Preview, Lite and Performance.
+
 ## 1.15.5
 
 - The model list now carries its provenance. The Models page and `qclaude models` say whether the list came from the Qoder CLI, from the last good list saved on disk, or from the built-in fallback, and how old it is.
