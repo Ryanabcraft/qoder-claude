@@ -85,6 +85,21 @@ write `bridge.config.json` and the Claude user settings with backups; analytics 
 Accounts cards show real Qoder credits per profile, and Analytics adds credits, burn rate and a
 quota forecast.
 
+## OpenAI-compatible API
+
+Any tool that speaks OpenAI can use the same bridge — OpenBot, Cursor, an SDK, a script:
+
+```bash
+curl http://127.0.0.1:8787/v1/chat/completions \
+  -H 'content-type: application/json' \
+  -d '{"model":"Auto","messages":[{"role":"user","content":"hello"}],"stream":true}'
+```
+
+`GET /v1/models` answers in the OpenAI shape (`{"object":"list"}`). This path does **not** go through
+Claude Code: the client's system prompt and tools are sent to Qoder exactly as written, and native
+tool calls come back as `tool_calls`. Point OpenBot's custom OpenAI-compatible provider at
+`http://127.0.0.1:8787/v1`.
+
 ## What works
 
 - `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `Agent` and MCP servers — executed by Claude

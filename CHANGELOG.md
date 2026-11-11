@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.17.0
+
+- The bridge is now an OpenAI-compatible API: `POST /v1/chat/completions` with streaming (`stream: true`), native `tool_calls`, and `GET /v1/models` in the OpenAI shape. OpenBot's custom OpenAI-compatible provider can point at `http://127.0.0.1:8787/v1`.
+- This path does not go through Claude Code. The client's system prompt and tools are sent to Qoder exactly as written — no agent prompt, no `<tool_calls>` markers — so a different orchestration layer keeps its own behaviour.
+- Both endpoints share the same Qoder transport, so accounts, failover, quota and the dashboard apply unchanged.
+
 ## 1.16.0
 
 - The Claude Code `/model` picker now follows the live list. The bridge rewrites `modelPicker` in `~/.claude/settings.json` on boot and every time the model list changes, keeping a timestamped backup and leaving the rest of the settings alone.

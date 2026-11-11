@@ -5,7 +5,8 @@
 | método | rota | função |
 |---|---|---|
 | POST | `/v1/messages` | Anthropic Messages; stream por padrão |
-| GET | `/v1/models` | lista de modelos |
+| POST | `/v1/chat/completions` | OpenAI Chat Completions, para qualquer cliente OpenAI; faz stream quando `stream` é true. O system prompt e as tools do cliente passam intactos — é API, não o agente do Claude Code. |
+| GET | `/v1/models` | lista de modelos, nos formatos Anthropic e OpenAI |
 | POST | `/v1/messages/count_tokens` | estimativa de tokens |
 | GET | `/health` | liveness |
 | GET | `/ui` | dashboard |

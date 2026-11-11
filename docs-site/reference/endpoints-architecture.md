@@ -5,7 +5,8 @@
 | method | route | purpose |
 |---|---|---|
 | POST | `/v1/messages` | Anthropic Messages API; streams by default |
-| GET | `/v1/models` | model list |
+| POST | `/v1/chat/completions` | OpenAI Chat Completions, for any OpenAI client; streams when `stream` is true. The client's own system prompt and tools are passed through unchanged — this is an API, not the Claude Code agent. |
+| GET | `/v1/models` | model list, in both the Anthropic and the OpenAI shape |
 | POST | `/v1/messages/count_tokens` | token estimate |
 | GET | `/health` | liveness |
 | GET | `/ui` | dashboard |

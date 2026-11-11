@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './prompt.js';
+import { createOpenAiAdapter } from './openai.js';
+import { streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
 import { runCompletion, workerConfig } from './cli.js';
 let directCompletion = null;
@@ -472,7 +474,16 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && (path === '/v1/models' || path === '/models')) {
     return send(res, 200, {
-      data: cachedModels().map((m) => ({ type: 'model', id: m, display_name: m, created_at: new Date(0).toISOString() })),
+      object: 'list',
+      data: cachedModels().map((m) => ({
+        id: m,
+        object: 'model',
+        type: 'model',
+        display_name: m,
+        owned_by: 'qoder',
+        created: 0,
+        created_at: new Date(0).toISOString(),
+      })),
       has_more: false,
     });
   }
@@ -486,6 +497,33 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: e.message } });
     }
+  }
+
+  if (req.method === 'POST' && (path === '/v1/chat/completions' || path === '/chat/completions')) {
+    let body;
+    try {
+      body = JSON.parse((await readBody(req)) || '{}');
+    } catch (e) {
+      return send(res, 400, { error: { message: e.message, type: 'invalid_request_error' } });
+    }
+    const stream = body.stream === true;
+    const includeUsage = Boolean(body.stream_options?.include_usage);
+    const adapter = createOpenAiAdapter({ res, model: body.model || 'Auto', stream, includeUsage });
+    const ac = new AbortController();
+    res.on('close', () => { if (!res.writableEnded) ac.abort(); });
+    const t0 = Date.now();
+    let out;
+    try {
+      out = await streamChat({ body, signal: ac.signal, onEvent: (ev) => adapter.event(ev.type, ev) });
+    } catch (e) {
+      out = { error: e.message || String(e) };
+    }
+    if (out.error && !adapter.started) {
+      return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
+    }
+    log(`  chat/completions model=${body.model || 'Auto'} total=${Date.now() - t0}ms`);
+    adapter.end();
+    return true;
   }
 
   if (req.method === 'POST' && (path === '/v1/messages' || path === '/messages')) {
