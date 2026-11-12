@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.19.3
+
+- Installing now wires OpenCode too: `scripts/enable-here.js` writes the provider with the 1M window and tool capabilities when OpenCode is detected, instead of leaving it for a manual `qclaude integrations opencode`.
+- The running bridge keeps that block current: whenever the model list changes, the OpenCode provider is rewritten with the same limits, so a new model shows up with 1M already declared.
+
 ## 1.19.2
 
 - The OpenCode provider now declares what the client needs to size the window: `limit: { context: 1000000, output: 128000 }` on every model, plus `tool_call`, `reasoning`, `attachment`, `temperature` and text+image input. Without those numbers OpenCode treats a custom model as small and compacts far too early — the 1M context never showed up.

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cachedModels, refreshModels, refreshRemote } from '../src/models.js';
 import { pickerFor } from '../src/claudePicker.js';
+import { applyOpenCode, detect } from '../src/integrations.js';
 import { ensureExa, EXA_URL } from '../src/exaSetup.js';
 import { withWebTools } from '../src/claudeSettings.js';
 
@@ -65,5 +66,12 @@ if (exa.added) console.log(`exa -> ${EXA_URL} (user scope)`);
 else if (exa.skipped === 'already') console.log('exa -> already configured');
 else if (exa.skipped === 'disabled') console.log('exa -> skipped (QODER_NO_EXA=1)');
 else console.log(`exa -> not configured: ${exa.error}`);
+
+const installed = detect();
+if (installed.opencode.installed) {
+  const applied = applyOpenCode({ models: cachedModels() });
+  if (applied.ok) console.log(`opencode -> qoder-claude provider (${applied.models.length} models, 1M context)`);
+  else console.warn(`opencode -> not updated: ${applied.error}`);
+}
 
 console.log('open it with: qclaude');

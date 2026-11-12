@@ -14,6 +14,7 @@ let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, onModelsChanged, refreshRemote, startModelRefresh } from './models.js';
 import { applyModelPicker } from './claudePicker.js';
+import { applyOpenCode, detect } from './integrations.js';
 import { startQuotaPolling } from './quota.js';
 import { startRewardPolling } from './rewards.js';
 import { handleUi } from './uiApi.js';
@@ -619,16 +620,26 @@ server.listen(PORT, HOST, () => {
   log(LOG_FILE ? `log:     ${LOG_FILE}` : 'log:     console');
   log('close this window or press Ctrl+C to stop.');
   log(`models: ${cachedModels().slice(0, 5).join(', ')}, ...`);
-  if (process.env.CLAUDE_PICKER_SYNC !== '0') {
+  const syncClients = process.env.CLAUDE_PICKER_SYNC !== '0';
+  const syncOpenCode = () => {
+    try {
+      if (!detect().opencode.installed) return;
+      const result = applyOpenCode({ models: cachedModels() });
+      if (result.changed) log(`opencode: ${result.models.length} models with 1M context`);
+    } catch {}
+  };
+  if (syncClients) {
     onModelsChanged(() => {
       const result = applyModelPicker();
       if (result.changed) log(`claude picker: ${result.count} models`);
+      syncOpenCode();
     });
     refreshRemote()
       .catch(() => {})
       .finally(() => {
         const first = applyModelPicker();
         if (first.changed) log(`claude picker: ${first.count} models`);
+        syncOpenCode();
       });
   }
   startModelRefresh();
