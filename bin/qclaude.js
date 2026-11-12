@@ -59,7 +59,7 @@ async function isUp() {
   } catch {
     return false;
   }
-}async function startServer({ window = true, persist = false } = {}) {
+}async function startServer({ window = true, persist = false, title = 'qoder-claude' } = {}) {
   if (await isUp()) return null;
   if (!fs.existsSync(serverEntry)) {
     console.error(`qclaude: server not found at ${serverEntry}`);
@@ -67,7 +67,7 @@ async function isUp() {
   }
 
   if (window) {
-    if (openServerWindow()) {
+    if (openServerWindow(title)) {
       for (let i = 0; i < 120; i++) {
         if (await isUp()) return null;
         await wait(500);
@@ -127,13 +127,13 @@ function hasCommand(bin) {
   }
 }
 
-function openServerWindow() {
+function openServerWindow(title = 'qoder-claude') {
   const script = path.join(ROOT, process.platform === 'win32' ? 'start.cmd' : 'start.sh');
   if (!fs.existsSync(script)) return false;
 
   try {
     if (process.platform === 'win32') {
-      spawn(`start "qoder-claude" cmd /k "${script}"`, {
+      spawn(`start "${title}" cmd /k "${script}"`, {
         cwd: ROOT,
         shell: true,
         detached: true,
@@ -873,7 +873,7 @@ OpenCode: provider "qoder-claude" already up to date -> ${result.path}`);
 }
 
 if (args[0] === 'opencode') {
-  await startServer({ window: true, persist: true });
+  await startServer({ window: true, persist: true, title: 'qoder-claude - OpenCode Mode' });
   openDashboard();
   const child = spawn('opencode', args.slice(1), { stdio: 'inherit', shell: true, env: process.env });
   child.on('exit', (code) => process.exit(code ?? 0));
@@ -884,7 +884,7 @@ if (args[0] === 'opencode') {
     console.error('qclaude: OpenBot not found. Install it, or open it once so its folder exists.');
     process.exit(1);
   }
-  await startServer({ window: true, persist: true });
+  await startServer({ window: true, persist: true, title: 'qoder-claude - OpenBot Mode' });
   openDashboard();
   const child = spawn(exe, [], { detached: true, stdio: 'ignore' });
   child.unref();

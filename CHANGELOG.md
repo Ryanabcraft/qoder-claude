@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.18.2
+
+- The console window says which mode it is serving: `qoder-claude - OpenCode Mode` or `qoder-claude - OpenBot Mode`, instead of the generic title for both.
+
 ## 1.18.1
 
 - `qclaude openbot` and `qclaude opencode` left the bridge watching the launcher's process id, so the server shut down three seconds after the command returned. Both now start it in a console window that stays open, independent of the launcher.
