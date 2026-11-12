@@ -99,6 +99,7 @@ function sseWriter(res) {
 }
 
 function errorStatus(message) {
+  if (/(?:^|D)402(?:D|$)|payment required/i.test(message)) return 402;
   if (/billing|daily count|quota|403|not logged in|unauthori[sz]ed/i.test(message)) return 400;
   if (/rate.?limit|429/i.test(message)) return 429;
   if (/timeout|stall|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND/i.test(message)) return 503;
@@ -107,6 +108,7 @@ function errorStatus(message) {
 
 function errorType(status) {
   if (status === 400) return 'invalid_request_error';
+  if (status === 402) return 'insufficient_quota';
   if (status === 429) return 'rate_limit_error';
   if (status === 503) return 'overloaded_error';
   return 'api_error';
@@ -199,6 +201,24 @@ async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => t
     if (!canRotate()) break;
   }
 
+  return last;
+}
+
+async function runOpenAiWithRotation({ body, signal, onEvent, canRotate = () => true, log }) {
+  const accounts = candidateAccounts();
+  let last = { error: 'no account available', account: '' };
+  for (const account of accounts) {
+    const out = await streamChat({ body, signal, onEvent, dir: account.dir });
+    if (!out.error) {
+      clearCooldown(account.name);
+      return { ...out, account: account.name };
+    }
+    last = { ...out, account: account.name };
+    if (!isRotatable(out.error)) break;
+    markCooldown(account.name, out.error);
+    log(`  account ${account.name} paused: ${String(out.error).slice(0, 160)}`);
+    if (!canRotate()) break;
+  }
   return last;
 }
 
@@ -514,7 +534,13 @@ const server = http.createServer(async (req, res) => {
     const t0 = Date.now();
     let out;
     try {
-      out = await streamChat({ body, signal: ac.signal, onEvent: (ev) => adapter.event(ev.type, ev) });
+      out = await runOpenAiWithRotation({
+        body,
+        signal: ac.signal,
+        onEvent: (ev) => adapter.event(ev.type, ev),
+        canRotate: () => !adapter.started,
+        log,
+      });
     } catch (e) {
       out = { error: e.message || String(e) };
     }

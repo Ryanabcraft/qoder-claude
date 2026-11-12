@@ -117,10 +117,10 @@ function parseEnvelope(line) {
 
 // Streams the upstream answer as Anthropic-shaped events, which is what the
 // adapter already knows how to turn into OpenAI chunks.
-export async function streamChat({ body, signal, onEvent }) {
+export async function streamChat({ body, signal, onEvent, dir = '' }) {
   let ctx;
   try {
-    ({ ctx } = context());
+    ({ ctx } = context(dir));
   } catch (e) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }

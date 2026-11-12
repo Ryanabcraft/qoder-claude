@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.18.4
+
+- Failover now recognises HTTP `402` / `payment required` as a spent account. Before, an exhausted plan that answered 402 without the word "quota" in the body paused nothing and the request failed on the same account.
+- The OpenAI-compatible endpoint rotates too. `/v1/chat/completions` called the transport directly, so OpenBot never moved to the next account; it now walks the same pool as Claude Code, pausing a dead account and retrying on the next one, and only commits once the stream has started.
+
 ## 1.18.3
 
 - Quota no longer calls an exhausted add-on a dead plan. When `userQuota.total` is 0 and only the add-on has a balance, the account reads **Add-on credits used up** with `200/200 add-on` and **plan without a fixed quota**, instead of a red "quota exceeded" that contradicted a working session.

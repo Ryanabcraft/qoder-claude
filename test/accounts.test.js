@@ -34,3 +34,10 @@ test('disabled accounts leave the pool', () => {
 });
 
 test.after(() => fs.rmSync(home, { recursive: true, force: true }));
+
+test('a 402 payment error is rotatable', async () => {
+  const { isRotatable } = await import('../src/accounts.js');
+  assert.equal(isRotatable('upstream 402: {"message":"payment required"}'), true);
+  assert.equal(isRotatable('upstream 402: {"code":"QoderQuotaExhausted"}'), true);
+  assert.equal(isRotatable('upstream 502: bad gateway'), false);
+});
