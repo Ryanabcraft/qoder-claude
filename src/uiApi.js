@@ -46,10 +46,22 @@ function sendFile(res, file, type) {
   });
 }
 
+const MAX_BODY = 1024 * 1024;
+
 function readBody(req) {
   return new Promise((resolve) => {
     const chunks = [];
-    req.on('data', (c) => chunks.push(c));
+    let size = 0;
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > MAX_BODY) {
+        chunks.length = 0;
+        req.destroy();
+        resolve({});
+        return;
+      }
+      chunks.push(c);
+    });
     req.on('end', () => {
       try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { resolve({}); }
     });

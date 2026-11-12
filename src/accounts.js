@@ -28,16 +28,56 @@ function normalize(data) {
   return out;
 }
 
-export function loadAccounts() {
+let recoveredFrom = null;
+
+function readAccountsFile(file) {
   try {
-    return normalize(JSON.parse(fs.readFileSync(FILE, 'utf8')));
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return data && typeof data === 'object' && data.accounts && Object.keys(data.accounts).length ? data : null;
   } catch {
-    return JSON.parse(JSON.stringify(FALLBACK));
+    return null;
   }
 }
 
+export function accountRecovery() {
+  return recoveredFrom;
+}
+
+export function loadAccounts() {
+  const direct = readAccountsFile(FILE);
+  if (direct) {
+    recoveredFrom = null;
+    return normalize(direct);
+  }
+  for (const candidate of [`${FILE}.bak`, `${FILE}.tmp`]) {
+    const copy = readAccountsFile(candidate);
+    if (copy) {
+      recoveredFrom = candidate;
+      return normalize(copy);
+    }
+  }
+  recoveredFrom = null;
+  return JSON.parse(JSON.stringify(FALLBACK));
+}
+
 export function saveAccounts(data) {
-  fs.writeFileSync(FILE, JSON.stringify(normalize(data), null, 2) + '\n');
+  const text = JSON.stringify(normalize(data), null, 2) + '\n';
+  try {
+    if (fs.existsSync(FILE)) {
+      if (readAccountsFile(FILE)) fs.copyFileSync(FILE, `${FILE}.bak`);
+      else fs.renameSync(FILE, `${FILE}.corrupt-${Date.now()}`);
+    }
+  } catch {}
+  const tmp = `${FILE}.tmp`;
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeFileSync(fd, text);
+    try { fs.fsyncSync(fd); } catch {}
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, FILE);
+  recoveredFrom = null;
 }
 
 export function activeAccount() {

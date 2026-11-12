@@ -37,6 +37,18 @@ export function credentials(dir, { force = false } = {}) {
 }
 
 export function context(dir, force = false) {
+  if (process.env.QODER_AUTH_FAKE === "1") {
+    return {
+      uid: "fake",
+      ctx: {
+        prepareInferRequest: (url, body) => ({
+          url: process.env.QODER_INFER_ENDPOINT || url,
+          headers: [],
+          body,
+        }),
+      },
+    };
+  }
   const entry = load(dir, force);
   if (entry.ctx && !force) return { ctx: entry.ctx, uid: entry.uid };
 

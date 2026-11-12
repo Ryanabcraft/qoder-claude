@@ -4,6 +4,7 @@ import path from 'node:path';
 import { WEB_TOOLS, ensureWebTools, settingsPath } from './claudeSettings.js';
 import { ensureExa, hasExa } from './exaSetup.js';
 import { cachedModels } from './models.js';
+import { pruneBackups } from './backups.js';
 
 export function claudeSettingsPath(home = os.homedir()) {
   return settingsPath(home);
@@ -75,6 +76,7 @@ export function updateClaudePrefs(patch = {}, home = os.homedir()) {
   } catch (e) {
     return { ok: false, error: `settings write failed: ${e.message}` };
   }
+  pruneBackups(file, '.bak-dashboard-');
   return { ok: true, prefs: readClaudePrefs(home) };
 }
 

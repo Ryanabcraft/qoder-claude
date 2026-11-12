@@ -1,5 +1,6 @@
 import { createStallTimer, stallMs } from './stall.js';
 import { context } from './qoderAuth.js';
+import { combineSignals } from './abort.js';
 import { resolveToolName, toolNames } from './toolNames.js';
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
@@ -152,7 +153,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
       method: 'POST',
       headers,
       body: req.body,
-      signal: AbortSignal.any([AbortSignal.timeout(timeout), ctrl.signal]),
+      signal: combineSignals([AbortSignal.timeout(timeout), ctrl.signal]),
     });
     stall.arm();
   } catch (e) {

@@ -44,3 +44,24 @@ Scope of this sheet: the repository, the sites, the docs, and the git/gh tooling
 - `npm test` and `npm run coverage` (thresholds 55/60/45; `src/ui` excluded).
 - `site` and `docs-site` builds pass; check the live URLs after a Pages deploy.
 - Re-verify anything in this sheet that smells stale before acting on it.
+
+## Invariants (learned the hard way — do not break these)
+
+- **Writes are atomic.** Every file the user cares about goes through `tmp` + `fsync` + `rename`
+  (`accounts.json`, `bridge.config.json`, `~/.claude/settings.json`, `opencode.json`,
+  `models.cache.json`, `metrics.jsonl`, `quota.jsonl`). `accounts.json` also keeps one `.bak`, and
+  a corrupt file is renamed to `.corrupt-<ts>` instead of being overwritten by the fallback.
+- **Upstream errors must surface.** A non-200 envelope from Qoder is an error, never an empty
+  `200`. The stream parsers keep it in `upstreamError` and return it; a swallowed status is what
+  made failover silently do nothing for three releases.
+- **Rotation happens before the first token only.** After `startStream()` the response belongs to
+  one account; `canRotate()` guards it on both endpoints (`/v1/messages` and
+  `/v1/chat/completions`).
+- **One tool catalog.** When tools go native, the text prompt carries names and short
+  descriptions, never the full schemas again. Two catalogs with two calling instructions is what
+  made models invent tools and stall.
+- **Tool names are matched, not trusted.** `resolveToolName` maps what the model said onto what the
+  client declared (`bash` → `Bash`, `openbot.send_message` → `mcp__openbot__send_message`).
+- **Tests run against a fake upstream.** `test/fixtures/fakeUpstream.js` plus `QODER_AUTH_FAKE=1`
+  exercise the real transport in-process; `test/e2e.test.js` runs the whole server. Do not add a
+  transport behaviour without a case there.

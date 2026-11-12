@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { cachedModels } from './models.js';
 import { settingsPath } from './claudeSettings.js';
+import { pruneBackups } from './backups.js';
 
 const BEHAVES_AS = process.env.QODER_BEHAVES_AS || 'claude-opus-4-8';
 
@@ -40,5 +41,6 @@ export function applyModelPicker({ home = os.homedir(), models = cachedModels(),
   } catch (e) {
     return { ok: false, error: `settings write failed: ${e.message}`, file };
   }
+  pruneBackups(file, '.bak-picker-');
   return { ok: true, changed: true, count: next.options.length, file };
 }

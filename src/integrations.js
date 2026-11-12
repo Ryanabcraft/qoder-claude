@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pruneBackups } from './backups.js';
 
 export const PROVIDER_ID = 'qoder-claude';
 
@@ -62,5 +63,6 @@ export function applyOpenCode({ file = null, models = [], baseURL, apiKey, setDe
   } catch (e) {
     return { ok: false, error: `write failed: ${e.message}`, path: target };
   }
+  pruneBackups(target, '.bak-qclaude-');
   return { ok: true, changed, path: target, models: Object.keys(provider.models) };
 }

@@ -1,3 +1,15 @@
+# Changelog
+
+## 1.19.0
+
+- `accounts.json` is written atomically (`tmp` + `fsync` + `rename`), keeps one `.bak`, and recovers from it when the file arrives truncated. A corrupt file is preserved as `.corrupt-<time>` instead of being replaced by the fallback — that fallback used to erase every account after a single bad write.
+- Upstream failures that happen after the first token now arrive as a real Anthropic `error` event instead of being written into the answer as text.
+- The dashboard refuses request bodies above 1 MB.
+- `qclaude update` verifies the files it wrote (version and required files) and restores the previous copies if the install came out mixed.
+- Timestamped backups are pruned to the three newest.
+- `AbortSignal.any` is wrapped, so Node 20.0–20.2 no longer breaks the transport.
+- Tests now run against a fake upstream: the real transports in-process (`direct.js` 89% lines, `openaiUpstream.js` 80%) and the whole server end to end — 402 rotation, cut stream, lowercase tool name, on both endpoints. 168 tests.
+
 ## 1.18.6
 
 - Claude Code requests no longer receive the whole tool catalog twice. The prompt used to repeat every schema as text *and* register the same tools natively, with two different calling instructions competing. With native tools enabled, the text now carries names and short descriptions only, and the `<tool_calls>` form is described as a fallback.

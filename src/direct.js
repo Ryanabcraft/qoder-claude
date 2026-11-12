@@ -2,6 +2,7 @@ import { deferredTools, renderMessageContent, systemToText } from './prompt.js';
 import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
 import { context, forgetContext } from './qoderAuth.js';
+import { combineSignals } from './abort.js';
 
 export { forgetContext };
 
@@ -107,7 +108,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
       method: 'POST',
       headers,
       body: req.body,
-      signal: AbortSignal.any([AbortSignal.timeout(timeout), ctrl.signal]),
+      signal: combineSignals([AbortSignal.timeout(timeout), ctrl.signal]),
     });
     stall.arm();
   } catch (e) {

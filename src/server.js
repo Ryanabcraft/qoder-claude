@@ -431,10 +431,7 @@ async function handleMessages(req, res, body) {
       return send(res, status, errorBody(out.error, status));
     }
     stopText();
-    write('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `qoder-claude: ${out.error}` } });
-    write('content_block_stop', { type: 'content_block_stop', index: 0 });
-    write('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 6 } });
-    write('message_stop', { type: 'message_stop' });
+    write('error', { type: 'error', error: { type: errorType(errorStatus(out.error)), message: out.error } });
     return res.end();
   }
 
