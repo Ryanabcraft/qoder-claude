@@ -114,16 +114,23 @@ function shortDesc(d, max = 240) {
   return s.length > max ? s.slice(0, max) + '...' : s;
 }
 
-function toolsToText(tools) {
-  const lines = [
-    'TOOLS (real, executed by the caller):',
-    `Use a tool by replying with ${MARK}[{"name":"<tool>","input":{...}}]</tool_calls> and no prose around it.`,
-    'Input must match the schema. If no tool is needed, answer normally.',
-    '',
-  ];
+function toolsToText(tools, { native = false } = {}) {
+  const lines = native
+    ? [
+        'TOOLS: registered in the function-calling interface. Call them as native tool calls.',
+        `Only if that interface rejects the call, reply with ${MARK}[{"name":"<tool>","input":{...}}]</tool_calls> and no prose around it.`,
+        'Input must match each tool schema. If no tool is needed, answer normally.',
+        '',
+      ]
+    : [
+        'TOOLS (real, executed by the caller):',
+        `Use a tool by replying with ${MARK}[{"name":"<tool>","input":{...}}]</tool_calls> and no prose around it.`,
+        'Input must match the schema. If no tool is needed, answer normally.',
+        '',
+      ];
   for (const t of tools) {
     lines.push(`- ${t.name}: ${shortDesc(t.description)}`.trim());
-    if (t.input_schema) lines.push(`  schema: ${JSON.stringify(t.input_schema)}`);
+    if (t.input_schema && !native) lines.push(`  schema: ${JSON.stringify(t.input_schema)}`);
   }
   return lines.join('\n');
 }
@@ -183,7 +190,7 @@ function withDeferred(tools, context) {
   return extra.length ? [...tools, ...extra] : tools;
 }
 
-export function buildPrompt(body, from = 0, log) {
+export function buildPrompt(body, from = 0, log, { nativeTools = false } = {}) {
   const system = normalizeSystem(body.system);
   const all = Array.isArray(body.messages) ? body.messages : [];
   const msgs = from > 0 ? all.slice(from) : all;
@@ -223,7 +230,7 @@ export function buildPrompt(body, from = 0, log) {
 
   const parts = [];
   if (from === 0 && Array.isArray(body.tools) && body.tools.length) {
-    parts.push(toolsToText(withDeferred(body.tools, context)), '');
+    parts.push(toolsToText(withDeferred(body.tools, context), { native: nativeTools }), '');
   }
 
   parts.push('[CONVERSATION]');

@@ -227,7 +227,7 @@ async function handleMessages(req, res, body) {
   const t0 = Date.now();
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
-  const built = buildPrompt(body, 0, log);
+  const built = buildPrompt(body, 0, log, { nativeTools: true });
   const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
@@ -513,7 +513,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const raw = await readBody(req);
       const body = JSON.parse(raw || '{}');
-      const built = buildPrompt(body);
+      const built = buildPrompt(body, 0, undefined, { nativeTools: true });
       return send(res, 200, { input_tokens: estimate(built.prompt) + estimateImageTokens(built.images) });
     } catch (e) {
       return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: e.message } });

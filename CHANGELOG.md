@@ -1,4 +1,7 @@
-# Changelog
+## 1.18.6
+
+- Claude Code requests no longer receive the whole tool catalog twice. The prompt used to repeat every schema as text *and* register the same tools natively, with two different calling instructions competing. With native tools enabled, the text now carries names and short descriptions only, and the `<tool_calls>` form is described as a fallback.
+- On a 20-tool catalog that is 27% fewer prompt characters, and the conflicting instruction is gone — the usual cause of a model inventing a tool or going quiet.
 
 ## 1.18.5
 

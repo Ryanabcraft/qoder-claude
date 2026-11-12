@@ -138,3 +138,15 @@ test('buildPrompt produces anthropic blocks with an image', () => {
   assert.ok(imageBlock);
   assert.equal(imageBlock.source.media_type, 'image/png');
 });
+
+test('native tools are not duplicated as text schemas', async () => {
+  const { buildPrompt } = await import('../src/prompt.js');
+  const tools = Array.from({ length: 12 }, (_, i) => ({ name: `Tool${i}`, description: 'run', input_schema: { type: 'object', properties: { command: { type: 'string' } } } }));
+  const body = { system: 's', messages: [{ role: 'user', content: 'hi' }], tools };
+  const native = buildPrompt(body, 0, undefined, { nativeTools: true }).prompt;
+  const legacy = buildPrompt(body).prompt;
+  assert.ok(native.includes('Native') === false || native.includes('function-calling interface'));
+  assert.ok(!native.includes('schema:'), 'the schema is not repeated when the call is native');
+  assert.ok(legacy.includes('schema:'), 'the textual fallback still carries the schema');
+  assert.ok(native.length < legacy.length, 'with a real catalog the compact block is smaller');
+});
