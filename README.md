@@ -101,7 +101,9 @@ curl http://127.0.0.1:8787/v1/chat/completions \
 `GET /v1/models` answers in the OpenAI shape (`{"object":"list"}`). This path does **not** go through
 Claude Code: the client's system prompt and tools are sent to Qoder exactly as written, and native
 tool calls come back as `tool_calls`. Point OpenBot's custom OpenAI-compatible provider at
-`http://127.0.0.1:8787/v1`.
+`http://127.0.0.1:8787/v1`. `qclaude integrations opencode` writes the same endpoint plus the
+1M context window and tool capabilities into OpenCode, so its picker shows a 1M model instead of a
+small one.
 
 ## What works
 

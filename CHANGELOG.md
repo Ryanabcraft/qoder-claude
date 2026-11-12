@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.19.2
+
+- The OpenCode provider now declares what the client needs to size the window: `limit: { context: 1000000, output: 128000 }` on every model, plus `tool_call`, `reasoning`, `attachment`, `temperature` and text+image input. Without those numbers OpenCode treats a custom model as small and compacts far too early — the 1M context never showed up.
+- `qclaude integrations opencode` writes the metadata on every run, so re-running it after a model-list change keeps the limits.
+
 ## 1.19.1
 
 - Opening `qclaude` could erase the Claude Code settings. `ensureWebTools` treated an unparseable `~/.claude/settings.json` as `{}` and wrote over it, taking hooks, env, model and plugins with it. It now refuses to write an unreadable file, and uses a timestamped backup plus `tmp` + `rename`.

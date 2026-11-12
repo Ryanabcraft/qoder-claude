@@ -25,10 +25,26 @@ export function detect(opts = {}) {
   };
 }
 
-export function opencodeProvider({ baseURL = 'http://127.0.0.1:8787/v1', apiKey = 'dummy', models = ['Auto'] } = {}) {
+// The client sizes its context window from these numbers, so a model without
+// them is treated as small and compacted early.
+export const MODEL_LIMITS = { context: 1000000, output: 128000 };
+
+export function modelMeta(model, { context = MODEL_LIMITS.context, output = MODEL_LIMITS.output } = {}) {
+  return {
+    name: model,
+    limit: { context, output },
+    tool_call: true,
+    reasoning: true,
+    attachment: true,
+    temperature: true,
+    modalities: { input: ['text', 'image'], output: ['text'] },
+  };
+}
+
+export function opencodeProvider({ baseURL = 'http://127.0.0.1:8787/v1', apiKey = 'dummy', models = ['Auto'], context, output } = {}) {
   const list = models.length ? models : ['Auto'];
   const map = {};
-  for (const model of list) map[model] = { name: model };
+  for (const model of list) map[model] = modelMeta(model, { context, output });
   return {
     npm: '@ai-sdk/openai-compatible',
     name: 'qoder-claude',

@@ -64,3 +64,15 @@ test('detect reports what is installed', () => {
   assert.equal(typeof state.opencode.installed, 'boolean');
   assert.equal(typeof state.openbot.installed, 'boolean');
 });
+
+test('every model declares the 1M window and its capabilities', () => {
+  const provider = opencodeProvider({ models: ['Auto', 'GLM-5.3'] });
+  for (const model of ['Auto', 'GLM-5.3']) {
+    const meta = provider.models[model];
+    assert.equal(meta.limit.context, 1000000);
+    assert.equal(meta.limit.output, 128000);
+    assert.equal(meta.tool_call, true);
+    assert.equal(meta.reasoning, true);
+    assert.deepEqual(meta.modalities.input, ['text', 'image']);
+  }
+});
