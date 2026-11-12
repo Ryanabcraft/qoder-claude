@@ -1,5 +1,6 @@
 import { createStallTimer, stallMs } from './stall.js';
 import { context } from './qoderAuth.js';
+import { resolveToolName, toolNames } from './toolNames.js';
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
@@ -125,6 +126,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
   const payload = upstreamPayload(body);
+  const availableTools = toolNames(body.tools);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), payload.model, '');
   const headers = Object.fromEntries(req.headers);
 
@@ -174,6 +176,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
   let text = '';
   let usage = {};
   let stopReason = null;
+  let upstreamError = null;
   let nextIndex = 0;
   let textIndex = -1;
   const calls = new Map();
@@ -197,7 +200,12 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     const data = line.slice(5).trim();
     if (!data || data === '[DONE]') return;
     let chunk;
-    try { chunk = parseEnvelope(data); } catch { return; }
+    try {
+      chunk = parseEnvelope(data);
+    } catch (e) {
+      if (!upstreamError) upstreamError = e.message || String(e);
+      return;
+    }
     if (chunk.usage) usage = chunk.usage;
     const choice = chunk.choices && chunk.choices[0];
     if (!choice) return;
@@ -220,7 +228,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
         }
         if (call.id) entry.id = call.id;
         if (call.function?.name && !entry.name) {
-          entry.name = call.function.name;
+          entry.name = resolveToolName(call.function.name, availableTools);
           onEvent?.({
             type: 'content_block_start',
             index: entry.index,
@@ -275,5 +283,5 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     delta: { stop_reason: stop, stop_sequence: null },
     usage: { input_tokens: Number(usage.prompt_tokens) || 0, output_tokens: Number(usage.completion_tokens) || 0 },
   });
-  return { text, usage, error: null, stopReason: stop };
+  return { text, usage, error: upstreamError, stopReason: stop };
 }

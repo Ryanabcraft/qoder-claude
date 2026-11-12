@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.18.5
+
+- The real cause of the dead failover: the stream parser caught the upstream's non-200 envelope and threw it away, so a 402/403 arrived at the client as an empty `200` and no account was ever paused. Upstream status errors now surface and rotate the account.
+- Tool names are matched against the catalog the client actually sent, on both endpoints: `bash` resolves to `Bash`, `openbot.send_message` to `mcp__openbot__send_message`, case and separators ignored. A model calling a lowercase tool no longer ends with "No such tool available".
+- A stream that dies mid-flight (`fetch failed`, `terminated`, `premature close`) is treated as a network failure and rotates instead of ending the turn with nothing.
+
 ## 1.18.4
 
 - Failover now recognises HTTP `402` / `payment required` as a spent account. Before, an exhausted plan that answered 402 without the word "quota" in the body paused nothing and the request failed on the same account.

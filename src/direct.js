@@ -129,6 +129,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   let text = '';
   let usage = {};
   let stopReason = null;
+  let upstreamError = null;
   const calls = new Map();
   const decoder = new TextDecoder();
   let buf = '';
@@ -139,7 +140,12 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     const data = line.slice(5).trim();
     if (!data || data === '[DONE]') return;
     let chunk;
-    try { chunk = parseEnvelope(data); } catch (e) { return; }
+    try {
+      chunk = parseEnvelope(data);
+    } catch (e) {
+      if (!upstreamError) upstreamError = e.message || String(e);
+      return;
+    }
 
     if (chunk.usage) usage = chunk.usage;
     const choice = chunk.choices && chunk.choices[0];
@@ -202,5 +208,5 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     }
   }
 
-  return { text, usage, error: null, stopReason };
+  return { text, usage, error: upstreamError, stopReason };
 }

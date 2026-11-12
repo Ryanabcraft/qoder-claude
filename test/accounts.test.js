@@ -41,3 +41,10 @@ test('a 402 payment error is rotatable', async () => {
   assert.equal(isRotatable('upstream 402: {"code":"QoderQuotaExhausted"}'), true);
   assert.equal(isRotatable('upstream 502: bad gateway'), false);
 });
+
+test('a cut stream is rotatable as a network failure', async () => {
+  const { isRotatable } = await import('../src/accounts.js');
+  assert.equal(isRotatable('fetch failed'), true);
+  assert.equal(isRotatable('terminated'), true);
+  assert.equal(isRotatable('premature close'), true);
+});

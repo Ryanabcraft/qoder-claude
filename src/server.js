@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './prompt.js';
+import { resolveToolName, toolNames } from './toolNames.js';
 import { createOpenAiAdapter } from './openai.js';
 import { streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
@@ -102,7 +103,7 @@ function errorStatus(message) {
   if (/(?:^|D)402(?:D|$)|payment required/i.test(message)) return 402;
   if (/billing|daily count|quota|403|not logged in|unauthori[sz]ed/i.test(message)) return 400;
   if (/rate.?limit|429/i.test(message)) return 429;
-  if (/timeout|stall|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND/i.test(message)) return 503;
+  if (/timeout|stall|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND|fetch failed|terminated|premature close|hang up/i.test(message)) return 503;
   return 502;
 }
 
@@ -130,12 +131,12 @@ const TOOL_ALIASES = { web_search: 'WebSearch', web_fetch: 'WebFetch' };
 
 // Deferred tools (WebSearch, WebFetch, MCP) are not in the request's tool list, so
 // filtering by that list would swallow a real call. Only the alias needs fixing.
-function alignToolCalls(tc, { preferExa = false } = {}) {
+function alignToolCalls(tc, { preferExa = false, available = [] } = {}) {
   if (!tc) return null;
   return {
     ...tc,
     calls: tc.calls.map((c) => {
-      const name = TOOL_ALIASES[c.name.toLowerCase()] || c.name;
+      const name = resolveToolName(TOOL_ALIASES[c.name.toLowerCase()] || c.name, available);
       if (preferExa && name === 'WebSearch') {
         const query = c.input?.query || c.input?.q || '';
         return { name: 'mcp__exa__web_search_exa', input: query ? { query } : c.input || {} };
@@ -294,7 +295,7 @@ async function handleMessages(req, res, body) {
       return send(res, status, errorBody(out.error, status));
     }
     const rawCalls = wantsTools ? extractToolCalls(out.text) : null;
-    const tc = rawCalls ? alignToolCalls(rawCalls, { preferExa }) : null;
+    const tc = rawCalls ? alignToolCalls(rawCalls, { preferExa, available: toolNames(body.tools) }) : null;
     const content = [];
     if (tc) {
       if (tc.before) content.push({ type: 'text', text: tc.before });
@@ -442,7 +443,7 @@ async function handleMessages(req, res, body) {
   const full = out.text || '';
   const parsed = wantsTools ? extractToolCalls(full) : null;
   if (parsed) log('  model tool calls: ' + parsed.calls.map((c) => c.name).join(', '));
-  const tc = alignToolCalls(parsed, { preferExa });
+  const tc = alignToolCalls(parsed, { preferExa, available: toolNames(body.tools) });
 
   if (tc) {
     if (tc.before && !emitted) emitText(tc.before);
