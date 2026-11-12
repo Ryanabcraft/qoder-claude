@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pruneBackups } from './backups.js';
 
 export const WEB_TOOLS = [
   'WebSearch',
@@ -27,15 +28,28 @@ export function withWebTools(settings) {
 }
 
 export function ensureWebTools(file = settingsPath()) {
+  const exists = fs.existsSync(file);
   let current = {};
-  try {
-    current = JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    current = {};
+  if (exists) {
+    try {
+      current = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+      // An unreadable settings file is never replaced: {} would erase hooks,
+      // env, model and plugins the user configured.
+      return { ok: false, changed: false, error: `${file} is not valid JSON; left untouched` };
+    }
   }
   const { settings, changed } = withWebTools(current);
-  if (!changed) return false;
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(settings, null, 2) + '\n');
-  return true;
+  if (!changed) return { ok: true, changed: false };
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    if (exists) fs.copyFileSync(file, `${file}.bak-qclaude-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+    const tmp = `${file}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(settings, null, 2) + '\n');
+    fs.renameSync(tmp, file);
+    pruneBackups(file, '.bak-qclaude-');
+  } catch (e) {
+    return { ok: false, changed: false, error: e.message };
+  }
+  return { ok: true, changed: true };
 }

@@ -3,44 +3,54 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureWebTools, WEB_TOOLS, withWebTools } from '../src/claudeSettings.js';
+import { ensureWebTools, withWebTools } from '../src/claudeSettings.js';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qclaude-settings-'));
-
-test.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-
-test('web tools are merged into permissions.allow', () => {
-  const { settings, changed } = withWebTools({ permissions: { allow: ['mcp__pencil'] } });
-  assert.equal(changed, true);
-  assert.deepEqual(settings.permissions.allow, ['mcp__pencil', ...WEB_TOOLS]);
-});
-
-test('merging twice changes nothing', () => {
-  const first = withWebTools({ permissions: { allow: [] } });
-  const second = withWebTools(first.settings);
-  assert.equal(second.changed, false);
-  assert.deepEqual(second.settings, first.settings);
-});
-
-test('a settings object without permissions gets one', () => {
-  const { settings } = withWebTools({ model: 'Auto' });
-  assert.equal(settings.model, 'Auto');
-  assert.deepEqual(settings.permissions.allow, WEB_TOOLS);
-});
-
-test('ensureWebTools writes once and then reports no change', () => {
+function sandbox(contents) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qc-claude-settings-'));
   const file = path.join(dir, 'settings.json');
-  fs.writeFileSync(file, JSON.stringify({ permissions: { allow: ['WebSearch'] } }));
-  assert.equal(ensureWebTools(file), true);
-  const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-  for (const tool of WEB_TOOLS) assert.ok(saved.permissions.allow.includes(tool));
-  assert.equal(saved.permissions.allow.filter((t) => t === 'WebSearch').length, 1);
-  assert.equal(ensureWebTools(file), false);
+  if (contents !== undefined) fs.writeFileSync(file, contents);
+  return { dir, file };
+}
+
+test('a corrupt settings file is never overwritten', () => {
+  const raw = '{"env": {"A": "1"},}';
+  const { file } = sandbox(raw);
+  const result = ensureWebTools(file);
+  assert.equal(result.ok, false);
+  assert.match(result.error, /not valid JSON/);
+  assert.equal(fs.readFileSync(file, 'utf8'), raw, 'the file stays byte for byte');
 });
 
-test('ensureWebTools creates a missing file', () => {
-  const file = path.join(dir, 'new', 'settings.json');
-  assert.equal(ensureWebTools(file), true);
+test('valid settings gain the web tools and keep everything else', () => {
+  const { file } = sandbox(JSON.stringify({ model: 'Auto', env: { A: '1' }, permissions: { allow: ['Read'] } }, null, 2));
+  const result = ensureWebTools(file);
+  assert.equal(result.ok, true);
+  assert.equal(result.changed, true);
   const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-  assert.deepEqual(saved.permissions.allow, WEB_TOOLS);
+  assert.equal(saved.model, 'Auto');
+  assert.deepEqual(saved.env, { A: '1' });
+  assert.ok(saved.permissions.allow.includes('Read'));
+  assert.ok(saved.permissions.allow.includes('WebSearch'));
+  assert.equal(fs.existsSync(`${file}.tmp`), false);
+});
+
+test('a second pass changes nothing', () => {
+  const { file } = sandbox('{}');
+  assert.equal(ensureWebTools(file).changed, true);
+  assert.equal(ensureWebTools(file).changed, false);
+});
+
+test('a missing file is created', () => {
+  const { file } = sandbox();
+  const result = ensureWebTools(file);
+  assert.equal(result.ok, true);
+  assert.ok(fs.existsSync(file));
+});
+
+test('withWebTools is pure', () => {
+  const input = { permissions: { allow: ['Read'] } };
+  const { settings, changed } = withWebTools(input);
+  assert.equal(changed, true);
+  assert.deepEqual(input.permissions.allow, ['Read'], 'the input is untouched');
+  assert.ok(settings.permissions.allow.includes('WebSearch'));
 });

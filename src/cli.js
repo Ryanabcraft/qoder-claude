@@ -43,7 +43,11 @@ export function resolveModel(requested) {
     if (/haiku/i.test(name)) return process.env.QODER_MODEL_HAIKU || 'Fast';
     if (/sonnet/i.test(name)) return process.env.QODER_MODEL_SONNET || 'Auto';
   }
-  return cachedModels().includes(name) ? name : DEFAULT_MODEL;
+  if (name && cachedModels().includes(name)) return name;
+  if (name && process.env.BRIDGE_LOG !== '0') {
+    console.warn(`  model "${name}" is not in the list; using ${DEFAULT_MODEL}`);
+  }
+  return DEFAULT_MODEL;
 }
 
 function baseArgs(cfg) {

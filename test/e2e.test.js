@@ -124,3 +124,15 @@ test('a stream that dies mid-flight rotates instead of ending empty', async () =
   const after = Object.keys(accounts().cooldowns || {}).length;
   assert.ok(after >= before, 'the failure was accounted for');
 });
+
+test('POST /stop ends the process', async () => {
+  const alive = proc.exitCode === null;
+  assert.equal(alive, true, 'the server is still running before the call');
+  const res = await post('/ui/api/stop', {});
+  assert.equal(res.status, 200);
+  for (let i = 0; i < 40; i += 1) {
+    if (proc.exitCode !== null) break;
+    await wait(100);
+  }
+  assert.notEqual(proc.exitCode, null, 'the process exited');
+});

@@ -1002,8 +1002,11 @@ function renderHealth() {
   const h = state.health;
   if (!h) return;
   const banner = $('#health-status');
-  banner.className = 'status-banner';
-  banner.innerHTML = '<span class="dot ok"></span><span>All systems operational</span>';
+  const exposed = Boolean(state.status?.exposed);
+  banner.className = exposed ? 'status-banner warn' : 'status-banner';
+  banner.innerHTML = exposed
+    ? '<span class="dot"></span><span>Reachable from the network without an API key</span>'
+    : '<span class="dot ok"></span><span>All systems operational</span>';
   const right = el('span', 'muted small');
   right.style.marginLeft = 'auto';
   right.textContent = `${h.transport} · ${h.host}:${h.port}`;

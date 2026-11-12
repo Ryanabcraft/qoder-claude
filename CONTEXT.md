@@ -47,6 +47,9 @@ Scope of this sheet: the repository, the sites, the docs, and the git/gh tooling
 
 ## Invariants (learned the hard way — do not break these)
 
+- **An unreadable file is never replaced.** If `~/.claude/settings.json` or `accounts.json` exists
+  but does not parse, the writer returns an error and leaves the file byte-for-byte intact. `{}`
+  plus defaults is not a recovery — it is data loss.
 - **Writes are atomic.** Every file the user cares about goes through `tmp` + `fsync` + `rename`
   (`accounts.json`, `bridge.config.json`, `~/.claude/settings.json`, `opencode.json`,
   `models.cache.json`, `metrics.jsonl`, `quota.jsonl`). `accounts.json` also keeps one `.bak`, and

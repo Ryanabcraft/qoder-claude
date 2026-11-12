@@ -339,6 +339,21 @@ async function stopServer() {
     console.log('qclaude: server is not running.');
     return 0;
   }
+  try {
+    const key = process.env.BRIDGE_API_KEY;
+    await fetch(`http://127.0.0.1:${PORT}/ui/api/stop`, {
+      method: 'POST',
+      headers: key ? { 'x-api-key': key } : {},
+      signal: AbortSignal.timeout(3000),
+    });
+    for (let i = 0; i < 20; i += 1) {
+      if (!(await isUp())) {
+        console.log('qclaude: server stopped.');
+        return 0;
+      }
+      await wait(250);
+    }
+  } catch {}
   if (process.platform === 'win32') {
     spawn(`for /f "tokens=5" %p in ('netstat -ano ^| findstr ":${PORT} .*LISTENING"') do taskkill /f /pid %p >nul 2>&1`, {
       stdio: 'ignore',
@@ -1109,7 +1124,9 @@ if (args[0] === '--serve') {
   const exa = ensureExa({ bin: claudeBin });
   if (exa.added) console.log('qclaude: exa MCP configured (web search)');
   else if (exa.error) console.warn(`qclaude: exa MCP not configured (${exa.error}); web search may be unavailable.`);
-  if (ensureWebTools()) console.log('qclaude: web tool permissions updated');
+  const webTools = ensureWebTools();
+  if (webTools.changed) console.log('qclaude: web tool permissions updated');
+  if (!webTools.ok) console.warn(`qclaude: ${webTools.error}`);
   const child = await startServer({ window: wantWindow });
 
   if (claudeArgs.length === 0) {

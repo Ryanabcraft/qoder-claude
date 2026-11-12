@@ -19,6 +19,7 @@ import {
 import { cachedModels, modelsStatus, refreshModels, refreshRemote } from './models.js';
 import { applyModelPicker } from './claudePicker.js';
 import { resolveCli } from './cliPath.js';
+import { shutdownPool } from './cli.js';
 import { snapshot } from './metrics.js';
 import { publicConfig, saveConfig } from './config.js';
 import { applyWebTools, readClaudePrefs, updateClaudePrefs } from './claudePrefs.js';
@@ -155,6 +156,7 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
       sessions: health.sessions,
       pool: health.pool,
       apiKeySet: Boolean(process.env.BRIDGE_API_KEY),
+      exposed: !['127.0.0.1', 'localhost', '::1'].includes(String(process.env.BRIDGE_HOST || '127.0.0.1')) && !process.env.BRIDGE_API_KEY,
       configPath: health.paths.config,
       logPath: health.paths.log,
       envLocked: publicConfig().envLocked,
@@ -296,7 +298,10 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
 
   if (req.method === 'POST' && route === 'stop') {
     sendJson(res, 200, { ok: true });
-    setTimeout(() => process.exit(0), 150);
+    setTimeout(() => {
+      try { shutdownPool(); } catch {}
+      process.exit(0);
+    }, 150);
     return true;
   }
 
@@ -332,8 +337,10 @@ export async function handleUi(req, res, url, { authorized, logFile }) {
     const model = String(body.model || 'Auto').slice(0, 64);
     const started = Date.now();
     try {
-      const r = await fetch(`http://127.0.0.1:${process.env.BRIDGE_PORT || 8787}/v1/messages`, {
+      const port = req.socket?.localPort || Number(process.env.BRIDGE_PORT || 8787);
+      const r = await fetch(`http://127.0.0.1:${port}/v1/messages`, {
         method: 'POST',
+        signal: AbortSignal.timeout(60000),
         headers: {
           'content-type': 'application/json',
           ...(process.env.BRIDGE_API_KEY ? { 'x-api-key': process.env.BRIDGE_API_KEY } : {}),

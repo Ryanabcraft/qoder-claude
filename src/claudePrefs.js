@@ -84,7 +84,9 @@ export function applyWebTools() {
   const exa = ensureExa();
   let allow = false;
   try {
-    allow = ensureWebTools();
+    const result = ensureWebTools();
+    if (!result.ok) return { ok: false, error: result.error };
+    allow = result.changed;
   } catch (e) {
     return { ok: false, error: e.message };
   }

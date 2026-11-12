@@ -9,7 +9,7 @@ import { resolveToolName, toolNames } from './toolNames.js';
 import { createOpenAiAdapter } from './openai.js';
 import { streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
-import { runCompletion, workerConfig } from './cli.js';
+import { runCompletion, shutdownPool, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, onModelsChanged, refreshRemote, startModelRefresh } from './models.js';
@@ -30,6 +30,8 @@ import {
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
 const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
 const KEY = process.env.BRIDGE_API_KEY || '';
+const LOOPBACK = ['127.0.0.1', 'localhost', '::1'].includes(HOST);
+if (!LOOPBACK && !KEY) console.warn(`qclaude: listening on ${HOST} without BRIDGE_API_KEY - anyone on the network can use this bridge`);
 const TRANSPORT = process.env.BRIDGE_TRANSPORT || (directCompletion ? 'direct' : 'cli');
 const run = TRANSPORT === 'direct' && directCompletion ? directCompletion : runCompletion;
 const LOG_FILE = process.env.BRIDGE_LOG_FILE || '';
@@ -587,7 +589,11 @@ function removePidFile() {
 try { fs.writeFileSync(PID_PATH, String(process.pid)); } catch {}
 process.on('exit', removePidFile);
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-  process.on(sig, () => { removePidFile(); process.exit(0); });
+  process.on(sig, () => {
+    try { shutdownPool(); } catch {}
+    removePidFile();
+    process.exit(0);
+  });
 }
 
 const PARENT_PID = Number(process.env.BRIDGE_PARENT_PID || 0);

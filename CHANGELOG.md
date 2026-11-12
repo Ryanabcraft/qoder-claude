@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.19.1
+
+- Opening `qclaude` could erase the Claude Code settings. `ensureWebTools` treated an unparseable `~/.claude/settings.json` as `{}` and wrote over it, taking hooks, env, model and plugins with it. It now refuses to write an unreadable file, and uses a timestamped backup plus `tmp` + `rename`.
+- Workers and sessions are actually shut down on stop: `SIGINT`/`SIGTERM`/`SIGHUP`, `POST /ui/api/stop` and `qclaude --stop` (which now asks the server to stop before killing the port) all call `shutdownPool()`, so no `qodercli` child is left behind on Windows.
+- The dashboard "Send test" uses the port the request arrived on (not `BRIDGE_PORT || 8787`) and times out after 60 s instead of hanging.
+- A model name that is not in the list is reported in the log when it falls back to `Auto`.
+- A bridge bound outside the loopback without `BRIDGE_API_KEY` warns in the log and on the Health page.
+
 ## 1.19.0
 
 - `accounts.json` is written atomically (`tmp` + `fsync` + `rename`), keeps one `.bak`, and recovers from it when the file arrives truncated. A corrupt file is preserved as `.corrupt-<time>` instead of being replaced by the fallback — that fallback used to erase every account after a single bad write.
