@@ -85,9 +85,15 @@ export function normalizeQuota(raw, now = Date.now()) {
   const expiresAt = Number(source.expiresAt);
   const safeExpiry = Number.isFinite(expiresAt) && expiresAt > now && expiresAt <= now + MAX_EXPIRY ? expiresAt : null;
 
+  const planTotal = plan ? Number(plan.total) || 0 : 0;
+  const addOnTotal = addOn ? Number(addOn.total) || 0 : 0;
+  const planUnmetered = planTotal === 0;
+  const addonGone = Boolean(source.isQuotaExceeded) && planUnmetered && addOnTotal > 0;
   return {
     status: 'ok',
     plan: String(source.userType || ''),
+    scope: planTotal > 0 ? 'plan' : addOnTotal > 0 ? 'addon' : 'none',
+    planUnmetered,
     unit: active.unit || String(source.usageType || 'credits'),
     total,
     used,
@@ -97,7 +103,7 @@ export function normalizeQuota(raw, now = Date.now()) {
     expiresAt: safeExpiry,
     fetchedAt: now,
     stale: false,
-    reason: '',
+    reason: addonGone ? 'addon-exhausted' : '',
     upgradeUrl,
     detailUrl,
     breakdown: { plan, addOn },

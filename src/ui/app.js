@@ -152,6 +152,7 @@ function fmtCredits(n) {
 }
 function quotaState(record) {
   if (!record) return { cls: '', label: '—' };
+  if (record.reason === 'addon-exhausted') return { cls: 'warn', label: t('Add-on credits used up') };
   if (record.status === 'exceeded' || record.exceeded) return { cls: 'err', label: t('Quota exceeded') };
   if (record.status === 'no-auth') return { cls: 'warn', label: t('No account signed in') };
   if (record.status !== 'ok') return { cls: 'warn', label: t('Unavailable') };
@@ -161,6 +162,7 @@ function quotaState(record) {
 }
 function quotaCell(record) {
   if (!record) return '—';
+  if (record.reason === 'addon-exhausted') return `${fmtCredits(record.used)}/${fmtCredits(record.total)} ${t('add-on')}`;
   if (record.status === 'exceeded') return t('Quota exceeded');
   if (record.status !== 'ok') return record.status === 'no-auth' ? t('No account signed in') : t('Unavailable');
   return `${pct(record.percent)} · ${fmtCredits(record.used)}/${fmtCredits(record.total)}`;
@@ -671,7 +673,7 @@ async function loadEndpoint() {
 
 async function loadAccounts() {
   const [accounts, quota, rewards] = await Promise.all([
-    api('accounts'),
+    api('accounts').catch(() => null),
     api('quota').catch(() => null),
     api('rewards').catch(() => null),
   ]);
@@ -741,7 +743,17 @@ function renderRewards() {
 
 function renderAccounts() {
   const data = state.accounts;
-  if (!data) return;
+  if (!data) {
+    const grid = $('#account-cards');
+    if (grid && !grid.dataset.offline) {
+      grid.dataset.offline = '1';
+      grid.textContent = '';
+      grid.append(el('div', 'muted small', t('Server offline - start it with qclaude to see the accounts')));
+    }
+    return;
+  }
+  const gridReset = $('#account-cards');
+  if (gridReset) delete gridReset.dataset.offline;
   renderRewards();
   const rot = data.rotation;
   $('#rot-toggle').checked = Boolean(rot.on);
@@ -785,6 +797,7 @@ function renderAccounts() {
       bar.append(fill);
       box.append(bar);
       box.append(el('div', 'muted small', quota.status === 'exceeded' ? `0 ${t('credits')}` : quotaCell(quota)));
+      if (quota.planUnmetered) box.append(el('div', 'muted small', t('plan without a fixed quota')));
       if (quota.status === 'ok') {
         const detail = [`${quota.plan || '—'}`, `${t('Updated {when} ago', { when: ago(quota.fetchedAt) })}`];
         if (quota.burnPerDay) detail.push(t('{rate} credits/day', { rate: fmtCredits(quota.burnPerDay) }));

@@ -124,3 +124,32 @@ test('getQuota caches and single-flights identical calls', async () => {
   assert.equal(cached.total, 200);
   assert.equal(calls, 1);
 });
+
+test('a plan without a fixed quota reports the add-on separately', () => {
+  const raw = {
+    userType: 'personal_standard',
+    usageType: 'credits',
+    totalUsagePercentage: 1,
+    isQuotaExceeded: true,
+    userQuota: { total: 0, used: 0, remaining: 0, percentage: 0, unit: 'credits' },
+    addOnQuota: { total: 200, used: 200, remaining: 0, percentage: 1, unit: 'credits' },
+  };
+  const record = normalizeQuota(raw);
+  assert.equal(record.status, 'ok');
+  assert.equal(record.scope, 'addon');
+  assert.equal(record.planUnmetered, true);
+  assert.equal(record.exceeded, true);
+  assert.equal(record.reason, 'addon-exhausted');
+  assert.equal(record.total, 200);
+});
+
+test('a real plan quota keeps the plan scope', () => {
+  const record = normalizeQuota({
+    userType: 'personal_pro',
+    userQuota: { total: 1000, used: 100, remaining: 900, unit: 'credits' },
+    addOnQuota: { total: 0, used: 0, remaining: 0, unit: 'credits' },
+  });
+  assert.equal(record.scope, 'plan');
+  assert.equal(record.planUnmetered, false);
+  assert.equal(record.reason, '');
+});

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.18.3
+
+- Quota no longer calls an exhausted add-on a dead plan. When `userQuota.total` is 0 and only the add-on has a balance, the account reads **Add-on credits used up** with `200/200 add-on` and **plan without a fixed quota**, instead of a red "quota exceeded" that contradicted a working session.
+- `qclaude update` stops the running server before replacing files and starts it again afterwards, so an update no longer leaves the dashboard showing **offline** with an empty account list.
+- When the dashboard cannot reach the server, the Accounts page says so (`Server offline - start it with qclaude to see the accounts`) instead of rendering an empty grid.
+
 ## 1.18.2
 
 - The console window says which mode it is serving: `qoder-claude - OpenCode Mode` or `qoder-claude - OpenBot Mode`, instead of the generic title for both.

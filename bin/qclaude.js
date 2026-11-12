@@ -703,18 +703,30 @@ if (args[0] === 'notes') {
 
 if (args[0] === 'update') {
   const before = localVersion(ROOT);
+  const wasUp = await isUp();
   console.log(`current: ${before}`);
+  if (wasUp) {
+    console.log('stopping the running server before replacing files...');
+    await stopServer();
+  }
+  let ok = false;
   try {
-    if (await applyUpdate(ROOT)) {
+    ok = await applyUpdate(ROOT);
+    if (ok) {
       const after = localVersion(ROOT);
       console.log(`updated to ${after}`);
       showReleaseNotes(ROOT, before, after);
     } else process.exitCode = 1;
   } catch (e) {
     console.error(`qclaude: update failed (${e.message})`);
-    process.exit(1);
+    process.exitCode = 1;
   }
-  process.exit(0);
+  if (wasUp) {
+    await startServer({ window: true });
+    openDashboard();
+    console.log(ok ? 'qclaude: server restarted on the new version.' : 'qclaude: server restarted on the previous version.');
+  }
+  process.exit(process.exitCode || 0);
 }
 
 if (args[0] === 'account') {
