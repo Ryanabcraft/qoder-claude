@@ -120,6 +120,8 @@ function parseEnvelope(line) {
 // Streams the upstream answer as Anthropic-shaped events, which is what the
 // adapter already knows how to turn into OpenAI chunks.
 export async function streamChat({ body, signal, onEvent, dir = '' }) {
+  const startedAt = Date.now();
+  let firstTokenAt = 0;
   let ctx;
   try {
     ({ ctx } = context(dir));
@@ -213,6 +215,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     if (choice.finish_reason) stopReason = choice.finish_reason;
     const delta = choice.delta || {};
 
+    if (!firstTokenAt && ((typeof delta.content === 'string' && delta.content) || (Array.isArray(delta.tool_calls) && delta.tool_calls.length))) firstTokenAt = Date.now();
     if (typeof delta.content === 'string' && delta.content) {
       ensureText();
       text += delta.content;
@@ -284,5 +287,5 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     delta: { stop_reason: stop, stop_sequence: null },
     usage: { input_tokens: Number(usage.prompt_tokens) || 0, output_tokens: Number(usage.completion_tokens) || 0 },
   });
-  return { text, usage, error: upstreamError, stopReason: stop };
+  return { text, usage, error: upstreamError, stopReason: stop, ttft: firstTokenAt ? firstTokenAt - startedAt : 0, ms: Date.now() - startedAt };
 }

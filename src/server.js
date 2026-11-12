@@ -548,7 +548,7 @@ const server = http.createServer(async (req, res) => {
     if (out.error && !adapter.started) {
       return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
     }
-    log(`  chat/completions model=${body.model || 'Auto'} total=${Date.now() - t0}ms`);
+    log(`  chat/completions model=${body.model || 'Auto'} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'}`);
     adapter.end();
     return true;
   }

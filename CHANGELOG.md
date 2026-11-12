@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.19.4
+
+- Every `/v1/chat/completions` log line now carries time-to-first-token and the real token counts (`ttft=… total=… in=… out=…`), so a slow turn can be split between queue/context and generation instead of guessed at.
+
 ## 1.19.3
 
 - Installing now wires OpenCode too: `scripts/enable-here.js` writes the provider with the 1M window and tool capabilities when OpenCode is detected, instead of leaving it for a manual `qclaude integrations opencode`.
