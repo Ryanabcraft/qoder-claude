@@ -3,6 +3,7 @@ import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
 import { context, forgetContext } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
+import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
 
 export { forgetContext };
 
@@ -11,6 +12,8 @@ const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
 
 export function buildPayload(body, model, contextWindow, opts = {}) {
   const messages = [];
+  const repeat = loopGuardEnabled() ? repeatedCall(body.messages) : null;
+  if (repeat) messages.push({ role: 'system', content: loopWarning(repeat) });
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
 

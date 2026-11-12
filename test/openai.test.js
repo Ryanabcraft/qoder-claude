@@ -157,3 +157,24 @@ test('reasoning is forwarded as a reasoning_content chunk', () => {
   assert.equal(text, 'ok');
   assert.equal(usage.usage.completion_tokens, 4);
 });
+
+test('a repeated tool call gets a warning in the payload', async () => {
+  const { upstreamPayload } = await import('../src/openaiUpstream.js');
+  const call = { role: 'assistant', content: '', tool_calls: [{ id: 'c1', type: 'function', function: { name: 'Edit', arguments: '{"old":"a","new":"a"}' } }] };
+  const result = { role: 'tool', tool_call_id: 'c1', content: 'No changes to apply' };
+  const repeated = upstreamPayload({ model: 'Auto', messages: [call, result, call, result, call, result] });
+  assert.match(repeated.messages[0].content, /Edit/);
+  assert.match(repeated.messages[0].content, /3 times/);
+
+  const clean = upstreamPayload({ model: 'Auto', messages: [{ role: 'user', content: 'hi' }] });
+  assert.ok(!/times and failed/.test(JSON.stringify(clean.messages)));
+});
+
+test('the direct payload carries the same warning', async () => {
+  const { buildPayload } = await import('../src/direct.js');
+  const call = { role: 'assistant', content: [{ type: 'tool_use', name: 'Edit', input: { old: 'a', new: 'a' } }] };
+  const tool = { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'x', content: 'failed' }] };
+  const payload = buildPayload({ messages: [call, tool, call, tool, call, tool] }, 'Auto', 0);
+  assert.match(payload.messages[0].content, /Edit/);
+  assert.match(payload.messages[0].content, /3 times/);
+});

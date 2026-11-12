@@ -63,6 +63,10 @@ Scope of this sheet: the repository, the sites, the docs, and the git/gh tooling
 - **One tool catalog.** When tools go native, the text prompt carries names and short
   descriptions, never the full schemas again. Two catalogs with two calling instructions is what
   made models invent tools and stall.
+- **The chosen model travels in `X-Model-Key`**, signed by the WASM; the JSON `model` field is ignored by
+  the gateway (the reply always says `"model":"auto"`). Never debug model selection from the reply body.
+- **`role:"tool"` is understood upstream** (verified with a tool round trip). A repeating agent is a
+  model behaviour, not a dropped result — the loop guard in `src/loopGuard.js` exists for that.
 - **Tool names are matched, not trusted.** `resolveToolName` maps what the model said onto what the
   client declared (`bash` → `Bash`, `openbot.send_message` → `mcp__openbot__send_message`).
 - **Tests run against a fake upstream.** `test/fixtures/fakeUpstream.js` plus `QODER_AUTH_FAKE=1`

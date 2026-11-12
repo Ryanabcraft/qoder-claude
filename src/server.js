@@ -624,7 +624,7 @@ server.listen(PORT, HOST, () => {
   const syncOpenCode = () => {
     try {
       if (!detect().opencode.installed) return;
-      const result = applyOpenCode({ models: cachedModels() });
+      const result = applyOpenCode({ models: cachedModels(), setDefault: true });
       if (result.changed) log(`opencode: ${result.models.length} models with 1M context`);
     } catch {}
   };

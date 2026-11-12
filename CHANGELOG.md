@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.6
+
+- A loop guard: when the same tool call (name plus exact arguments) appears three times in the history, the next turn carries a short system notice telling the model that it already failed that way and to change the approach. It is a warning, not a block, and `QODER_LOOP_GUARD=0` disables it. Applies to both the Anthropic path and `/v1/chat/completions`.
+- OpenCode opens on `qoder-claude/Auto` when no model was ever chosen; an existing choice is never overwritten. Auto and Ultimate are the models that stream reasoning and miss less on edits.
+- Documented in `CONTEXT.md`: the model travels in `X-Model-Key`, and `role:"tool"` is understood upstream — so a repeating agent is a model behaviour, not a transport bug.
+
 ## 1.19.5
 
 - The model's reasoning now reaches the client. Auto and Ultimate stream a `reasoning_content` field that the bridge dropped on the floor; it is forwarded as a thinking block and re-emitted as `reasoning_content` on the OpenAI path, with `interleaved: "reasoning_content"` declared in the OpenCode provider so the client renders it.

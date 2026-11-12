@@ -2,6 +2,7 @@ import { createStallTimer, stallMs } from './stall.js';
 import { context } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
 import { resolveToolName, toolNames } from './toolNames.js';
+import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
@@ -74,8 +75,11 @@ export function toUpstreamMessages(messages = []) {
 }
 
 export function upstreamPayload(body = {}) {
+  const messages = toUpstreamMessages(body.messages);
+  const repeat = loopGuardEnabled() ? repeatedCall(body.messages) : null;
+  if (repeat) messages.unshift({ role: 'system', content: loopWarning(repeat) });
   const payload = {
-    messages: toUpstreamMessages(body.messages),
+    messages,
     model: String(body.model || 'auto').toLowerCase(),
     agent_id: AGENT_ID,
     stream: true,

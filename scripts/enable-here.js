@@ -69,7 +69,7 @@ else console.log(`exa -> not configured: ${exa.error}`);
 
 const installed = detect();
 if (installed.opencode.installed) {
-  const applied = applyOpenCode({ models: cachedModels() });
+  const applied = applyOpenCode({ models: cachedModels(), setDefault: true });
   if (applied.ok) console.log(`opencode -> qoder-claude provider (${applied.models.length} models, 1M context)`);
   else console.warn(`opencode -> not updated: ${applied.error}`);
 }
