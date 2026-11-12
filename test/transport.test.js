@@ -51,3 +51,14 @@ test('the OpenAI transport reports a 402 too', async () => {
   const out = await openai.streamChat({ body: body({ messages: [{ role: 'system', content: 'scenario:quota' }, { role: 'user', content: 'hi' }] }) });
   assert.match(String(out.error), /upstream 402/);
 });
+
+test('the upstream reasoning survives as a thinking event', async () => {
+  const events = [];
+  const out = await openai.streamChat({
+    body: body({ messages: [{ role: 'system', content: 'scenario:think' }, { role: 'user', content: 'hi' }] }),
+    onEvent: (e) => events.push(e),
+  });
+  assert.equal(out.error, null);
+  assert.ok(events.some((e) => e.delta?.type === 'thinking_delta'));
+  assert.ok(events.some((e) => e.delta?.type === 'text_delta'));
+});

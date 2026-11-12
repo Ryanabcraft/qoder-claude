@@ -178,6 +178,7 @@ export function createOpenAiAdapter({ res, model, stream = true, includeUsage = 
     }
     if (event === 'content_block_start') {
       const block = data?.content_block;
+      if (block?.type === 'thinking') return;
       if (block?.type === 'tool_use') {
         state.toolIndex += 1;
         state.tools.set(data.index, { index: state.toolIndex, id: block.id, name: block.name, args: '' });
@@ -197,6 +198,11 @@ export function createOpenAiAdapter({ res, model, stream = true, includeUsage = 
       if (delta?.type === 'text_delta' && delta.text) {
         state.text += delta.text;
         chunk({ content: delta.text });
+        return;
+      }
+      if (delta?.type === 'thinking_delta' && delta.thinking) {
+        state.reasoning = (state.reasoning || '') + delta.thinking;
+        chunk({ reasoning_content: delta.thinking });
         return;
       }
       if (delta?.type === 'input_json_delta') {
@@ -255,7 +261,7 @@ export function createOpenAiAdapter({ res, model, stream = true, includeUsage = 
     begin();
     if (stream) {
       chunk({}, state.stop);
-      if (includeUsage) {
+      if (true) {
         res.write(`data: ${JSON.stringify({
           id: state.id,
           object: 'chat.completion.chunk',

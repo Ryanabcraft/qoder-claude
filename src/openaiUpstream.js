@@ -182,6 +182,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
   let upstreamError = null;
   let nextIndex = 0;
   let textIndex = -1;
+  let thinkingIndex = -1;
   const calls = new Map();
   const decoder = new TextDecoder();
   let buf = '';
@@ -215,7 +216,21 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     if (choice.finish_reason) stopReason = choice.finish_reason;
     const delta = choice.delta || {};
 
+    const reasoning = typeof delta.reasoning_content === 'string' ? delta.reasoning_content : (typeof delta.reasoning === 'string' ? delta.reasoning : '');
+    if (reasoning) {
+      if (!firstTokenAt) firstTokenAt = Date.now();
+      if (thinkingIndex === -1) {
+        closeText();
+        thinkingIndex = nextIndex++;
+        onEvent?.({ type: 'content_block_start', index: thinkingIndex, content_block: { type: 'thinking', thinking: '' } });
+      }
+      onEvent?.({ type: 'content_block_delta', index: thinkingIndex, delta: { type: 'thinking_delta', thinking: reasoning } });
+    }
     if (!firstTokenAt && ((typeof delta.content === 'string' && delta.content) || (Array.isArray(delta.tool_calls) && delta.tool_calls.length))) firstTokenAt = Date.now();
+    if (delta.content && thinkingIndex !== -1) {
+      onEvent?.({ type: 'content_block_stop', index: thinkingIndex });
+      thinkingIndex = -1;
+    }
     if (typeof delta.content === 'string' && delta.content) {
       ensureText();
       text += delta.content;
@@ -276,6 +291,10 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
     signal?.removeEventListener?.('abort', onAbort);
   }
 
+  if (thinkingIndex !== -1) {
+    onEvent?.({ type: 'content_block_stop', index: thinkingIndex });
+    thinkingIndex = -1;
+  }
   closeText();
   for (const entry of calls.values()) {
     if (!entry.name) continue;

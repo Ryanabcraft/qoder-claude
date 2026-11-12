@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.5
+
+- The model's reasoning now reaches the client. Auto and Ultimate stream a `reasoning_content` field that the bridge dropped on the floor; it is forwarded as a thinking block and re-emitted as `reasoning_content` on the OpenAI path, with `interleaved: "reasoning_content"` declared in the OpenCode provider so the client renders it.
+- The final stream chunk always carries `usage`, so clients can show tokens and tokens per second instead of guessing.
+- DeepSeek-V4-Flash and GLM-5.3 do not stream reasoning through this gateway at all — on those models there is no thinking to show, by the provider's choice.
+
 ## 1.19.4
 
 - Every `/v1/chat/completions` log line now carries time-to-first-token and the real token counts (`ttft=… total=… in=… out=…`), so a slow turn can be split between queue/context and generation instead of guessed at.

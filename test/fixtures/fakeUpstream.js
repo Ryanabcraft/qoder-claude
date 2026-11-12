@@ -17,6 +17,7 @@ function modeOf(raw) {
   if (text.includes('scenario:quota')) return 'quota';
   if (text.includes('scenario:cut')) return 'cut';
   if (text.includes('scenario:lower')) return 'lower';
+  if (text.includes('scenario:think')) return 'think';
   return 'tools';
 }
 
@@ -37,6 +38,14 @@ export async function startFakeUpstream() {
       if (mode === 'cut') {
         res.write(envelope(chunk({ role: 'assistant', content: 'parcial' })));
         res.destroy();
+        return;
+      }
+      if (mode === 'think') {
+        res.write(envelope(chunk({ role: 'assistant', content: '', reasoning_content: 'pensando… ' })));
+        res.write(envelope(chunk({ content: 'ok' })));
+        res.write(envelope(chunk({}, 'stop')));
+        res.write(envelope({ choices: [], usage: { prompt_tokens: 12, completion_tokens: 4 } }));
+        res.end();
         return;
       }
       const toolName = mode === 'lower' ? 'bash' : 'Bash';

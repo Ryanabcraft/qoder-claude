@@ -80,7 +80,7 @@ test('the adapter streams text as OpenAI chunks', () => {
   assert.equal(parsed[0].choices[0].delta.role, 'assistant');
   const text = parsed.map((c) => c.choices?.[0]?.delta?.content || '').join('');
   assert.equal(text, 'hi there');
-  const last = parsed[parsed.length - 1];
+  const last = parsed.filter((c) => c.choices && c.choices[0]).pop();
   assert.equal(last.choices[0].finish_reason, 'stop');
 });
 
@@ -99,7 +99,7 @@ test('tool calls come out as OpenAI tool_calls', () => {
   assert.equal(call.choices[0].delta.tool_calls[0].function.name, 'Bash');
   const args = parsed.map((c) => c.choices?.[0]?.delta?.tool_calls?.[0]?.function?.arguments || '').join('');
   assert.equal(args, '{"command":"ls"}');
-  const last = parsed[parsed.length - 1];
+  const last = parsed.filter((c) => c.choices && c.choices[0]).pop();
   assert.equal(last.choices[0].finish_reason, 'tool_calls');
 });
 
@@ -138,4 +138,22 @@ test('the upstream payload keeps the client system prompt verbatim', async () =>
   assert.equal(payload.max_tokens, 64);
   assert.equal(payload.agent_id, 'agent_common');
   assert.ok(!JSON.stringify(payload).includes('[CONVERSATION]'), 'no agent prompt is injected');
+});
+
+test('reasoning is forwarded as a reasoning_content chunk', () => {
+  const real = fakeRes();
+  const proxy = createOpenAiAdapter({ res: real, model: 'Auto', stream: true });
+  proxy.write(sse('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '' } }));
+  proxy.write(sse('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'penso ' } }));
+  proxy.write(sse('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'ok' } }));
+  proxy.write(sse('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { input_tokens: 12, output_tokens: 4 } }));
+  proxy.end();
+
+  const parsed = real.body.split('\n\n').filter((c) => c.startsWith('data: ') && !c.includes('[DONE]')).map((c) => JSON.parse(c.slice(6)));
+  const reasoning = parsed.map((c) => c.choices?.[0]?.delta?.reasoning_content || '').join('');
+  const text = parsed.map((c) => c.choices?.[0]?.delta?.content || '').join('');
+  const usage = parsed.filter((c) => c.usage).pop();
+  assert.equal(reasoning, 'penso ');
+  assert.equal(text, 'ok');
+  assert.equal(usage.usage.completion_tokens, 4);
 });

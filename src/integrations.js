@@ -35,6 +35,7 @@ export function modelMeta(model, { context = MODEL_LIMITS.context, output = MODE
     limit: { context, output },
     tool_call: true,
     reasoning: true,
+    interleaved: 'reasoning_content',
     attachment: true,
     temperature: true,
     modalities: { input: ['text', 'image'], output: ['text'] },
