@@ -900,6 +900,7 @@ OpenCode: provider "qoder-claude" already up to date -> ${result.path}`);
 }
 
 if (args[0] === 'opencode') {
+  await checkForUpdate(['opencode', ...args.slice(1)]);
   await startServer({ window: true, persist: true, title: 'qoder-claude - OpenCode Mode' });
   openDashboard();
   const child = spawn('opencode', args.slice(1), { stdio: 'inherit', shell: true, env: process.env });
@@ -911,6 +912,7 @@ if (args[0] === 'opencode') {
     console.error('qclaude: OpenBot not found. Install it, or open it once so its folder exists.');
     process.exit(1);
   }
+  await checkForUpdate(['openbot']);
   await startServer({ window: true, persist: true, title: 'qoder-claude - OpenBot Mode' });
   openDashboard();
   const child = spawn(exe, [], { detached: true, stdio: 'ignore' });
@@ -1075,6 +1077,35 @@ if (args[0] === '--window') {
   process.exit(1);
 }
 
+async function checkForUpdate(argv = [], { noUpdate = false } = {}) {
+  if (noUpdate || !process.stdin.isTTY || fs.existsSync(path.join(ROOT, '.git'))) return false;
+  try {
+    const u = await checkUpdate(ROOT);
+    if (!u.hasUpdate || skippedVersion(ROOT) === u.remote) return false;
+    const yes = await ask(`qclaude ${u.local} -> ${u.remote} is available. Update now? [y/N] `);
+    if (!yes) {
+      skipVersion(ROOT, u.remote);
+      return false;
+    }
+    console.log('updating qclaude...');
+    if (!(await applyUpdate(ROOT))) {
+      console.warn('qclaude: update failed; using the current version.');
+      return false;
+    }
+    const after = localVersion(ROOT);
+    console.log(`updated to ${after}`);
+    showReleaseNotes(ROOT, u.local, after);
+    stopBridge(null);
+    await wait(700);
+    const child = spawn(process.execPath, [path.join(ROOT, 'bin', 'qclaude.js'), ...argv, '--no-update'], { stdio: 'inherit' });
+    const code = await new Promise((resolve) => child.on('close', resolve));
+    process.exit(code ?? 0);
+  } catch (e) {
+    console.warn(`qclaude: update failed (${e.message}); using the current version.`);
+    return false;
+  }
+}
+
 if (!['quota', 'rewards', 'models', 'integrations', 'opencode', 'openbot', '--status'].includes(args[0])) {
 if (args[0] === '--serve') {
   const child = await startServer({ window: false });
@@ -1093,32 +1124,7 @@ if (args[0] === '--serve') {
   const noUpdate = args.includes('--no-update') || process.env.QODER_NO_UPDATE === '1';
   const claudeArgs = args.filter((a) => !['--window', '--no-window', '--no-browser', '--no-update'].includes(a));
 
-  if (!noUpdate && process.stdin.isTTY && !fs.existsSync(path.join(ROOT, '.git'))) {
-    const u = await checkUpdate(ROOT);
-    if (u.hasUpdate && skippedVersion(ROOT) !== u.remote) {
-      const yes = await ask(`qclaude ${u.local} -> ${u.remote} is available. Update now? [y/N] `);
-      if (yes) {
-        console.log('updating qclaude...');
-        try {
-          if (await applyUpdate(ROOT)) {
-            const after = localVersion(ROOT);
-            console.log(`updated to ${after}`);
-            showReleaseNotes(ROOT, u.local, after);
-            stopBridge(null);
-            await wait(700);
-            const child = spawn(process.execPath, [path.join(ROOT, 'bin', 'qclaude.js'), ...claudeArgs, '--no-update'], { stdio: 'inherit' });
-            const code = await new Promise((resolve) => child.on('close', resolve));
-            process.exit(code ?? 0);
-          }
-          console.warn('qclaude: update failed; using the current version.');
-        } catch (e) {
-          console.warn(`qclaude: update failed (${e.message}); using the current version.`);
-        }
-      } else {
-        skipVersion(ROOT, u.remote);
-      }
-    }
-  }
+  await checkForUpdate(claudeArgs, { noUpdate });
 
   const claudeBin = await ensureClaude();
   const exa = ensureExa({ bin: claudeBin });

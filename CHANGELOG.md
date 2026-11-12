@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.19.7
+
+- `qclaude opencode` and `qclaude openbot` now run the same version check as `qclaude`: if a newer release exists and you did not skip it, they ask before opening, apply the update and relaunch the launcher with the new code. Before, both went straight to opening and ignored updates.
+
 ## 1.19.6
 
 - A loop guard: when the same tool call (name plus exact arguments) appears three times in the history, the next turn carries a short system notice telling the model that it already failed that way and to change the approach. It is a warning, not a block, and `QODER_LOOP_GUARD=0` disables it. Applies to both the Anthropic path and `/v1/chat/completions`.
