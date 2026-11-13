@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.19.8
+
+- The OpenCode provider now asks the bridge for an action-oriented turn: it sends `x-qoder-act: 1` (and `qoder_act: true` in the body as a fallback), and the bridge appends one line to the client system prompt — act in the same turn, do not list the plan or print the code before applying. It only affects requests that carry the marker, so OpenBot and any other client keep their own prompt; `QODER_ACT_PROMPT=0` disables it.
+
 ## 1.19.7
 
 - `qclaude opencode` and `qclaude openbot` now run the same version check as `qclaude`: if a newer release exists and you did not skip it, they ask before opening, apply the update and relaunch the launcher with the new code. Before, both went straight to opening and ignored updates.

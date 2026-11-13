@@ -208,11 +208,11 @@ async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => t
   return last;
 }
 
-async function runOpenAiWithRotation({ body, signal, onEvent, canRotate = () => true, log }) {
+async function runOpenAiWithRotation({ body, act = false, signal, onEvent, canRotate = () => true, log }) {
   const accounts = candidateAccounts();
   let last = { error: 'no account available', account: '' };
   for (const account of accounts) {
-    const out = await streamChat({ body, signal, onEvent, dir: account.dir });
+    const out = await streamChat({ body, act, signal, onEvent, dir: account.dir });
     if (!out.error) {
       clearCooldown(account.name);
       return { ...out, account: account.name };
@@ -529,6 +529,7 @@ const server = http.createServer(async (req, res) => {
     }
     const stream = body.stream === true;
     const includeUsage = Boolean(body.stream_options?.include_usage);
+    const act = String(req.headers['x-qoder-act'] || '') === '1' || body.qoder_act === true;
     const adapter = createOpenAiAdapter({ res, model: body.model || 'Auto', stream, includeUsage });
     const ac = new AbortController();
     res.on('close', () => { if (!res.writableEnded) ac.abort(); });
@@ -537,6 +538,7 @@ const server = http.createServer(async (req, res) => {
     try {
       out = await runOpenAiWithRotation({
         body,
+        act,
         signal: ac.signal,
         onEvent: (ev) => adapter.event(ev.type, ev),
         canRotate: () => !adapter.started,

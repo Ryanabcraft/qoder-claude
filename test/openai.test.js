@@ -178,3 +178,25 @@ test('the direct payload carries the same warning', async () => {
   assert.match(payload.messages[0].content, /Edit/);
   assert.match(payload.messages[0].content, /3 times/);
 });
+
+test('the action hint is appended to the client system prompt', async () => {
+  const { upstreamPayload } = await import('../src/openaiUpstream.js');
+  const base = { model: 'Auto', messages: [{ role: 'system', content: 'You are OpenBot.' }, { role: 'user', content: 'hi' }] };
+  const withAct = upstreamPayload(base, { act: true });
+  assert.match(withAct.messages[0].content, /You are OpenBot\./);
+  assert.match(withAct.messages[0].content, /Act, do not narrate/);
+
+  const plain = upstreamPayload(base, { act: false });
+  assert.equal(plain.messages[0].content, 'You are OpenBot.');
+
+  process.env.QODER_ACT_PROMPT = '0';
+  const off = upstreamPayload(base, { act: true });
+  assert.equal(off.messages[0].content, 'You are OpenBot.');
+  delete process.env.QODER_ACT_PROMPT;
+});
+
+test('the header is declared in the OpenCode provider', async () => {
+  const { opencodeProvider } = await import('../src/integrations.js');
+  const provider = opencodeProvider({ models: ['Auto'] });
+  assert.equal(provider.options.headers['x-qoder-act'], '1');
+});

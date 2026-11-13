@@ -74,10 +74,19 @@ export function toUpstreamMessages(messages = []) {
   return out;
 }
 
-export function upstreamPayload(body = {}) {
+export function upstreamPayload(body = {}, { act = false } = {}) {
   const messages = toUpstreamMessages(body.messages);
   const repeat = loopGuardEnabled() ? repeatedCall(body.messages) : null;
   if (repeat) messages.unshift({ role: 'system', content: loopWarning(repeat) });
+  if (act && process.env.QODER_ACT_PROMPT !== '0') {
+    const notice = 'Act, do not narrate: when a tool can do the job, call it in this same turn. '
+      + 'Do not list the plan or print the code before applying it.';
+    const at = messages.findIndex((m) => m.role === 'system');
+    if (at >= 0) messages[at] = { role: 'system', content: `${messages[at].content}
+
+${notice}` };
+    else messages.unshift({ role: 'system', content: notice });
+  }
   const payload = {
     messages,
     model: String(body.model || 'auto').toLowerCase(),
@@ -123,7 +132,7 @@ function parseEnvelope(line) {
 
 // Streams the upstream answer as Anthropic-shaped events, which is what the
 // adapter already knows how to turn into OpenAI chunks.
-export async function streamChat({ body, signal, onEvent, dir = '' }) {
+export async function streamChat({ body, signal, onEvent, dir = '', act = false }) {
   const startedAt = Date.now();
   let firstTokenAt = 0;
   let ctx;
@@ -132,7 +141,7 @@ export async function streamChat({ body, signal, onEvent, dir = '' }) {
   } catch (e) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
-  const payload = upstreamPayload(body);
+  const payload = upstreamPayload(body, { act });
   const availableTools = toolNames(body.tools);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), payload.model, '');
   const headers = Object.fromEntries(req.headers);

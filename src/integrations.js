@@ -39,6 +39,7 @@ export function modelMeta(model, { context = MODEL_LIMITS.context, output = MODE
     attachment: true,
     temperature: true,
     modalities: { input: ['text', 'image'], output: ['text'] },
+    body: { qoder_act: true },
   };
 }
 
@@ -49,7 +50,12 @@ export function opencodeProvider({ baseURL = 'http://127.0.0.1:8787/v1', apiKey 
   return {
     npm: '@ai-sdk/openai-compatible',
     name: 'qoder-claude',
-    options: { baseURL, apiKey },
+    options: {
+      baseURL,
+      apiKey,
+      // read by the bridge: ask the model to act instead of narrating.
+      headers: { 'x-qoder-act': '1' },
+    },
     models: map,
   };
 }
