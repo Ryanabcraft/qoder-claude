@@ -135,6 +135,10 @@ Throughput is set by the model, not by the bridge. Measured on the bridge, same 
 | Auto | 62–115 s | ~130 | 92–94% reasoning before the first word |
 | Efficient / Lite / Performance | 71–85 s | ~130–140 | 86–92% reasoning |
 
+All flash models measured within 1 tok/s of each other (~46 tok/s, ~1 s to the first
+text); the ~108 ms between chunks is the provider cadence, not the bridge. A 35k-token
+conversation that used to take 25–84 s answers in **4.9 s** after the model-header fix.
+
 `reasoning_effort` is accepted and forwarded, but the upstream ignores it — a model that
 thinks will think. If the answer feels slow, switch the model; the first word is what you
 wait for, and a thinking model spends a minute on it.

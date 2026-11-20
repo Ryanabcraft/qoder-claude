@@ -167,3 +167,28 @@ test('two timeouts arm the circuit and the third call skips the proxy', async ()
   resetCompressCircuit();
   process.env.QODER_COMPRESS_TIMEOUT_MS = '300';
 });
+
+test('two zero-gain answers disarm compression for a while', async () => {
+  const { resetCompressCircuit } = await import('../src/compress.js');
+  resetCompressCircuit();
+  let calls = 0;
+  const { server, url } = await proxy((req, res) => {
+    calls += 1;
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', () => {
+      const body = JSON.parse(raw);
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ messages: body.messages }));
+    });
+  });
+  process.env.QODER_COMPRESS_PROXY = url;
+  const input = messages();
+  await compactMessages(input, { model: 'Auto' });
+  await compactMessages(input, { model: 'Auto' });
+  const third = await compactMessages(input, { model: 'Auto' });
+  server.close();
+  assert.equal(calls, 2, 'the third call never reached the proxy');
+  assert.equal(third.reason, 'circuit');
+  resetCompressCircuit();
+});

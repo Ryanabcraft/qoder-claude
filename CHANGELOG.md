@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.24.3
+
+- **Compression disarms itself when it does not help.** Two answers with less than 5% of savings put the proxy in the same 10-minute cooldown used for timeouts (`compact=off(circuit)`). Before, a 35k turn paid 2.4 s to the proxy for a 0% result on every request.
+- Measured now: all flash models sit within 1 tok/s of each other (~46 tok/s, gap ~108 ms), so the gap is the provider's cadence — 108 ms is not ours. The 35k-token conversation that took 25–84 s answers in **4.9 s** after the header fix.
+- README records both numbers next to the model table.
+
 ## 1.24.2
 
 - **`/v1/responses` dropped reasoning; now it forwards it.** The adapter ignored `thinking_delta`. It now streams `response.reasoning_summary_text.delta` / `.done` and includes a `reasoning` item (with `summary_text`) in the `output`, so Responses clients see the model's thinking the same way the other two APIs do.

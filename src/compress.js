@@ -5,14 +5,16 @@ const TIMEOUT_MS = Number(process.env.QODER_COMPRESS_TIMEOUT_MS || 800);
 const CIRCUIT_MS = Number(process.env.QODER_COMPRESS_COOLDOWN_MS || 10 * 60 * 1000);
 let consecutiveTimeouts = 0;
 let circuitUntil = 0;
+let noGain = 0;
 
 export function compressCircuit() {
-  return { consecutiveTimeouts, circuitUntil };
+  return { consecutiveTimeouts, circuitUntil, noGain };
 }
 
 export function resetCompressCircuit() {
   consecutiveTimeouts = 0;
   circuitUntil = 0;
+  noGain = 0;
 }
 
 export function compressProxy() {
@@ -90,7 +92,17 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
     for (const index of protectedIndexes(list)) out[index] = list[index];
     const after = JSON.stringify(out).length;
     consecutiveTimeouts = 0;
-    return { messages: out, ratio: before ? Math.max(0, 1 - after / before) : 0, skipped: false, ms: Date.now() - startedAt, reason: 'ok' };
+    const ratio = before ? Math.max(0, 1 - after / before) : 0;
+    if (ratio < 0.05) {
+      noGain += 1;
+      if (noGain >= 2) {
+        circuitUntil = Date.now() + CIRCUIT_MS;
+        noGain = 0;
+      }
+    } else {
+      noGain = 0;
+    }
+    return { messages: out, ratio, skipped: false, ms: Date.now() - startedAt, reason: 'ok' };
   } catch (e) {
     const ms = Date.now() - startedAt;
     const reason = ctrl.signal.aborted ? 'timeout' : signal?.aborted ? 'aborted' : 'error';
