@@ -63,7 +63,7 @@ export function speedOf(out, totalMs) {
   const thinkShare = out.reasoningChars ? Math.round((out.reasoningChars / Math.max(1, out.textChars + out.reasoningChars)) * 100) : 0;
   const compact = out.compact ? `${Math.round(out.compact * 100)}%` : out.compactMs ? '0%' : 'off';
   const compactDetail = out.compactMs ? `${compact}(${out.compactMs}ms${out.compactReason && out.compactReason !== 'ok' ? ` ${out.compactReason}` : ''})` : compact;
-  return `tok/s=${tps.toFixed(1)} textTok=${textTokens} think=${thinkShare}% gap=${out.maxGapMs || 0}ms compact=${compactDetail}${out.toolOverflow ? ` tool-limit=${out.toolOverflow}` : ''}`;
+  return `tok/s=${tps.toFixed(1)} textTok=${textTokens} think=${thinkShare}% gap=${out.maxGapMs || 0}ms compact=${compactDetail}${out.toolOverflow ? ` tool-limit=${out.toolOverflow}` : ''}${out.toolTruncated ? ` tool-truncated=${out.toolTruncated}` : ''}`;
 }
 
 function send(res, status, obj) {
@@ -701,34 +701,47 @@ const server = http.createServer(async (req, res) => {
     res.on('close', () => { if (!res.writableEnded) ac.abort(); });
     const t0 = Date.now();
     const images = collectImages(body.messages);
-    if (images.length && visionCliPath()) {
-      const prompt = lastUserText(body.messages);
-      // The 1.1.80 engine validates model names against its own list; a newer
-      // name from the client would be rejected before the image is read.
-      const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
-      for (const account of candidateAccounts()) {
-        const cfgV = { ...workerConfig({ ...body, model: visionModel }, ''), configDir: account.dir, account: account.name };
-        const v = await runVision({ built: { images, prompt, system: '' }, cfg: cfgV, signal: ac.signal, log });
-        if (!v?.text || looksQuotaExhausted(v.text)) {
-          if (v?.text) {
-            markCooldown(account.name, 'quota: exhausted');
-            log(`  account ${account.name} paused: quota`);
-          } else {
-            log(`  vision failed on ${account.name}: ${v?.error || 'empty'}`);
+    if (images.length) {
+      // The image engine has no tools. Describe the image, put the description in
+      // the user turn, and let the normal request run with the client's tools —
+      // otherwise a turn with a picture becomes a blind turn.
+      let visionNote = '';
+      if (visionCliPath()) {
+        const prompt = lastUserText(body.messages);
+        const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
+        for (const account of candidateAccounts()) {
+          const cfgV = { ...workerConfig({ ...body, model: visionModel }, ''), configDir: account.dir, account: account.name };
+          const v = await runVision({ built: { images, prompt, system: '' }, cfg: cfgV, signal: ac.signal, log });
+          if (!v?.text || looksQuotaExhausted(v.text)) {
+            if (v?.text) {
+              markCooldown(account.name, 'quota: exhausted');
+              log(`  account ${account.name} paused: quota`);
+            } else {
+              log(`  vision failed on ${account.name}: ${v?.error || 'empty'}`);
+            }
+            continue;
           }
-          continue;
+          visionNote = v.text;
+          log(`  vision=${images.length} account=${account.name} ${v.text.length} chars`);
+          break;
         }
-        for (let i = 0; i < v.text.length; i += 240) {
-          adapter.event('content_block_delta', { delta: { type: 'text_delta', text: v.text.slice(i, i + 240) } });
+        if (!visionNote) {
+          visionNote = 'the image could not be read';
+          log('  vision found no account with credits');
         }
-        adapter.event('message_delta', { delta: { stop_reason: 'end_turn' }, usage: {} });
-        adapter.end();
-        log(`  chat/completions model=${model} vision=${images.length} account=${account.name} total=${Date.now() - t0}ms`);
-        return true;
+      } else {
+        visionNote = 'the image could not be read (vision engine not installed)';
+        log(`  images ${images.length} ignored (vision engine not installed)`);
       }
-      log('  vision found no account with credits');
-    } else if (images.length) {
-      log(`  images ${images.length} ignored (vision engine not installed)`);
+      for (let i = body.messages.length - 1; i >= 0; i -= 1) {
+        const message = body.messages[i];
+        if (message?.role !== 'user') continue;
+        const text = Array.isArray(message.content)
+          ? message.content.filter((part) => part?.type !== 'image_url').map((part) => part?.text || '').join('\n')
+          : typeof message.content === 'string' ? message.content : '';
+        body.messages[i] = { ...message, content: `${text}\n[image: ${visionNote}]`.trim() };
+        break;
+      }
     }
     let out;
     try {

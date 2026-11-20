@@ -46,6 +46,36 @@ export function loopWarning(hit) {
     + 'Do not call it again. Read the error, change the arguments or the approach, or answer the user directly.';
 }
 
+function targetOf(call) {
+  let args;
+  try { args = JSON.parse(call.args); } catch { return String(call.args || ''); }
+  if (!args || typeof args !== 'object') return String(call.args || '');
+  return String(args.file_path || args.path || args.pattern || args.url || args.command || call.args || '');
+}
+
+// Reading the same file again with a different offset is the same action. Four
+// of those in the last six calls means the model is not converging.
+export function repeatedTarget(messages = [], threshold = 4, window = 6) {
+  const list = [];
+  for (const message of messages) {
+    if (message?.role !== 'assistant') continue;
+    for (const call of callsOf(message)) list.push(call);
+  }
+  if (list.length < threshold) return null;
+  const last = list[list.length - 1];
+  const key = `${last.name}|${targetOf(last)}`;
+  let count = 1;
+  for (let i = list.length - 2; i >= 0 && list.length - i <= window; i -= 1) {
+    if (`${list[i].name}|${targetOf(list[i])}` === key) count += 1;
+  }
+  return count >= threshold ? { name: last.name, target: targetOf(last), count } : null;
+}
+
+export function targetWarning(hit) {
+  return `You have already called ${hit.name} on "${hit.target}" ${hit.count} times in the last few turns (different offsets or arguments count as the same action). `
+    + 'Stop re-reading it: answer with what you have, or change the approach in a way that does not repeat this call.';
+}
+
 export function loopGuardEnabled() {
   return process.env.QODER_LOOP_GUARD !== '0';
 }

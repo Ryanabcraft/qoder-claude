@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loopWarning, repeatedCall } from '../src/loopGuard.js';
+import {loopWarning, repeatedCall, repeatedTarget } from '../src/loopGuard.js';
 
 const call = (name, args, id = 'c1') => ({
   role: 'assistant',
@@ -45,4 +45,32 @@ test('the warning names the tool and the count', () => {
   const text = loopWarning({ name: 'Edit', arguments: '{}', count: 3 });
   assert.match(text, /Edit/);
   assert.match(text, /3 times/);
+});
+
+test('reading the same file with different offsets counts as repetition', () => {
+  const messages = [1, 2, 3, 4].map((n) => ({
+    role: 'assistant',
+    tool_calls: [{ function: { name: 'Read', arguments: JSON.stringify({ file_path: 'a.html', offset: n * 200 }) } }],
+  }));
+  messages.push({ role: 'user', content: 'continue' });
+  const hit = repeatedTarget(messages);
+  assert.ok(hit, 'expected a hit');
+  assert.equal(hit.name, 'Read');
+  assert.equal(hit.target, 'a.html');
+  assert.equal(hit.count, 4);
+});
+
+test('three reads, or the same offset once per file, stay silent', () => {
+  const three = [1, 2, 3].map((n) => ({
+    role: 'assistant',
+    tool_calls: [{ function: { name: 'Read', arguments: JSON.stringify({ file_path: 'a.html', offset: n }) } }],
+  }));
+  assert.equal(repeatedTarget(three), null);
+  const mixed = [
+    { role: 'assistant', tool_calls: [{ function: { name: 'Read', arguments: JSON.stringify({ file_path: 'a.html' }) } }] },
+    { role: 'assistant', tool_calls: [{ function: { name: 'Read', arguments: JSON.stringify({ file_path: 'b.html' }) } }] },
+    { role: 'assistant', tool_calls: [{ function: { name: 'Read', arguments: JSON.stringify({ file_path: 'c.html' }) } }] },
+    { role: 'assistant', tool_calls: [{ function: { name: 'Read', arguments: JSON.stringify({ file_path: 'd.html' }) } }] },
+  ];
+  assert.equal(repeatedTarget(mixed), null);
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.23.2
+
+- **A turn with an image no longer loses its tools.** In 1.23.1 the OpenAI path answered the whole request with the vision engine, which runs with `--tools ''` — so a message with a picture could not call `Read`, and the model answered "I cannot access the file". Now the engine only produces a description; the bridge injects it into the user turn as `[image: …]` and runs the normal request **with the client's tools**. Proven in the reported case: image + "read roteiro.html" returned `<title>Serra em Inverno — Gramado & Canela 2027</title>` after a real `Read`, where before it said it could not access the file.
+- **Tool calls are held until the stop reason.** A call cut by `max_tokens` is a fragment: the bridge no longer delivers a half tool call, and logs `tool-truncated=N`.
+- **Repeated reads are caught.** The loop guard now groups by tool + target (file, command, URL), not only by identical arguments: four reads of the same file within six calls add a system warning to stop re-reading and answer.
+- **"Modelo não definido no opencode"**: the provider block was declared under `providers` (plural), which OpenCode ignores. Moved to `provider` with a dated backup; the top-level `model` now resolves.
+
 ## 1.23.1
 
 - **Images work on the OpenAI path.** A pasted image in OpenCode reaches `/v1/chat/completions` as `image_url`; the direct Qoder endpoint drops inline images, so the model used to answer "I cannot see images". The bridge now sends the current turn's images through the pinned 1.1.80 engine, with the same account rotation as text: default (out of credits) -> Ryan -> Ryan01 -> Ryan0, answered in 41 s. Only the last user message is read (the engine caps attachments at 5), and the engine model is `QODER_VISION_MODEL` (default `Auto`) because it validates names against its own list.

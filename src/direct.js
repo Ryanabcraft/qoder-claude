@@ -3,7 +3,7 @@ import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
 import { context, forgetContext } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
-import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
+import { loopGuardEnabled, loopWarning, repeatedCall, repeatedTarget, targetWarning } from './loopGuard.js';
 import { compactMessages } from './compress.js';
 import { repairJson } from './toolValidate.js';
 
@@ -18,6 +18,10 @@ export function buildPayload(body, model, contextWindow, opts = {}) {
   const messages = [];
   const repeat = loopGuardEnabled() ? repeatedCall(body.messages) : null;
   if (repeat) messages.push({ role: 'system', content: loopWarning(repeat) });
+  else {
+    const sameTarget = loopGuardEnabled() ? repeatedTarget(body.messages) : null;
+    if (sameTarget) messages.push({ role: 'system', content: targetWarning(sameTarget) });
+  }
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
 

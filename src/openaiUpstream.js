@@ -2,7 +2,7 @@ import { createStallTimer, stallMs } from './stall.js';
 import { context } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
 import { resolveToolName, toolAliases, toolNames } from './toolNames.js';
-import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
+import { loopGuardEnabled, loopWarning, repeatedCall, repeatedTarget, targetWarning } from './loopGuard.js';
 import { compactMessages } from './compress.js';
 import { needsWeb, runSearch } from './webSearch.js';
 import { repairJson } from './toolValidate.js';
@@ -95,6 +95,10 @@ export function upstreamPayload(body = {}, { act = false } = {}) {
   const messages = toUpstreamMessages(body.messages);
   const repeat = loopGuardEnabled() ? repeatedCall(body.messages) : null;
   if (repeat) messages.unshift({ role: 'system', content: loopWarning(repeat) });
+  else {
+    const sameTarget = loopGuardEnabled() ? repeatedTarget(body.messages) : null;
+    if (sameTarget) messages.unshift({ role: 'system', content: targetWarning(sameTarget) });
+  }
   if (act && process.env.QODER_ACT_PROMPT !== '0') {
     const notice = 'Act, do not narrate: when a tool can do the job, call it in this same turn. '
       + 'Do not list the plan or print the code before applying it.';
@@ -162,6 +166,19 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
   let textChars = 0;
   let toolBytes = 0;
   let toolOverflow = 0;
+  let toolTruncated = 0;
+  const flushTool = (entry) => {
+    if (!entry?.name || entry.emitted) return;
+    entry.emitted = true;
+    onEvent?.({
+      type: 'content_block_start',
+      index: entry.index,
+      content_block: { type: 'tool_use', id: entry.id || `toolu_${entry.raw}`, name: entry.name, input: {} },
+    });
+    if (entry.arguments) {
+      onEvent?.({ type: 'content_block_delta', index: entry.index, delta: { type: 'input_json_delta', partial_json: entry.arguments } });
+    }
+  };
   let ctx;
   try {
     ({ ctx } = context(dir));
@@ -340,14 +357,6 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
         if (call.id) entry.id = call.id;
         if (call.function?.name && !entry.name) {
           entry.name = resolveToolName(aliases.decode(call.function.name), availableTools);
-          if (!searchMode) {
-            entry.emitted = true;
-            onEvent?.({
-              type: 'content_block_start',
-              index: entry.index,
-              content_block: { type: 'tool_use', id: entry.id || `toolu_${i}`, name: entry.name, input: {} },
-            });
-          }
         }
         if (call.function?.arguments) {
           const add = call.function.arguments.length;
@@ -357,13 +366,6 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
           } else {
             toolBytes += add;
             entry.arguments += call.function.arguments;
-            if (!searchMode) {
-              onEvent?.({
-                type: 'content_block_delta',
-                index: entry.index,
-                delta: { type: 'input_json_delta', partial_json: call.function.arguments },
-              });
-            }
           }
         }
       }
@@ -437,16 +439,15 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
       ];
       return await streamChat({ body: { ...body, messages: extended, search: false }, signal, onEvent, dir, act });
     }
-    for (const entry of rest) {
-      entry.emitted = true;
-      onEvent?.({ type: 'content_block_start', index: entry.index, content_block: { type: 'tool_use', id: entry.id || `toolu_${entry.raw}`, name: entry.name, input: {} } });
-      if (entry.arguments) onEvent?.({ type: 'content_block_delta', index: entry.index, delta: { type: 'input_json_delta', partial_json: entry.arguments } });
-    }
+    for (const entry of rest) flushTool(entry);
+  } else if (!searchMode && calls.size) {
+    // A call cut by max_tokens is a fragment, not something the client can run.
+    if (stopReason === 'max_tokens') toolTruncated = [...calls.values()].filter((entry) => entry.name).length;
+    else for (const entry of calls.values()) flushTool(entry);
   }
 
   for (const entry of calls.values()) {
-    if (!entry.name) continue;
-    if (searchMode && !entry.emitted) continue;
+    if (!entry.emitted) continue;
     onEvent?.({ type: 'content_block_stop', index: entry.index });
   }
   const stop = calls.size ? 'tool_use' : (stopReason === 'length' ? 'max_tokens' : 'end_turn');
@@ -470,6 +471,7 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     reasoningChars,
     textChars,
     toolOverflow,
+    toolTruncated,
     ms: Date.now() - startedAt,
   };
 }
