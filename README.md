@@ -122,6 +122,11 @@ Throughput is set by the model, not by the bridge. Measured on the bridge, same 
 thinks will think. If the answer feels slow, switch the model; the first word is what you
 wait for, and a thinking model spends a minute on it.
 
+The model you pick in the client always wins. The bridge matches it against its catalog
+case-insensitively and forwards anything it does not recognize exactly as sent; only a
+request with no model at all falls back to Auto. `QODER_MODEL` remains the explicit
+override for the whole bridge.
+
 Every request now logs what the user feels:
 
 ```

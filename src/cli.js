@@ -35,19 +35,25 @@ for (const k of [
 
 const CLI = resolveCli();
 
-export function resolveModel(requested) {
+// An unknown name is still forwarded as requested: the upstream knows more
+// models than our cached list, and quietly swapping it for Auto is what made
+// "I changed the model" look like a lie.
+export function resolveModel(requested, list = cachedModels()) {
   if (process.env.QODER_MODEL) return process.env.QODER_MODEL;
-  const name = String(requested || '');
+  const name = String(requested || '').trim();
   if (process.env.QODER_MODEL_MAP === '1') {
     if (/opus/i.test(name)) return process.env.QODER_MODEL_OPUS || 'Ultimate';
     if (/haiku/i.test(name)) return process.env.QODER_MODEL_HAIKU || 'Fast';
     if (/sonnet/i.test(name)) return process.env.QODER_MODEL_SONNET || 'Auto';
   }
-  if (name && cachedModels().includes(name)) return name;
-  if (name && process.env.BRIDGE_LOG !== '0') {
-    console.warn(`  model "${name}" is not in the list; using ${DEFAULT_MODEL}`);
+  if (!name) return DEFAULT_MODEL;
+  if (list.includes(name)) return name;
+  const folded = list.find((m) => m.toLowerCase() === name.toLowerCase());
+  if (folded) return folded;
+  if (process.env.BRIDGE_LOG !== '0') {
+    console.warn(`  model "${name}" is not in the cached list; sending it as requested`);
   }
-  return DEFAULT_MODEL;
+  return name;
 }
 
 function baseArgs(cfg) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.21.1
+
+- A model missing from the bridge's cached list is no longer swapped for `Auto` in silence. It is matched case-insensitively against the list first, and otherwise forwarded exactly as the client asked — so picking a model in Claude Code or OpenCode now actually picks it. `QODER_MODEL` is still the explicit override, and an empty model still falls back to Auto.
+- The OpenAI and Responses routes resolve the model the same way and log the model that was really used; `/v1/messages` logs `model=` too.
+- Proof: `POST /v1/messages` with `DeepSeek-V4-Flash` (not in the cached list) answered with `"model":"DeepSeek-V4-Flash"`, and `deepseek-flash` in lower case resolved to the canonical `DeepSeek-Flash`.
+
 ## 1.21.0
 
 - Every request now logs what the user feels: `tok/s`, `textTok`, `think=NN%`, `gap=NNms` and `compact=NN%(NNms)`. Before, the log had only total time, so "slow" was an opinion.

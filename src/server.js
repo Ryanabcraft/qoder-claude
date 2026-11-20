@@ -9,7 +9,7 @@ import { resolveToolName, toolNames } from './toolNames.js';
 import { createOpenAiAdapter } from './openai.js';
 import { streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
-import { runCompletion, shutdownPool, workerConfig } from './cli.js';
+import { runCompletion, resolveModel, shutdownPool, workerConfig } from './cli.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, onModelsChanged, refreshRemote, startModelRefresh } from './models.js';
@@ -438,7 +438,7 @@ async function handleMessages(req, res, body) {
   clearInterval(keepalive);
   if (!out.error) trackUsage(out.usage, out.text || '');
 
-  log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms ${speedOf(out, Date.now() - t0)}`);
+  log(`  done transport=${TRANSPORT} model=${cfg.model} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms ${speedOf(out, Date.now() - t0)}`);
 
   if (out.error && !out.text && !emitted) {
     if (!headersSent) {
@@ -540,8 +540,9 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: { message: e.message, type: 'invalid_request_error' } });
     }
     const chat = toChatRequest(body);
+    chat.model = resolveModel(chat.model || body.model);
     const stream = chat.stream === true;
-    const adapter = createResponsesAdapter({ res, model: body.model || 'Auto', stream });
+    const adapter = createResponsesAdapter({ res, model: chat.model || 'Auto', stream });
     const ac = new AbortController();
     res.on('close', () => { if (!res.writableEnded) ac.abort(); });
     const t0 = Date.now();
@@ -562,7 +563,7 @@ const server = http.createServer(async (req, res) => {
     if (out.error && !adapter.started) {
       return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
     }
-    log(`  responses model=${body.model || 'Auto'} total=${Date.now() - t0}ms ${speedOf(out, Date.now() - t0)}`);
+    log(`  responses model=${chat.model} total=${Date.now() - t0}ms ${speedOf(out, Date.now() - t0)}`);
     adapter.end();
     return true;
   }
@@ -575,16 +576,17 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: { message: e.message, type: 'invalid_request_error' } });
     }
     const stream = body.stream === true;
+    const model = resolveModel(body.model);
     const includeUsage = Boolean(body.stream_options?.include_usage);
     const act = String(req.headers['x-qoder-act'] || '') === '1' || body.qoder_act === true;
-    const adapter = createOpenAiAdapter({ res, model: body.model || 'Auto', stream, includeUsage });
+    const adapter = createOpenAiAdapter({ res, model, stream, includeUsage });
     const ac = new AbortController();
     res.on('close', () => { if (!res.writableEnded) ac.abort(); });
     const t0 = Date.now();
     let out;
     try {
       out = await runOpenAiWithRotation({
-        body,
+        body: { ...body, model },
         act,
         signal: ac.signal,
         onEvent: (ev) => adapter.event(ev.type, ev),
@@ -597,7 +599,7 @@ const server = http.createServer(async (req, res) => {
     if (out.error && !adapter.started) {
       return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
     }
-    log(`  chat/completions model=${body.model || 'Auto'} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'} ${speedOf(out, Date.now() - t0)}`);
+    log(`  chat/completions model=${model} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'} ${speedOf(out, Date.now() - t0)}`);
     adapter.end();
     return true;
   }
