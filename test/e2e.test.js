@@ -68,6 +68,7 @@ test.before(async () => {
       QODER_INFER_ENDPOINT: `http://127.0.0.1:${fake.port}`,
       QODER_COMPRESS_PROXY: `http://127.0.0.1:${compressProxy.address().port}`,
       QODER_COMPRESS_MIN_CHARS: '1',
+      QODER_COMPRESS_MIN_BLOCK: '1',
     },
     stdio: 'ignore',
   });

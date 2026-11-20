@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.2
+
+- Compression now needs a **single block of at least 8 KB** (`QODER_COMPRESS_MIN_BLOCK`) before the proxy is called. In a normal OpenCode turn the context is prose spread across small messages: the proxy returned 0-1% after 100-600 ms, every turn. Those turns now log `compact=off` and skip the call.
+- A real log or JSON dump still compresses: a 46 KB tool result measured **100% ratio, 282 ms**, and the 27,702 → 98 prompt-token case is unchanged.
+- Measured the same coding task: **13.7 s** with the rule, against 16.8 s before.
+
 ## 1.22.1
 
 - **OpenCode gets web search too.** The provider now sends `search: true`; when the question clearly depends on current facts (price, today, latest, versions, news, a URL), the bridge searches before calling the model and injects the results with URLs. The model answers from real data instead of memory. The `web_search` function tool is also declared, and a model that does call it gets the results and a second turn — the loop runs inside the bridge, so the client never sees a tool it cannot execute.

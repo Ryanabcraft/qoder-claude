@@ -25,6 +25,20 @@ function protectedIndexes(messages) {
   return keep;
 }
 
+// Compression only pays for itself on one huge block (a log or a JSON dump).
+// Prose spread across many small messages compresses to nothing, so asking the
+// proxy costs 100-600 ms per turn for a 0-1% gain.
+function largestBlock(messages, keep) {
+  let largest = 0;
+  messages.forEach((message, index) => {
+    if (keep.has(index)) return;
+    const content = message?.content;
+    const size = typeof content === 'string' ? content.length : JSON.stringify(content || '').length;
+    if (size > largest) largest = size;
+  });
+  return largest;
+}
+
 // The current request and the system prompt are never rewritten; everything
 // else may be shortened by the local Headroom proxy.
 export async function compactMessages(messages, { model = '', signal } = {}) {
@@ -37,6 +51,9 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
   const before = JSON.stringify(list).length;
   const min = Number(process.env.QODER_COMPRESS_MIN_CHARS || 20000);
   if (before < min) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'small' };
+  const keep = protectedIndexes(list);
+  const block = Number(process.env.QODER_COMPRESS_MIN_BLOCK || 8000);
+  if (largestBlock(list, keep) < block) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'no-block' };
   const ctrl = new AbortController();
   const timer = setTimeout(() => {
     try { ctrl.abort(); } catch {}

@@ -4,6 +4,7 @@ import http from 'node:http';
 
 process.env.QODER_COMPRESS_TIMEOUT_MS = '300';
 process.env.QODER_COMPRESS_MIN_CHARS = '1';
+process.env.QODER_COMPRESS_MIN_BLOCK = '1';
 const { compactMessages } = await import('../src/compress.js');
 
 const long = 'x'.repeat(4000);
@@ -128,4 +129,23 @@ test('every skip is named so the log says why', async () => {
   assert.equal(failed.reason, 'http-500');
   assert.ok(failed.ms >= 0);
   assert.equal(failed.skipped, true);
+});
+
+test("many small messages skip the proxy: no single block worth crushing", async () => {
+  process.env.QODER_COMPRESS_MIN_BLOCK = "8000";
+  let called = false;
+  const { server, url } = await proxy((req, res) => { called = true; res.writeHead(200); res.end("{}"); });
+  process.env.QODER_COMPRESS_PROXY = url;
+  const small = [
+    { role: "system", content: "s" },
+    { role: "user", content: "a".repeat(3000) },
+    { role: "assistant", content: "b".repeat(3000) },
+    { role: "tool", tool_call_id: "c", content: "c".repeat(3000) },
+    { role: "user", content: "d".repeat(3000) },
+  ];
+  const out = await compactMessages(small, { model: "Auto" });
+  server.close();
+  process.env.QODER_COMPRESS_MIN_BLOCK = "1";
+  assert.equal(out.reason, "no-block");
+  assert.equal(called, false);
 });

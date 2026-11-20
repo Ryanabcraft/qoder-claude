@@ -107,6 +107,10 @@ The system prompt and the message you just sent are never rewritten; a slow or f
 proxy is ignored after 800 ms. `QODER_COMPRESS=0` turns it off. The request log prints
 `compact=NN%(NNNms)` or `compact=off`.
 
+The proxy is only called when one message carries **at least 8 KB** of content
+(`QODER_COMPRESS_MIN_BLOCK`), because that is where the gain lives — a log or a JSON dump.
+Prose spread across small messages compresses to nothing and used to cost 100–600 ms per turn.
+
 ## Web search
 
 When the client asks for Anthropic's server-side search tool (`web_search_20250305`), the
