@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.23.5
+
+- **Parity: the fixes from 1.23.4 reach the Claude Code path too.** An image on `/v1/messages` used to run the vision engine as the whole answer (the engine has no tools), so a message with a picture could not call `Read`. Both paths now share `visionNoteFor()`: the engine produces one description (cached by image hash for 30 minutes), the description goes into the user turn as `[image: …]`, and the normal request runs with the client's tools. Proven: image + tools on `/v1/messages` returned `stop_reason: tool_use` with `Read`.
+- The "files are on disk, never ask the user to attach one" rule now applies to the Claude Code path as well.
+- Claude Code's tool block is also withheld when the model is cut by `max_tokens` — a half call is not delivered.
+- Already shared before and unchanged: compression circuit breaker, quota-as-text rotation, the target-based loop guard.
+
 ## 1.23.4
 
 - **The image is described once, not every turn.** OpenCode keeps the picture in the history, so each later request re-ran the vision engine (10-40 s per turn). Descriptions are now cached by image hash for 30 minutes: `vision=1 cached`.

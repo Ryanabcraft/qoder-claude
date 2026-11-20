@@ -25,6 +25,7 @@ export function buildPayload(body, model, contextWindow, opts = {}) {
   }
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
+  messages.push({ role: 'system', content: 'The project files are on disk: never ask the user to paste or attach a file that is in the working directory - call Read (or Glob) and read it yourself.' });
   if (process.env.QODER_VERBOSITY === 'brief') messages.push({ role: 'system', content: BRIEF_NOTICE });
 
   const all = Array.isArray(body.messages) ? body.messages : [];
@@ -231,7 +232,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     cleanup();
   }
 
-  if (calls.size) {
+  if (calls.size && stopReason !== 'max_tokens') {
     const list = [...calls.values()]
       .filter((c) => c.name)
       .map((c) => {

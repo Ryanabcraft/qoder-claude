@@ -152,8 +152,52 @@ function imageKey(images) {
   return hash.digest('hex');
 }
 
-function lastUserText(messages) {
-  for (let i = (messages || []).length - 1; i >= 0; i -= 1) {
+// Anthropic clients send images as base64 blocks on the current turn.
+function collectAnthropicImages(messages = []) {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message?.role !== 'user' || !Array.isArray(message.content)) continue;
+    const out = message.content
+      .filter((block) => block?.type === 'image' && block.source?.type === 'base64' && block.source.data)
+      .map((block) => ({ mediaType: block.source.media_type || 'image/png', data: block.source.data }));
+    if (out.length) return out;
+  }
+  return [];
+}
+
+// One description per image, shared by both API paths.
+async function visionNoteFor(images, log) {
+  const key = imageKey(images);
+  const cached = visionCache.get(key);
+  if (cached && Date.now() - cached.at < VISION_TTL) {
+    log(`  vision=${images.length} cached`);
+    return cached.text;
+  }
+  if (!visionCliPath()) return 'the image could not be read (vision engine not installed)';
+  const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
+  const prompt = 'Describe this image in one short paragraph: the text it shows, the layout, and the visual elements that matter for changing code.';
+  for (const account of candidateAccounts()) {
+    const cfgV = { ...workerConfig({ model: visionModel }, ''), configDir: account.dir, account: account.name };
+    const v = await runVision({ built: { images, prompt, system: '' }, cfg: cfgV, log });
+    if (!v?.text || looksQuotaExhausted(v.text)) {
+      if (v?.text) {
+        markCooldown(account.name, 'quota: exhausted');
+        log(`  account ${account.name} paused: quota`);
+      } else {
+        log(`  vision failed on ${account.name}: ${v?.error || 'empty'}`);
+      }
+      continue;
+    }
+    if (visionCache.size > 50) visionCache.clear();
+    visionCache.set(key, { at: Date.now(), text: v.text });
+    log(`  vision=${images.length} account=${account.name} ${v.text.length} chars`);
+    return v.text;
+  }
+  log('  vision found no account with credits');
+  return 'the image could not be read';
+}
+
+function lastUserText(messages) {  for (let i = (messages || []).length - 1; i >= 0; i -= 1) {
     const message = messages[i];
     if (message?.role !== 'user') continue;
     if (typeof message.content === 'string') return message.content;
@@ -335,7 +379,22 @@ async function handleMessages(req, res, body) {
     body.tools = body.tools.filter((item) => !/^web_fetch_/.test(String(item?.type || '')));
     log(`  web_fetch ${url || '(none)'} -> ${found.error || `${found.page.text.length} chars`}`);
   }
-  const built = buildPrompt(body, 0, log, { nativeTools: true });  const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
+  const anthropicImages = collectAnthropicImages(body.messages);
+  if (anthropicImages.length) {
+    const note = await visionNoteFor(anthropicImages, log);
+    for (let i = body.messages.length - 1; i >= 0; i -= 1) {
+      const message = body.messages[i];
+      if (message?.role !== 'user' || !Array.isArray(message.content)) continue;
+      const text = message.content
+        .filter((block) => block?.type !== 'image')
+        .map((block) => (typeof block === 'string' ? block : block?.text || ''))
+        .join('\n');
+      body.messages[i] = { ...message, content: `${text}\n[image: ${note}]`.trim() };
+      break;
+    }
+  }
+  const built = buildPrompt(body, 0, log, { nativeTools: true });
+  const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
   let inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
@@ -343,9 +402,7 @@ async function handleMessages(req, res, body) {
     const history = built.historyImages ? ` (+${built.historyImages} from history)` : '';
     log(`  images ${built.images.length}${history}${visionCliPath() ? '' : ' (vision engine not installed)'}`);
   }
-  const runner = built.images.length && visionCliPath()
-    ? (args) => runVision({ ...args, built, log }) || run(args)
-    : run;
+  const runner = run;
   const msgId = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   const started = Date.now();
   let firstByteAt = 0;
@@ -713,45 +770,7 @@ const server = http.createServer(async (req, res) => {
     const t0 = Date.now();
     const images = collectImages(body.messages);
     if (images.length) {
-      // The image engine has no tools. Describe the image, put the description in
-      // the user turn, and let the normal request run with the client's tools —
-      // otherwise a turn with a picture becomes a blind turn.
-      let visionNote = '';
-      const key = imageKey(images);
-      const cached = visionCache.get(key);
-      if (cached && Date.now() - cached.at < VISION_TTL) {
-        visionNote = cached.text;
-        log(`  vision=${images.length} cached`);
-      } else if (visionCliPath()) {
-        const prompt = lastUserText(body.messages);
-        const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
-        for (const account of candidateAccounts()) {
-          const cfgV = { ...workerConfig({ ...body, model: visionModel }, ''), configDir: account.dir, account: account.name };
-          const v = await runVision({ built: { images, prompt, system: '' }, cfg: cfgV, signal: ac.signal, log });
-          if (!v?.text || looksQuotaExhausted(v.text)) {
-            if (v?.text) {
-              markCooldown(account.name, 'quota: exhausted');
-              log(`  account ${account.name} paused: quota`);
-            } else {
-              log(`  vision failed on ${account.name}: ${v?.error || 'empty'}`);
-            }
-            continue;
-          }
-          visionNote = v.text;
-          log(`  vision=${images.length} account=${account.name} ${v.text.length} chars`);
-          break;
-        }
-        if (!visionNote) {
-          visionNote = 'the image could not be read';
-          log('  vision found no account with credits');
-        } else {
-          if (visionCache.size > 50) visionCache.clear();
-          visionCache.set(key, { at: Date.now(), text: visionNote });
-        }
-      } else {
-        visionNote = 'the image could not be read (vision engine not installed)';
-        log(`  images ${images.length} ignored (vision engine not installed)`);
-      }
+      const visionNote = await visionNoteFor(images, log);
       for (let i = body.messages.length - 1; i >= 0; i -= 1) {
         const message = body.messages[i];
         if (message?.role !== 'user') continue;
