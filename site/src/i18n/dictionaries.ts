@@ -109,10 +109,10 @@ export const en: Dict = {
     intro:
       'The honest list. If any of these breaks your workflow, the bridge is not the right tool — and it is better to know before installing.',
     rows: [
-      ['Latency', '1–2 s per turn warm, ~2 s right after start; tool round-trips add 3–15 s'],
+      ['Latency', '1–3 s to the first text on a flash model; a thinking model can spend a minute reasoning before the first word'],
       ['Context', '1M by default; the full history still travels on every request'],
       ['Transport', 'direct by default — the embedded WASM signs the request; the CLI stays as fallback'],
-      ['Tools', 'client-side, including WebSearch/WebFetch and MCP; web tools get a schema and an allow rule'],
+      ['Tools', 'client-side; the WebSearch and WebFetch server tools run in the bridge — real results, clean page text, private addresses refused'],
     ],
     fullA: 'Full detail, including how each request is signed locally, lives in the',
     fullB: 'repository',
@@ -201,10 +201,10 @@ export const pt: Dict = {
     intro:
       'A lista honesta. Se algum destes pontos quebra o seu fluxo, a bridge não é a ferramenta certa — e é melhor saber antes de instalar.',
     rows: [
-      ['Latência', '1–2 s por turno quente, ~2 s logo após o start; round-trip de ferramenta soma 3–15 s'],
+      ['Latência', '1–3 s até o primeiro texto num modelo flash; modelo de raciocínio pode passar um minuto pensando antes da primeira palavra'],
       ['Contexto', '1M por padrão; o histórico inteiro continua indo em cada requisição'],
       ['Transporte', 'direto por padrão — o WASM embutido assina a requisição; o CLI fica como fallback'],
-      ['Ferramentas', 'do lado do cliente, incluindo WebSearch/WebFetch e MCP; as web tools ganham schema e regra de allow'],
+      ['Ferramentas', 'do lado do cliente; as server tools WebSearch e WebFetch rodam na bridge — resultado real, texto limpo, endereço privado recusado'],
     ],
     fullA: 'O detalhe completo, incluindo como cada request é assinado localmente, está no',
     fullB: 'repositório',
@@ -293,10 +293,10 @@ export const es: Dict = {
     intro:
       'La lista honesta. Si alguno de estos puntos rompe tu flujo, el puente no es la herramienta adecuada — y es mejor saberlo antes de instalar.',
     rows: [
-      ['Latencia', '1–2 s por turno en caliente, ~2 s justo tras el inicio; un round-trip de herramienta suma 3–15 s'],
+      ['Latencia', '1–3 s hasta el primer texto con un modelo flash; un modelo de razonamiento puede pasar un minuto pensando antes de la primera palabra'],
       ['Contexto', '1M por defecto; el historial completo sigue viajando en cada petición'],
       ['Transporte', 'directo por defecto — el WASM embebido firma la petición; el CLI queda como fallback'],
-      ['Herramientas', 'del lado del cliente, incluidas WebSearch/WebFetch y MCP; las web tools reciben esquema y regla de allow'],
+      ['Herramientas', 'del lado del cliente; las server tools WebSearch y WebFetch corren en el puente — resultados reales, texto limpio y direcciones privadas rechazadas'],
     ],
     fullA: 'El detalle completo, incluido cómo se firma cada petición localmente, está en el',
     fullB: 'repositorio',
@@ -385,10 +385,10 @@ export const fr: Dict = {
     intro:
       'La liste honnête. Si l’un de ces points casse votre flux, le pont n’est pas le bon outil — et mieux vaut le savoir avant d’installer.',
     rows: [
-      ['Latence', '1–2 s par tour à chaud, ~2 s juste après le démarrage ; un aller-retour d’outil ajoute 3–15 s'],
+      ['Latence', '1–3 s jusqu’au premier texte avec un modèle flash ; un modèle de raisonnement peut passer une minute à réfléchir avant le premier mot'],
       ['Contexte', '1M par défaut ; l’historique complet voyage toujours à chaque requête'],
       ['Transport', 'direct par défaut — le WASM embarqué signe la requête ; le CLI reste en secours'],
-      ['Outils', 'côté client, y compris WebSearch/WebFetch et MCP ; les web tools reçoivent un schéma et une règle allow'],
+      ['Outils', 'côté client ; les server tools WebSearch et WebFetch tournent dans le pont — vrais résultats, texte propre, adresses privées refusées'],
     ],
     fullA: 'Le détail complet, y compris la signature locale de chaque requête, se trouve dans le',
     fullB: 'dépôt',
@@ -477,10 +477,10 @@ export const de: Dict = {
     intro:
       'Die ehrliche Liste. Wenn einer dieser Punkte deinen Ablauf bricht, ist die Bridge nicht das richtige Werkzeug — besser vor der Installation wissen.',
     rows: [
-      ['Latenz', '1–2 s pro Turn warm, ~2 s direkt nach dem Start; ein Tool-Roundtrip kostet 3–15 s mehr'],
+      ['Latenz', '1–3 s bis zum ersten Text bei einem Flash-Modell; ein Denk-Modell kann eine Minute nachdenken, bevor das erste Wort kommt'],
       ['Kontext', '1M standardmäßig; der gesamte Verlauf geht weiterhin bei jeder Anfrage mit'],
       ['Transport', 'standardmäßig direkt — das eingebettete WASM signiert die Anfrage; die CLI bleibt als Fallback'],
-      ['Werkzeuge', 'clientseitig, inklusive WebSearch/WebFetch und MCP; Web-Tools bekommen Schema und Allow-Regel'],
+      ['Werkzeuge', 'clientseitig; die Server-Tools WebSearch und WebFetch laufen in der Bridge — echte Ergebnisse, sauberer Text, private Adressen abgelehnt'],
     ],
     fullA: 'Alle Details, einschließlich der lokalen Signatur jeder Anfrage, stehen im',
     fullB: 'Repository',
