@@ -29,6 +29,7 @@ Existing environment variables win over the file. Values set by the launcher (su
 | `quota` | `true` | read real Qoder quota per account |
 | `quotaPollMs` | `300000` | quota poll interval (60s–1h) |
 | `rewardAutoClaim` | `false` | redeem the daily 100-credit campaign automatically |
+| `compressProxy` | empty | local Headroom proxy, e.g. `http://127.0.0.1:8790` |
 
 ## Environment variables
 
@@ -63,6 +64,16 @@ Existing environment variables win over the file. Values set by the launcher (su
 | `BRIDGE_DUMP` | empty | dump the last request body |
 | `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | per-image cap |
 | `BRIDGE_IMAGE_MAX_COUNT` | `50` | images per request |
+| `QODER_COMPRESS_PROXY` | from config | Headroom proxy for context compression |
+| `QODER_COMPRESS` | on | `0` disables compression |
+| `QODER_COMPRESS_TIMEOUT_MS` | `800` | give up on the proxy after this |
+| `QODER_COMPRESS_MIN_CHARS` | `20000` | payload floor |
+| `QODER_COMPRESS_MIN_BLOCK` | `8000` | one message must carry at least this to be worth compressing |
+| `QODER_SEARCH` | `auto` | `exa`, `ddg` or `auto` |
+| `QODER_FETCH_MAX_CHARS` | `24000` | text kept from a fetched page |
+| `QODER_FETCH_TIMEOUT_MS` | `20000` | fetch timeout |
+| `QODER_TOOL_ARG_MAX` | `1048576` | tool arguments per call |
+| `QODER_TOOL_TOTAL_MAX` | `16777216` | tool arguments per response |
 
 The Claude settings tab writes `~/.claude/settings.json` (model and 1M context) with a timestamped
 backup. The web-tools action reuses the same Exa and allowlist setup as the installer.

@@ -21,6 +21,10 @@ features:
     details: Add several Qoder profiles; quota, 403, 429 and lost sessions rotate to the next one.
   - title: Direct transport
     details: The embedded WASM signs requests locally and calls api1.qoder.sh; the CLI stays as fallback.
+  - title: Web search and fetch
+    details: Server-side search and page fetch run in the bridge — real results with URLs, clean page text, private addresses refused.
+  - title: Three APIs
+    details: Anthropic Messages, OpenAI Chat Completions and the OpenAI Responses API, all with the same rotation and compression.
   - title: Nine-page console
     details: Accounts, routing, analytics, health, usage, models and settings at 127.0.0.1:8787/ui.
 ---

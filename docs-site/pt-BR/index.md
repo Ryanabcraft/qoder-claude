@@ -21,6 +21,10 @@ features:
     details: Várias contas Qoder; cota, 403, 429 e sessão perdida rotacionam para a próxima.
   - title: Transporte direto
     details: O WASM embutido assina localmente e chama api1.qoder.sh; o CLI fica como fallback.
+  - title: Busca e leitura de página
+    details: Busca e fetch de página rodam na bridge — resultados com URL, texto limpo e endereços privados recusados.
+  - title: Três APIs
+    details: Anthropic Messages, OpenAI Chat Completions e a Responses API, com a mesma rotação e compressão.
   - title: Console de nove páginas
     details: Contas, routing, analytics, health, usage, modelos e settings em 127.0.0.1:8787/ui.
 ---

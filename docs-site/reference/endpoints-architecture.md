@@ -6,6 +6,7 @@
 |---|---|---|
 | POST | `/v1/messages` | Anthropic Messages API; streams by default |
 | POST | `/v1/chat/completions` | OpenAI Chat Completions, for any OpenAI client; streams when `stream` is true. The client's own system prompt and tools are passed through unchanged — this is an API, not the Claude Code agent. |
+| POST | `/v1/responses` | OpenAI Responses API (`input`, `instructions`, Responses-style tools); streams `response.created` … `response.completed` |
 | GET | `/v1/models` | model list, in both the Anthropic and the OpenAI shape |
 | POST | `/v1/messages/count_tokens` | token estimate |
 | GET | `/health` | liveness |
@@ -17,6 +18,12 @@ Set `ANTHROPIC_BASE_URL` to `http://127.0.0.1:8787`. When `BRIDGE_API_KEY` is se
 Streaming emits `message_start`, `content_block_*`, `message_delta` and `message_stop`. A `: ping`
 comment goes out every 12 seconds after the stream opens. Tool calls arrive as real `tool_use`
 blocks; the bridge converts the model text shape before it reaches Claude Code.
+
+Anthropic server tools are handled by the bridge, not passed upstream: a request declaring
+`web_search_20250305` or `web_fetch_20250910` gets the search or the page fetched locally and the
+result streamed as `server_tool_use` plus `web_search_tool_result` / `web_fetch_tool_result`.
+
+An empty request body is rejected with 400 on all three routes, before it can spend a quota call.
 
 ## Dashboard API
 

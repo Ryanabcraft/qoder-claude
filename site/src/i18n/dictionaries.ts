@@ -85,7 +85,7 @@ export const en: Dict = {
       },
       {
         title: 'Web search',
-        body: 'Deferred tools arrive by name only; the bridge supplies a schema and routes WebSearch to the Exa MCP, which the installer configures and allowlists — so results come back real instead of empty.',
+        body: 'Web search and page fetch run inside the bridge, without a key or an MCP: results come back real, pages come back as clean text, and private addresses are refused.',
       },
       {
         title: 'Images',
@@ -177,7 +177,7 @@ export const pt: Dict = {
       },
       {
         title: 'Busca na web',
-        body: 'Ferramentas deferred chegam só pelo nome; a bridge entrega o schema e roteia o WebSearch para o MCP Exa, que o instalador configura e libera na allowlist — resultado real em vez de lista vazia.',
+        body: 'Busca e leitura de página rodam dentro da bridge, sem chave e sem MCP: resultados reais, texto limpo e endereços privados recusados.',
       },
       {
         title: 'Imagens',
@@ -269,7 +269,7 @@ export const es: Dict = {
       },
       {
         title: 'Búsqueda web',
-        body: 'Las herramientas deferred llegan solo por nombre; el puente entrega el esquema y enruta WebSearch al MCP Exa, que el instalador configura y añade a la allowlist — resultados reales en vez de lista vacía.',
+        body: 'La búsqueda y la lectura de páginas corren dentro del puente, sin clave ni MCP: resultados reales, texto limpio y direcciones privadas rechazadas.',
       },
       {
         title: 'Imágenes',
@@ -361,7 +361,7 @@ export const fr: Dict = {
       },
       {
         title: 'Recherche web',
-        body: 'Les outils deferred arrivent par leur nom ; le pont fournit le schéma et route WebSearch vers le MCP Exa, que l’installateur configure et autorise — de vrais résultats au lieu d’une liste vide.',
+        body: 'La recherche et la lecture de pages tournent dans le pont, sans clé ni MCP : de vrais résultats, du texte propre, et les adresses privées refusées.',
       },
       {
         title: 'Images',
@@ -453,7 +453,7 @@ export const de: Dict = {
       },
       {
         title: 'Websuche',
-        body: 'Deferred Tools kommen nur mit Namen an; die Bridge liefert ein Schema und leitet WebSearch an den Exa-MCP weiter, den der Installer einrichtet und freigibt — echte Ergebnisse statt leerer Liste.',
+        body: 'Suche und Seitenabruf laufen in der Bridge, ohne Schlüssel und ohne MCP: echte Ergebnisse, sauberer Text, private Adressen abgelehnt.',
       },
       {
         title: 'Bilder',

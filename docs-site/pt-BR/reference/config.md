@@ -28,6 +28,7 @@ Variáveis de ambiente existentes vencem o arquivo. Valores definidos pelo launc
 | `quota` | `true` | lê a cota real da Qoder por conta |
 | `quotaPollMs` | `300000` | intervalo da consulta de cota (60s–1h) |
 | `rewardAutoClaim` | `false` | resgata a campanha diária de 100 créditos sozinho |
+| `compressProxy` | vazio | proxy Headroom local, ex. `http://127.0.0.1:8790` |
 | `log` | `true` | access log; restart |
 
 ## Variáveis de ambiente
@@ -63,6 +64,16 @@ Variáveis de ambiente existentes vencem o arquivo. Valores definidos pelo launc
 | `BRIDGE_DUMP` | vazio | grava o último request |
 | `BRIDGE_IMAGE_MAX_BYTES` | `10485760` | tamanho por imagem |
 | `BRIDGE_IMAGE_MAX_COUNT` | `50` | imagens por request |
+| `QODER_COMPRESS_PROXY` | do config | proxy Headroom para compressão de contexto |
+| `QODER_COMPRESS` | ligado | `0` desliga a compressão |
+| `QODER_COMPRESS_TIMEOUT_MS` | `800` | desiste do proxy depois disso |
+| `QODER_COMPRESS_MIN_CHARS` | `20000` | piso do payload |
+| `QODER_COMPRESS_MIN_BLOCK` | `8000` | uma mensagem precisa ter ao menos isso para valer comprimir |
+| `QODER_SEARCH` | `auto` | `exa`, `ddg` ou `auto` |
+| `QODER_FETCH_MAX_CHARS` | `24000` | texto mantido de uma página |
+| `QODER_FETCH_TIMEOUT_MS` | `20000` | timeout do fetch |
+| `QODER_TOOL_ARG_MAX` | `1048576` | argumentos de tool por chamada |
+| `QODER_TOOL_TOTAL_MAX` | `16777216` | argumentos de tool por resposta |
 
 A aba AI grava `~/.claude/settings.json` (modelo e 1M) com backup. O botão de web tools reaplica Exa
 e allowlist como o instalador.

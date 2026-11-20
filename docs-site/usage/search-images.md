@@ -1,21 +1,37 @@
 # Search and images
 
-## Web search
+## Web search, executed by the bridge
 
-Claude Code sends `WebSearch`, `WebFetch` and MCP tools by name only (deferred). The bridge injects
-minimal schemas into the request so the model can call them without a `ToolSearch` round trip.
+Clients that declare Anthropic's server tools (`web_search_20250305`) get real results: the bridge
+runs the search itself and streams the standard `server_tool_use` + `web_search_tool_result`
+blocks, then answers with the results in context. No API key and no MCP are required.
 
-Behind the local gateway the built-in `WebSearch` returns no results, so search is routed through
-Exa:
+- **Backend order**: the Exa MCP endpoint (`https://mcp.exa.ai/mcp`, works without a key), then
+  DuckDuckGo HTML. `QODER_SEARCH=exa|ddg` pins one.
+- Results are cached for five minutes; `allowed_domains` / `blocked_domains` from the tool are
+  applied before anything is returned.
+- A failed search becomes a `web_search_tool_result_error`, never a broken stream.
 
-- The installer and `qclaude` add `mcp__exa__web_search_exa` when it is missing.
-- `WebSearch` and `mcp__exa__web_search_exa` are allowlisted, so auto mode does not block them with
-  a safety classifier.
-- `WebFetch` is routed to `mcp__exa__web_fetch_exa`.
-- The model is told to attempt the web tool before answering that search is unavailable.
+OpenCode does not know server tools, so its generated provider sends `search: true`. When the
+question depends on current facts (prices, "today", latest versions, news, a URL), the bridge
+searches **before** calling the model and injects the results with URLs — models here tend to
+narrate tool calls instead of emitting them. A model that does call the declared `web_search`
+function gets the results plus a second turn, entirely inside the bridge.
 
-`QODER_NO_EXA=1` skips the MCP setup. The dashboard Settings → Security page can re-apply the Exa
-MCP and the allowlist.
+The Exa MCP is still added to Claude Code by the installer when missing; it is optional now, not the
+only path. `QODER_NO_EXA=1` skips that setup.
+
+## Web fetch
+
+Anthropic's `web_fetch_20250910` also runs in the bridge: the page is fetched, scripts and styles
+are stripped, and the title plus visible text are streamed back (24k chars, 2 MB of bytes, 5
+redirects, 20 s timeout).
+
+Private targets are refused before any connection: `file://`, `localhost`, `127/8`, `10/8`,
+`172.16/12`, `192.168/16`, `169.254/16`, `::1`, `fc00::/7`, and public hostnames that resolve to a
+private address. Without that, a page could ask the model to read the dashboard on `127.0.0.1:8787`
+or another machine on your network. To read a local server, use the terminal tool (`curl`) — the
+rule only applies to the fetch executed by the bridge.
 
 ## Images
 
