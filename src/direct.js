@@ -6,6 +6,7 @@ import { combineSignals } from './abort.js';
 import { loopGuardEnabled, loopWarning, repeatedCall, repeatedTarget, targetWarning } from './loopGuard.js';
 import { compactMessages } from './compress.js';
 import { repairJson } from './toolValidate.js';
+import { BRIEF_NOTICE } from './openaiUpstream.js';
 
 export { forgetContext };
 
@@ -24,6 +25,7 @@ export function buildPayload(body, model, contextWindow, opts = {}) {
   }
   const system = systemToText(body.system);
   if (system) messages.push({ role: 'system', content: system });
+  if (process.env.QODER_VERBOSITY === 'brief') messages.push({ role: 'system', content: BRIEF_NOTICE });
 
   const all = Array.isArray(body.messages) ? body.messages : [];
   const lastAssistant = all.reduce((index, m, i) => (m.role === 'assistant' ? i : index), -1);

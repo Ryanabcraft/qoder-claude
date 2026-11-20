@@ -2,6 +2,18 @@ import { combineSignals } from './abort.js';
 import { effectiveConfig } from './config.js';
 
 const TIMEOUT_MS = Number(process.env.QODER_COMPRESS_TIMEOUT_MS || 800);
+const CIRCUIT_MS = Number(process.env.QODER_COMPRESS_COOLDOWN_MS || 10 * 60 * 1000);
+let consecutiveTimeouts = 0;
+let circuitUntil = 0;
+
+export function compressCircuit() {
+  return { consecutiveTimeouts, circuitUntil };
+}
+
+export function resetCompressCircuit() {
+  consecutiveTimeouts = 0;
+  circuitUntil = 0;
+}
 
 export function compressProxy() {
   let value = process.env.QODER_COMPRESS_PROXY || '';
@@ -51,6 +63,7 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
   const before = JSON.stringify(list).length;
   const min = Number(process.env.QODER_COMPRESS_MIN_CHARS || 20000);
   if (before < min) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'small' };
+  if (Date.now() < circuitUntil) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'circuit' };
   const keep = protectedIndexes(list);
   const block = Number(process.env.QODER_COMPRESS_MIN_BLOCK || 8000);
   if (largestBlock(list, keep) < block) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'no-block' };
@@ -75,10 +88,18 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
 
     for (const index of protectedIndexes(list)) out[index] = list[index];
     const after = JSON.stringify(out).length;
+    consecutiveTimeouts = 0;
     return { messages: out, ratio: before ? Math.max(0, 1 - after / before) : 0, skipped: false, ms: Date.now() - startedAt, reason: 'ok' };
   } catch (e) {
     const ms = Date.now() - startedAt;
     const reason = ctrl.signal.aborted ? 'timeout' : signal?.aborted ? 'aborted' : 'error';
+    if (reason === 'timeout') {
+      consecutiveTimeouts += 1;
+      if (consecutiveTimeouts >= 2) {
+        circuitUntil = Date.now() + CIRCUIT_MS;
+        consecutiveTimeouts = 0;
+      }
+    }
     return { messages: list, ratio: 0, skipped: true, ms, reason };
   } finally {
     clearTimeout(timer);

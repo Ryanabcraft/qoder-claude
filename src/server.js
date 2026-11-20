@@ -3,7 +3,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './prompt.js';
 import { resolveToolName, toolNames } from './toolNames.js';
 import { createOpenAiAdapter } from './openai.js';
@@ -139,6 +139,17 @@ function fetchBlocks(page) {
     { type: 'server_tool_use', id, name: 'web_fetch', input: { url: page.url || '' } },
     { type: 'web_fetch_tool_result', tool_use_id: id, content: payload },
   ];
+}
+
+// The client keeps the image in the history, so every later turn would re-run
+// the vision engine. Describe each picture once.
+const visionCache = new Map();
+const VISION_TTL = 30 * 60 * 1000;
+
+function imageKey(images) {
+  const hash = createHash('sha1');
+  for (const image of images) hash.update(image.mediaType || '').update(image.data || '');
+  return hash.digest('hex');
 }
 
 function lastUserText(messages) {
@@ -706,7 +717,12 @@ const server = http.createServer(async (req, res) => {
       // the user turn, and let the normal request run with the client's tools —
       // otherwise a turn with a picture becomes a blind turn.
       let visionNote = '';
-      if (visionCliPath()) {
+      const key = imageKey(images);
+      const cached = visionCache.get(key);
+      if (cached && Date.now() - cached.at < VISION_TTL) {
+        visionNote = cached.text;
+        log(`  vision=${images.length} cached`);
+      } else if (visionCliPath()) {
         const prompt = lastUserText(body.messages);
         const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
         for (const account of candidateAccounts()) {
@@ -728,6 +744,9 @@ const server = http.createServer(async (req, res) => {
         if (!visionNote) {
           visionNote = 'the image could not be read';
           log('  vision found no account with credits');
+        } else {
+          if (visionCache.size > 50) visionCache.clear();
+          visionCache.set(key, { at: Date.now(), text: visionNote });
         }
       } else {
         visionNote = 'the image could not be read (vision engine not installed)';

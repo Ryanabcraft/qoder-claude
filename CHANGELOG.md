@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.23.4
+
+- **The image is described once, not every turn.** OpenCode keeps the picture in the history, so each later request re-ran the vision engine (10-40 s per turn). Descriptions are now cached by image hash for 30 minutes: `vision=1 cached`.
+- **Compression circuit breaker.** Two consecutive timeouts disable the proxy for 10 minutes (`QODER_COMPRESS_COOLDOWN_MS`), logging `compact=off(circuit)`. The log was full of `compact=0%(80xms timeout)` — a wasted second per turn with no gain.
+- **Brevity rule.** With `act` (the OpenCode provider), the system notice now asks for at most three short sentences after the work, no emoji, no tables, no list of alternatives, no closing question. `QODER_VERBOSITY=normal` turns it off.
+- **No "send me the file".** The same notice states the project files are on disk and the model must call Read/Glob instead of asking the user to paste them. Proven: the same request that answered "Envie o roteiro.html" now read the file (`in=34,782`) and edited it.
+- The OpenCode agent still appends its own "What I skipped / Risk" block; that text belongs to the client's prompt, not to the model.
+
 ## 1.23.3
 
 - The action notice now says it plainly: do not offer to generate images and do not describe an image you are going to make — when the work is an icon, a header or any visual, implement it in HTML/CSS/SVG in the file itself. Proven on a copy of `roteiro.html`: the model replaced the header icon with the existing `i-snow` SVG, changed the CSS, and applied the edit directly — no offer, no question, 47 s.

@@ -12,6 +12,14 @@ const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
 const MAX_TOOL_ARG = Number(process.env.QODER_TOOL_ARG_MAX || 1024 * 1024);
 const MAX_TOOL_TOTAL = Number(process.env.QODER_TOOL_TOTAL_MAX || 16 * 1024 * 1024);
 
+export const BRIEF_NOTICE = 'Answer in the user\'s language and keep it short: after doing the work, at most three short sentences. '
+  + 'No emoji, no tables, no list of alternatives, and no closing question such as "want me to do more?". '
+  + 'One request means one action and its result.';
+
+export function verbosityBrief() {
+  return (process.env.QODER_VERBOSITY || 'brief') !== 'normal';
+}
+
 function textOf(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return content == null ? '' : String(content);
@@ -100,10 +108,13 @@ export function upstreamPayload(body = {}, { act = false } = {}) {
     if (sameTarget) messages.unshift({ role: 'system', content: targetWarning(sameTarget) });
   }
   if (act && process.env.QODER_ACT_PROMPT !== '0') {
+    const brevity = verbosityBrief() ? ` ${BRIEF_NOTICE}` : '';
     const notice = 'Act, do not narrate: when a tool can do the job, call it in this same turn. '
       + 'Do not list the plan or print the code before applying it. '
+      + 'The project files are on disk: never ask the user to paste or attach a file that is in the working directory — call Read (or Glob) and read it yourself. '
       + 'Do not offer to generate images and do not describe an image you are going to make: '
-      + 'when the work is an icon, a header or any visual, implement it in HTML/CSS/SVG in the file itself.';
+      + 'when the work is an icon, a header or any visual, implement it in HTML/CSS/SVG in the file itself.'
+      + brevity;
     const at = messages.findIndex((m) => m.role === 'system');
     if (at >= 0) messages[at] = { role: 'system', content: `${messages[at].content}
 
