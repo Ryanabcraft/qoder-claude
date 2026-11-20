@@ -107,4 +107,25 @@ test('a small conversation never calls the proxy', async () => {
   process.env.QODER_COMPRESS_MIN_CHARS = '1';
   assert.equal(out.skipped, true);
   assert.equal(out.messages, small);
+  assert.equal(out.reason, 'small');
+});
+
+test('every skip is named so the log says why', async () => {
+  process.env.QODER_COMPRESS_PROXY = 'http://127.0.0.1:1';
+  process.env.QODER_COMPRESS = '0';
+  const off = await compactMessages(messages(), { model: 'Auto' });
+  delete process.env.QODER_COMPRESS;
+  assert.equal(off.reason, 'disabled');
+  assert.equal(off.ms, 0);
+
+  const { server, url } = await proxy((req, res) => {
+    res.writeHead(500, { 'content-type': 'text/plain' });
+    res.end('no');
+  });
+  process.env.QODER_COMPRESS_PROXY = url;
+  const failed = await compactMessages(messages(), { model: 'Auto' });
+  server.close();
+  assert.equal(failed.reason, 'http-500');
+  assert.ok(failed.ms >= 0);
+  assert.equal(failed.skipped, true);
 });

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.21.0
+
+- Every request now logs what the user feels: `tok/s`, `textTok`, `think=NN%`, `gap=NNms` and `compact=NN%(NNms)`. Before, the log had only total time, so "slow" was an opinion.
+- `scripts/bench.mjs` is a real harness: incremental SSE parse, time to first text, text tokens per second, gap p50/p95, both `/v1/messages` and `/v1/chat/completions`, a model matrix, and `--effort`. Run it with `npm run bench`.
+- Measured on the bridge, same prompt, `max_tokens=300`: **DeepSeek-Flash** first text in 1.1–1.7 s and ~46 text tok/s with zero reasoning; **Auto** first text in 62–115 s because 92–94% of the stream is thinking, then ~130 tok/s. `reasoning_effort` is forwarded but ignored upstream.
+- The compression call now gives up after **800 ms** (was 3 s) and names its reason in the log (`timeout`, `small`, `http-500`, `shape`), so a slow proxy can no longer sit in front of the first token.
+- README gains a Speed section with the measured table and how to run the bench. Some models in the live list are not routable for every account (`Fast` answered empty); the bench reports zero tokens instead of hiding it.
+
 ## 1.20.1
 
 - A `[DONE]` sentinel arriving inside the upstream envelope is now treated as the end of the stream, not a parse error. Before, a successful answer could end with a phantom error and lose its usage.

@@ -51,6 +51,17 @@ function log(msg) {
 
 const estimate = (s) => Math.max(1, Math.ceil(String(s).length / 4));
 
+// One line of throughput facts per request: what the user actually feels.
+export function speedOf(out, totalMs) {
+  const textTokens = Math.round((out.textChars || 0) / 4);
+  const genMs = out.ttftText ? Math.max(1, totalMs - out.ttftText) : 0;
+  const tps = genMs ? textTokens / (genMs / 1000) : 0;
+  const thinkShare = out.reasoningChars ? Math.round((out.reasoningChars / Math.max(1, out.textChars + out.reasoningChars)) * 100) : 0;
+  const compact = out.compact ? `${Math.round(out.compact * 100)}%` : out.compactMs ? '0%' : 'off';
+  const compactDetail = out.compactMs ? `${compact}(${out.compactMs}ms${out.compactReason && out.compactReason !== 'ok' ? ` ${out.compactReason}` : ''})` : compact;
+  return `tok/s=${tps.toFixed(1)} textTok=${textTokens} think=${thinkShare}% gap=${out.maxGapMs || 0}ms compact=${compactDetail}`;
+}
+
 function send(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, {
@@ -427,7 +438,7 @@ async function handleMessages(req, res, body) {
   clearInterval(keepalive);
   if (!out.error) trackUsage(out.usage, out.text || '');
 
-  log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms compact=${out.compact ? `${Math.round(out.compact * 100)}%` : 'off'}`);
+  log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms ${speedOf(out, Date.now() - t0)}`);
 
   if (out.error && !out.text && !emitted) {
     if (!headersSent) {
@@ -551,7 +562,7 @@ const server = http.createServer(async (req, res) => {
     if (out.error && !adapter.started) {
       return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
     }
-    log(`  responses model=${body.model || 'Auto'} total=${Date.now() - t0}ms compact=${out.compact ? Math.round(out.compact * 100) + '%' : 'off'}`);
+    log(`  responses model=${body.model || 'Auto'} total=${Date.now() - t0}ms ${speedOf(out, Date.now() - t0)}`);
     adapter.end();
     return true;
   }
@@ -586,7 +597,7 @@ const server = http.createServer(async (req, res) => {
     if (out.error && !adapter.started) {
       return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
     }
-    log(`  chat/completions model=${body.model || 'Auto'} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'} compact=${out.compact ? `${Math.round(out.compact * 100)}%` : 'off'}`);
+    log(`  chat/completions model=${body.model || 'Auto'} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'} ${speedOf(out, Date.now() - t0)}`);
     adapter.end();
     return true;
   }

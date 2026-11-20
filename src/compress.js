@@ -1,7 +1,7 @@
 import { combineSignals } from './abort.js';
 import { effectiveConfig } from './config.js';
 
-const TIMEOUT_MS = Number(process.env.QODER_COMPRESS_TIMEOUT_MS || 3000);
+const TIMEOUT_MS = Number(process.env.QODER_COMPRESS_TIMEOUT_MS || 800);
 
 export function compressProxy() {
   let value = process.env.QODER_COMPRESS_PROXY || '';
@@ -29,13 +29,14 @@ function protectedIndexes(messages) {
 // else may be shortened by the local Headroom proxy.
 export async function compactMessages(messages, { model = '', signal } = {}) {
   const list = Array.isArray(messages) ? messages : [];
+  const startedAt = Date.now();
   const proxy = compressProxy();
   const off = !proxy || process.env.QODER_COMPRESS === '0';
-  if (off || list.length < 3) return { messages: list, ratio: 0, skipped: true };
+  if (off || list.length < 3) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: off ? 'disabled' : 'few' };
 
   const before = JSON.stringify(list).length;
   const min = Number(process.env.QODER_COMPRESS_MIN_CHARS || 20000);
-  if (before < min) return { messages: list, ratio: 0, skipped: true };
+  if (before < min) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'small' };
   const ctrl = new AbortController();
   const timer = setTimeout(() => {
     try { ctrl.abort(); } catch {}
@@ -49,16 +50,19 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
       body: JSON.stringify({ messages: list, model }),
       signal: combineSignals([ctrl.signal, signal]),
     });
-    if (!res.ok) return { messages: list, ratio: 0, skipped: true };
+    const ms = Date.now() - startedAt;
+    if (!res.ok) return { messages: list, ratio: 0, skipped: true, ms, reason: `http-${res.status}` };
     const json = await res.json();
     const out = Array.isArray(json?.messages) ? json.messages : Array.isArray(json?.result?.messages) ? json.result.messages : null;
-    if (!out || out.length !== list.length) return { messages: list, ratio: 0, skipped: true };
+    if (!out || out.length !== list.length) return { messages: list, ratio: 0, skipped: true, ms, reason: 'shape' };
 
     for (const index of protectedIndexes(list)) out[index] = list[index];
     const after = JSON.stringify(out).length;
-    return { messages: out, ratio: before ? Math.max(0, 1 - after / before) : 0, skipped: false };
-  } catch {
-    return { messages: list, ratio: 0, skipped: true };
+    return { messages: out, ratio: before ? Math.max(0, 1 - after / before) : 0, skipped: false, ms: Date.now() - startedAt, reason: 'ok' };
+  } catch (e) {
+    const ms = Date.now() - startedAt;
+    const reason = ctrl.signal.aborted ? 'timeout' : signal?.aborted ? 'aborted' : 'error';
+    return { messages: list, ratio: 0, skipped: true, ms, reason };
   } finally {
     clearTimeout(timer);
   }

@@ -138,6 +138,11 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   let usage = {};
   let stopReason = null;
   let upstreamError = null;
+  const startedAt = Date.now();
+  let firstTextAt = 0;
+  let lastAt = 0;
+  let maxGap = 0;
+  let chunks = 0;
   const calls = new Map();
   const decoder = new TextDecoder();
   let buf = '';
@@ -163,6 +168,11 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     const delta = choice.delta || {};
 
     if (typeof delta.content === 'string' && delta.content) {
+      const at = Date.now();
+      if (!firstTextAt) firstTextAt = at;
+      if (lastAt) maxGap = Math.max(maxGap, at - lastAt);
+      lastAt = at;
+      chunks += 1;
       text += delta.content;
       if (onEvent) onEvent({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: delta.content } });
     }
@@ -217,5 +227,20 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     }
   }
 
-  return { text, usage, error: upstreamError, stopReason, compact: compacted.ratio };
+  return {
+    text,
+    usage,
+    error: upstreamError,
+    stopReason,
+    compact: compacted.ratio,
+    compactMs: compacted.ms || 0,
+    compactReason: compacted.reason || '',
+    ttft: firstTextAt ? firstTextAt - startedAt : 0,
+    ttftText: firstTextAt ? firstTextAt - startedAt : 0,
+    chunks,
+    maxGapMs: maxGap,
+    reasoningChars: 0,
+    textChars: text.length,
+    ms: Date.now() - startedAt,
+  };
 }

@@ -104,8 +104,41 @@ QODER_COMPRESS_PROXY=http://127.0.0.1:8790 qclaude
 ```
 
 The system prompt and the message you just sent are never rewritten; a slow or failing
-proxy is ignored. `QODER_COMPRESS=0` turns it off. The request log prints `compact=NN%`
-or `compact=off`.
+proxy is ignored after 800 ms. `QODER_COMPRESS=0` turns it off. The request log prints
+`compact=NN%(NNNms)` or `compact=off`.
+
+## Speed
+
+Throughput is set by the model, not by the bridge. Measured on the bridge, same prompt,
+`max_tokens=300`:
+
+| model | first text | text tok/s | where the time goes |
+| --- | --- | --- | --- |
+| DeepSeek-Flash | 1.1–1.7 s | ~46 | no thinking at all |
+| Auto | 62–115 s | ~130 | 92–94% reasoning before the first word |
+| Efficient / Lite / Performance | 71–85 s | ~130–140 | 86–92% reasoning |
+
+`reasoning_effort` is accepted and forwarded, but the upstream ignores it — a model that
+thinks will think. If the answer feels slow, switch the model; the first word is what you
+wait for, and a thinking model spends a minute on it.
+
+Every request now logs what the user feels:
+
+```
+chat/completions model=DeepSeek-Flash ttft=1141ms total=11552ms in=55 out=475 tok/s=46.5 textTok=503 think=0% gap=133ms compact=off
+```
+
+Measure any model yourself:
+
+```bash
+npm run bench -- --api chat --models Auto,DeepSeek-Flash --turns 3
+npm run bench -- --api messages --models DeepSeek-Flash --turns 3
+```
+
+`think=` is the share of the stream spent reasoning, `gap=` the worst pause between
+chunks. Some names in the live model list are not routable for every account (`Fast`
+returned an empty answer here); the bench reports that as zero tokens instead of hiding it.
+
 
 ## OpenAI-compatible API
 

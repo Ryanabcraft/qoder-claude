@@ -138,6 +138,12 @@ function parseEnvelope(line) {
 export async function streamChat({ body, signal, onEvent, dir = '', act = false }) {
   const startedAt = Date.now();
   let firstTokenAt = 0;
+  let firstTextAt = 0;
+  let lastDeltaAt = 0;
+  let chunks = 0;
+  let maxGap = 0;
+  let reasoningChars = 0;
+  let textChars = 0;
   let ctx;
   try {
     ({ ctx } = context(dir));
@@ -233,10 +239,17 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     if (!choice) return;
     if (choice.finish_reason) stopReason = choice.finish_reason;
     const delta = choice.delta || {};
+    if (delta.content || delta.reasoning_content || delta.reasoning || (Array.isArray(delta.tool_calls) && delta.tool_calls.length)) {
+      const at = Date.now();
+      if (lastDeltaAt) maxGap = Math.max(maxGap, at - lastDeltaAt);
+      lastDeltaAt = at;
+      chunks += 1;
+    }
 
     const reasoning = typeof delta.reasoning_content === 'string' ? delta.reasoning_content : (typeof delta.reasoning === 'string' ? delta.reasoning : '');
     if (reasoning) {
       if (!firstTokenAt) firstTokenAt = Date.now();
+      reasoningChars += reasoning.length;
       if (thinkingIndex === -1) {
         closeText();
         thinkingIndex = nextIndex++;
@@ -250,6 +263,8 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
       thinkingIndex = -1;
     }
     if (typeof delta.content === 'string' && delta.content) {
+      if (!firstTextAt) firstTextAt = Date.now();
+      textChars += delta.content.length;
       ensureText();
       text += delta.content;
       onEvent?.({ type: 'content_block_delta', index: textIndex, delta: { type: 'text_delta', text: delta.content } });
@@ -324,5 +339,20 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     delta: { stop_reason: stop, stop_sequence: null },
     usage: { input_tokens: Number(usage.prompt_tokens) || 0, output_tokens: Number(usage.completion_tokens) || 0 },
   });
-  return { text, usage, error: upstreamError, stopReason: stop, compact: compacted.ratio, ttft: firstTokenAt ? firstTokenAt - startedAt : 0, ms: Date.now() - startedAt };
+  return {
+    text,
+    usage,
+    error: upstreamError,
+    stopReason: stop,
+    compact: compacted.ratio,
+    compactMs: compacted.ms || 0,
+    compactReason: compacted.reason || '',
+    ttft: firstTokenAt ? firstTokenAt - startedAt : 0,
+    ttftText: firstTextAt ? firstTextAt - startedAt : 0,
+    chunks,
+    maxGapMs: maxGap,
+    reasoningChars,
+    textChars,
+    ms: Date.now() - startedAt,
+  };
 }
