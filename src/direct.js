@@ -98,7 +98,10 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   const compacted = await compactMessages(body.messages, { model: cfg.model, signal });
   const payload = buildPayload({ ...body, messages: compacted.messages }, cfg.model, cfg.contextWindow, cfg);
   if (process.env.QODER_DUMP_PAYLOAD) { try { fs.writeFileSync(process.env.QODER_DUMP_PAYLOAD.replace(/.json$/, '-direct.json'), JSON.stringify(payload, null, 2)); } catch {} }
-  const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
+  // The model goes in the X-Model-Key header. Casing matters: "Auto" lands on a
+  // backend without reasoning and ~half the generation speed; "auto" is the one
+  // the OpenAI path uses. Always send payload.model (lowercased).
+  const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), payload.model, '');
   const headers = Object.fromEntries(req.headers);
 
   const timeout = Number(process.env.BRIDGE_REQUEST_TIMEOUT_MS || 300000);

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.24.1
+
+- **Root cause found: the model header was sent as `Auto`, not `auto`.** Qoder routes by that value, and `Auto` lands on a backend that never emits reasoning and generates at about half the speed. Measured on `/v1/messages`, same prompt, same model:
+
+| header | reasoning chunks | tok/s | total |
+| --- | --- | --- | --- |
+| `Auto` | 0 | 23.4 | 16.5 s |
+| `auto` | 51–87 | 40.7–42.1 | 8.8–10.3 s |
+
+- That single fix is why thinking never appeared in Claude Code **and** why the Claude Code path felt slow. The vision run, the tool quirks and the "não consigo acessar" answers all happened on the worse backend.
+- **Thinking now visible in both clients.** Claude Code `stream-json` shows `"type":"thinking"` (think=47% in the run); OpenCode shows `Thinking: …` with `--thinking`.
+- `direct.js` sends `payload.model` (lowercased) to `prepareInferRequest`, with a comment explaining that casing selects a different backend.
+- Kept from 1.24.0: thinking blocks on both paths, notes moved to the last user message for a stable prefix, payload-scaled compression timeout, `QODER_DUMP_PAYLOAD`.
+
 ## 1.24.0
 
 - **Thinking is parsed and emitted on both paths.** `direct.js` used to drop `reasoning_content`; `/v1/messages` had no `thinking` block at all. Now the direct transport collects the reasoning and `handleMessages` streams `content_block_start(thinking)` + `thinking_delta`, and the non-stream response includes the block. When the client sends `thinking.display: "omitted"`, the bridge asks for `summarized` instead (`QODER_SHOW_THINKING=0` disables).
