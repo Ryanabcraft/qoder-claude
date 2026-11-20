@@ -10,6 +10,8 @@ import { createOpenAiAdapter } from './openai.js';
 import { streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
 import { runCompletion, resolveModel, shutdownPool, workerConfig } from './cli.js';
+import { runSearch, serverSearchTools } from './webSearch.js';
+import { checkToolCall } from './toolValidate.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, onModelsChanged, refreshRemote, startModelRefresh } from './models.js';
@@ -112,6 +114,40 @@ function sseWriter(res) {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
   return write;
+}
+
+// Server-side web_search blocks: the bridge runs the search, the client only renders it.
+function searchBlocks(query, result) {
+  const id = `srvtoolu_${randomUUID().replace(/-/g, '').slice(0, 20)}`;
+  const payload = result.error
+    ? { type: 'web_search_tool_result_error', error_code: 'unavailable' }
+    : result.results.map((item) => ({ type: 'web_search_result', title: item.title, url: item.url }));
+  return [
+    { type: 'server_tool_use', id, name: 'web_search', input: { query } },
+    { type: 'web_search_tool_result', tool_use_id: id, content: payload },
+  ];
+}
+
+function lastUserText(messages) {
+  for (let i = (messages || []).length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message?.role !== 'user') continue;
+    if (typeof message.content === 'string') return message.content;
+    if (Array.isArray(message.content)) {
+      return message.content
+        .map((part) => (part?.type === 'text' ? part.text || '' : ''))
+        .join('\n')
+        .trim();
+    }
+  }
+  return '';
+}
+
+function appendSystem(system, note) {
+  if (!note) return system;
+  if (typeof system === 'string') return system ? `${system}\n\n${note}` : note;
+  if (Array.isArray(system)) return [...system, { type: 'text', text: note }];
+  return note;
 }
 
 function errorStatus(message) {
@@ -242,6 +278,20 @@ async function handleMessages(req, res, body) {
   const t0 = Date.now();
   const stream = body.stream !== false;
   const wantsTools = Array.isArray(body.tools) && body.tools.length > 0;
+  const searchTools = serverSearchTools(body.tools);
+  let search = null;
+  if (searchTools.length) {
+    const query = lastUserText(body.messages);
+    const tool = searchTools[0];
+    const found = await runSearch(query, { allowed: tool.allowed, blocked: tool.blocked });
+    search = { query, ...found };
+    const note = found.error
+      ? `Web search for "${query}" failed (${found.error}). Say the search failed instead of guessing.`
+      : `Live web results for "${query}":\n${found.results.map((item, i) => `${i + 1}. ${item.title} — ${item.url}`).join('\n')}\nUse these URLs and cite them.`;
+    body.system = appendSystem(body.system, note);
+    body.tools = body.tools.filter((item) => !/^web_search_/.test(String(item?.type || '')));
+    log(`  web_search "${query.slice(0, 80)}" -> ${found.error || `${found.results.length} results`}`);
+  }
   const built = buildPrompt(body, 0, log, { nativeTools: true });
   const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
@@ -298,20 +348,35 @@ async function handleMessages(req, res, body) {
 
   if (!stream) {
     let out;
-    try {
-      out = await runWithRotation({ body, cfg, signal: ac.signal }, runner);
-    } catch (e) {
-      const status = errorStatus(e.message || '');
-      return send(res, status, errorBody(e.message || 'request failed', status));
+    let tc = null;
+    let attemptBody = body;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        out = await runWithRotation({ body: attemptBody, cfg, signal: ac.signal }, runner);
+      } catch (e) {
+        const status = errorStatus(e.message || '');
+        return send(res, status, errorBody(e.message || 'request failed', status));
+      }
+      usedAccount = out.account || usedAccount;
+      if (out.error) {
+        const status = errorStatus(out.error);
+        return send(res, status, errorBody(out.error, status));
+      }
+      const rawCalls = wantsTools ? extractToolCalls(out.text) : null;
+      tc = rawCalls ? alignToolCalls(rawCalls, { preferExa, available: toolNames(body.tools) }) : null;
+      const invalid = tc ? tc.calls.map((c) => checkToolCall(body.tools, c.name, c.input)).filter(Boolean) : [];
+      if (!invalid.length || attempt === 1) {
+        if (invalid.length) log(`  tool-invalid ${invalid.join('; ')}`);
+        break;
+      }
+      log(`  tool-invalid ${invalid.join('; ')} (retrying once)`);
+      attemptBody = {
+        ...body,
+        system: appendSystem(body.system, `Your previous tool call was rejected: ${invalid.join('; ')}. Call the tool again with arguments that match its schema.`),
+      };
     }
-    usedAccount = out.account || usedAccount;
-    if (out.error) {
-      const status = errorStatus(out.error);
-      return send(res, status, errorBody(out.error, status));
-    }
-    const rawCalls = wantsTools ? extractToolCalls(out.text) : null;
-    const tc = rawCalls ? alignToolCalls(rawCalls, { preferExa, available: toolNames(body.tools) }) : null;
     const content = [];
+    if (search) content.push(...searchBlocks(search.query, search));
     if (tc) {
       if (tc.before) content.push({ type: 'text', text: tc.before });
       for (const c of tc.calls) {
@@ -360,6 +425,16 @@ async function handleMessages(req, res, body) {
       try { res.write(': ping\n\n'); } catch {}
     }, 12000);
     keepalive.unref?.();
+    if (search) {
+      const [use, result] = searchBlocks(search.query, search);
+      const useIndex = nextIndex++;
+      write('content_block_start', { type: 'content_block_start', index: useIndex, content_block: { ...use, input: {} } });
+      write('content_block_delta', { type: 'content_block_delta', index: useIndex, delta: { type: 'input_json_delta', partial_json: JSON.stringify(use.input) } });
+      write('content_block_stop', { type: 'content_block_stop', index: useIndex });
+      const resultIndex = nextIndex++;
+      write('content_block_start', { type: 'content_block_start', index: resultIndex, content_block: result });
+      write('content_block_stop', { type: 'content_block_stop', index: resultIndex });
+    }
   };
 
   let nextIndex = 0;

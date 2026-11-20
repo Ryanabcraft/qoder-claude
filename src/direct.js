@@ -5,6 +5,7 @@ import { context, forgetContext } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
 import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
 import { compactMessages } from './compress.js';
+import { repairJson } from './toolValidate.js';
 
 export { forgetContext };
 
@@ -216,8 +217,9 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     const list = [...calls.values()]
       .filter((c) => c.name)
       .map((c) => {
-        let input = {};
-        try { input = JSON.parse(c.arguments || '{}'); } catch {}
+        const parsed = repairJson(c.arguments || '{}');
+        const input = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        if (parsed === null && c.arguments) upstreamError = upstreamError || `tool arguments were not valid JSON for ${c.name}`;
         return { name: c.name, input };
       });
     if (list.length) {

@@ -107,6 +107,19 @@ The system prompt and the message you just sent are never rewritten; a slow or f
 proxy is ignored after 800 ms. `QODER_COMPRESS=0` turns it off. The request log prints
 `compact=NN%(NNNms)` or `compact=off`.
 
+## Web search
+
+When the client asks for Anthropic's server-side search tool (`web_search_20250305`), the
+bridge runs the search itself and streams the standard `server_tool_use` and
+`web_search_tool_result` blocks, then answers with the results in context. No API key and no
+MCP: the backends are the **Exa MCP endpoint** (`https://mcp.exa.ai/mcp`, works without a
+key) and **DuckDuckGo HTML** as fallback. Results are cached for five minutes, and the
+tool's `allowed_domains` / `blocked_domains` are applied before anything is returned.
+
+```bash
+QODER_SEARCH=exa qclaude     # pin a backend: exa | ddg | auto (default)
+```
+
 ## Speed
 
 Throughput is set by the model, not by the bridge. Measured on the bridge, same prompt,

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.22.0
+
+- **Web search runs in the bridge.** When a client declares Anthropic's server tool (`web_search_20250305`), the bridge executes the search itself and streams `server_tool_use` + `web_search_tool_result` with real URLs, then answers with the results in context. No key, no MCP. Backend order: **Exa MCP HTTP** (works without a key, proved live) then **DuckDuckGo HTML** as fallback; results cached for 5 minutes; domain allow/block lists honoured. `QODER_SEARCH=exa|ddg` pins a backend.
+- Tool names that are not `^[A-Za-z0-9_-]{1,64}$` (dots, spaces) get a deterministic reversible alias to the upstream and are decoded on the way back, so `openbot.send_message` no longer reaches the provider as an invalid name.
+- Tool arguments are validated against the declared schema (`required`, primitive type, `enum`, `additionalProperties: false`). A rejected call gets **one** retry with the exact validation error, only before anything is emitted; otherwise it is logged as `tool-invalid`.
+- Broken tool JSON is repaired before it becomes `{}`: fences, trailing commas and unquoted keys.
+- A one-letter typo in a tool name now resolves to the closest real tool (edit distance ≤ 2); a stranger stays as sent.
+
 ## 1.21.3
 
 - The bridge no longer writes the top-level `model` into `opencode.json`. It used to fill `"model": "qoder-claude/Auto"` when the field was empty, which made OpenCode jump back to Qoder after a restart. Only the `provider.qoder-claude` block is ever written now; the model you pick in OpenCode stays yours.

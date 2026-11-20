@@ -1,7 +1,7 @@
 import { createStallTimer, stallMs } from './stall.js';
 import { context } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
-import { resolveToolName, toolNames } from './toolNames.js';
+import { resolveToolName, toolAliases, toolNames } from './toolNames.js';
 import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
 import { compactMessages } from './compress.js';
 
@@ -152,6 +152,13 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
   }
   const compacted = await compactMessages(body.messages, { model: body.model, signal });
   const payload = upstreamPayload({ ...body, messages: compacted.messages }, { act });
+  const aliases = toolAliases(body.tools);
+  if (aliases.size && Array.isArray(payload.tools)) {
+    for (const tool of payload.tools) {
+      const original = tool.function?.name;
+      if (original) tool.function.name = aliases.encode(original);
+    }
+  }
   const availableTools = toolNames(body.tools);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), payload.model, '');
   const headers = Object.fromEntries(req.headers);
@@ -280,7 +287,7 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
         }
         if (call.id) entry.id = call.id;
         if (call.function?.name && !entry.name) {
-          entry.name = resolveToolName(call.function.name, availableTools);
+          entry.name = resolveToolName(aliases.decode(call.function.name), availableTools);
           onEvent?.({
             type: 'content_block_start',
             index: entry.index,
