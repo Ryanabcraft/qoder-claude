@@ -60,7 +60,9 @@ export function opencodeProvider({ baseURL = 'http://127.0.0.1:8787/v1', apiKey 
   };
 }
 
-export function applyOpenCode({ file = null, models = [], baseURL, apiKey, setDefault = false } = {}) {
+// Only the provider block is ever written. The top-level "model" belongs to the
+// user's OpenCode session, so the bridge never touches it.
+export function applyOpenCode({ file = null, models = [], baseURL, apiKey } = {}) {
   const target = file || paths().opencode;
   let data;
   try {
@@ -72,9 +74,7 @@ export function applyOpenCode({ file = null, models = [], baseURL, apiKey, setDe
   data.provider = data.provider && typeof data.provider === 'object' ? data.provider : {};
   const before = JSON.stringify(data.provider[PROVIDER_ID] || null);
   data.provider[PROVIDER_ID] = provider;
-  const defaultChanged = setDefault && !data.model;
-  if (defaultChanged) data.model = `${PROVIDER_ID}/Auto`;
-  const changed = before !== JSON.stringify(provider) || defaultChanged;
+  const changed = before !== JSON.stringify(provider);
   if (!changed) {
     return { ok: true, changed: false, path: target, models: Object.keys(provider.models) };
   }

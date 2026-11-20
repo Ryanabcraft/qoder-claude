@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.21.3
+
+- The bridge no longer writes the top-level `model` into `opencode.json`. It used to fill `"model": "qoder-claude/Auto"` when the field was empty, which made OpenCode jump back to Qoder after a restart. Only the `provider.qoder-claude` block is ever written now; the model you pick in OpenCode stays yours.
+
 ## 1.21.2
 
 - An empty request body is now a **400** on all three routes instead of a 200 or 502. Before, `{}` reached the upstream and spent a quota call to produce nothing.

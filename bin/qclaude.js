@@ -870,7 +870,7 @@ if (args[0] === 'integrations') {
     } else {
       await refreshRemote().catch(() => false);
       await refreshModels().catch(() => false);
-      const result = applyOpenCode({ models: cachedModels(), setDefault: true });
+      const result = applyOpenCode({ models: cachedModels() });
       if (!result.ok) console.error(`qclaude: ${result.error}`);
       else console.log(result.changed
         ? `

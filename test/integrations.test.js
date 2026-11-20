@@ -40,14 +40,14 @@ test('a second apply is a no-op', () => {
   assert.equal(again.changed, false);
 });
 
-test('setDefault only fills an empty model field', () => {
+test('the top-level model is never written or replaced', () => {
   const { file } = sandbox({});
-  applyOpenCode({ file, models: ['Auto'], setDefault: true });
-  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).model, 'qoder-claude/Auto');
+  applyOpenCode({ file, models: ['Auto'] });
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).model, undefined);
 
-  const second = sandbox({ model: 'anthropic/claude' });
-  applyOpenCode({ file: second.file, models: ['Auto'], setDefault: true });
-  assert.equal(JSON.parse(fs.readFileSync(second.file, 'utf8')).model, 'anthropic/claude');
+  const chosen = sandbox({ model: 'opencode/deepseek-v4.1-flash-free' });
+  applyOpenCode({ file: chosen.file, models: ['Auto'] });
+  assert.equal(JSON.parse(fs.readFileSync(chosen.file, 'utf8')).model, 'opencode/deepseek-v4.1-flash-free');
 });
 
 test('a missing config is reported, not created', () => {
