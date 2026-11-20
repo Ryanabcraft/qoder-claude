@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.23.1
+
+- **Images work on the OpenAI path.** A pasted image in OpenCode reaches `/v1/chat/completions` as `image_url`; the direct Qoder endpoint drops inline images, so the model used to answer "I cannot see images". The bridge now sends the current turn's images through the pinned 1.1.80 engine, with the same account rotation as text: default (out of credits) -> Ryan -> Ryan01 -> Ryan0, answered in 41 s. Only the last user message is read (the engine caps attachments at 5), and the engine model is `QODER_VISION_MODEL` (default `Auto`) because it validates names against its own list.
+- **Quota can arrive as ordinary text.** Qoder sometimes returns "Your personal Credits have been exhausted" as a 200 with normal assistant text, so rotation never fired and the active account stayed stuck. A short, tool-free reply matching a quota phrase is now an error: the account is paused and the request goes to the next one. Proven in the vision run: `account Ryan paused: quota`.
+
 ## 1.23.0
 
 - **web_fetch runs in the bridge.** Anthropic server tool (`web_fetch_20250910`): the bridge fetches the page, strips scripts/styles, keeps the title and the visible text (24k chars, 2 MB of bytes, 5 redirects, 20 s) and streams `server_tool_use` + `web_fetch_tool_result`. Failures become `web_fetch_tool_error`, never a broken stream.

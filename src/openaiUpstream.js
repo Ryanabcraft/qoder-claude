@@ -37,6 +37,18 @@ function imageParts(content) {
   return images.length ? images : null;
 }
 
+// Only the current turn's images: the vision engine caps attachments at 5, and
+// images from earlier turns are already described in the history.
+export function collectImages(messages = []) {
+  const list = Array.isArray(messages) ? messages : [];
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    if (list[i]?.role !== 'user' || !Array.isArray(list[i].content)) continue;
+    const parts = imageParts(list[i].content);
+    if (parts) return parts;
+  }
+  return [];
+}
+
 // The client's own prompt is sent as-is: this path is an API, not an agent.
 export function toUpstreamMessages(messages = []) {
   const out = [];

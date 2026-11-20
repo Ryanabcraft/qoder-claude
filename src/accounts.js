@@ -173,6 +173,15 @@ export function isRotatable(message) {
   return cooldownFor(message) > 0;
 }
 
+// Qoder sometimes answers a quota exhaustion as ordinary assistant text, so the
+// HTTP status is 200 and the rotation never fires. Only a short, tool-free reply
+// is treated this way — a model talking about quotas is not an error.
+export function looksQuotaExhausted(text) {
+  const value = String(text || '').trim();
+  if (!value || value.length > 400) return false;
+  return /credit usage limit|credits? (have been|is|are) exhausted|quota (exceeded|exhausted|reached)|insufficient (credits|quota)|daily (usage )?limit/i.test(value);
+}
+
 export function markCooldown(name, message) {
   const ms = cooldownFor(message);
   if (!ms) return 0;

@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { buildPrompt, extractToolCalls, findToolBlock, toolMarkers } from './prompt.js';
 import { resolveToolName, toolNames } from './toolNames.js';
 import { createOpenAiAdapter } from './openai.js';
-import { streamChat } from './openaiUpstream.js';
+import { collectImages, streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
 import { runCompletion, resolveModel, shutdownPool, workerConfig } from './cli.js';
 import { runSearch, serverSearchTools } from './webSearch.js';
@@ -29,6 +29,7 @@ import {
   candidateAccounts,
   clearCooldown,
   isRotatable,
+  looksQuotaExhausted,
   markCooldown,
 } from './accounts.js';
 
@@ -251,6 +252,9 @@ async function runWithRotation({ body, cfg, signal, onEvent, canRotate = () => t
     } catch (e) {
       out = { text: '', usage: {}, error: e.message || String(e) };
     }
+    if (!out.error && !out.stopReason?.includes?.('tool') && looksQuotaExhausted(out.text)) {
+      out = { ...out, text: '', error: `quota: ${String(out.text).slice(0, 160)}` };
+    }
 
     if (!out.error) {
       clearCooldown(account.name);
@@ -273,6 +277,9 @@ async function runOpenAiWithRotation({ body, act = false, signal, onEvent, canRo
   let last = { error: 'no account available', account: '' };
   for (const account of accounts) {
     const out = await streamChat({ body, act, signal, onEvent, dir: account.dir });
+    if (!out.error && !out.stopReason?.includes?.('tool') && looksQuotaExhausted(out.text)) {
+      out.error = `quota: ${String(out.text).slice(0, 160)}`;
+    }
     if (!out.error) {
       clearCooldown(account.name);
       return { ...out, account: account.name };
@@ -693,6 +700,36 @@ const server = http.createServer(async (req, res) => {
     const ac = new AbortController();
     res.on('close', () => { if (!res.writableEnded) ac.abort(); });
     const t0 = Date.now();
+    const images = collectImages(body.messages);
+    if (images.length && visionCliPath()) {
+      const prompt = lastUserText(body.messages);
+      // The 1.1.80 engine validates model names against its own list; a newer
+      // name from the client would be rejected before the image is read.
+      const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
+      for (const account of candidateAccounts()) {
+        const cfgV = { ...workerConfig({ ...body, model: visionModel }, ''), configDir: account.dir, account: account.name };
+        const v = await runVision({ built: { images, prompt, system: '' }, cfg: cfgV, signal: ac.signal, log });
+        if (!v?.text || looksQuotaExhausted(v.text)) {
+          if (v?.text) {
+            markCooldown(account.name, 'quota: exhausted');
+            log(`  account ${account.name} paused: quota`);
+          } else {
+            log(`  vision failed on ${account.name}: ${v?.error || 'empty'}`);
+          }
+          continue;
+        }
+        for (let i = 0; i < v.text.length; i += 240) {
+          adapter.event('content_block_delta', { delta: { type: 'text_delta', text: v.text.slice(i, i + 240) } });
+        }
+        adapter.event('message_delta', { delta: { stop_reason: 'end_turn' }, usage: {} });
+        adapter.end();
+        log(`  chat/completions model=${model} vision=${images.length} account=${account.name} total=${Date.now() - t0}ms`);
+        return true;
+      }
+      log('  vision found no account with credits');
+    } else if (images.length) {
+      log(`  images ${images.length} ignored (vision engine not installed)`);
+    }
     let out;
     try {
       out = await runOpenAiWithRotation({

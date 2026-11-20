@@ -35,7 +35,7 @@ rule only applies to the fetch executed by the bridge.
 
 ## Images
 
-Claude Code sends pasted images as base64 blocks. The direct Qoder endpoint drops inline images, so
+Claude Code sends pasted images as base64 blocks, and OpenAI clients send `image_url` parts. Both paths use the engine below; on the OpenAI path the bridge rotates accounts until one has credits. The direct Qoder endpoint drops inline images, so
 the bridge uses the bundled Qoder CLI 1.1.80 engine:
 
 ```bash

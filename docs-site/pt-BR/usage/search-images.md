@@ -35,7 +35,7 @@ terminal (`curl`) — a regra vale só para o fetch que a bridge executa.
 
 ## Imagens
 
-O Claude Code manda imagens coladas como blocos base64. O endpoint direto do Qoder descarta imagens
+O Claude Code manda imagens coladas como blocos base64, e clientes OpenAI mandam partes `image_url`. Os dois caminhos usam o motor abaixo; no caminho OpenAI a bridge rotaciona contas ate uma ter credito. O endpoint direto do Qoder descarta imagens
 inline, então a bridge usa o motor do CLI 1.1.80:
 
 ```bash
