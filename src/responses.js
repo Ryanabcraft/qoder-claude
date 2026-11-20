@@ -135,6 +135,7 @@ export function createResponsesAdapter({ res, model, stream = true }) {
     send('response.output_item.done', { output_index: index, item });
     state.output.push(item);
     state.textItem = null;
+    state.text = '';
   };
 
   const handle = (event, data) => {

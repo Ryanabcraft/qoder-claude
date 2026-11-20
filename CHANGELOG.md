@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.21.2
+
+- An empty request body is now a **400** on all three routes instead of a 200 or 502. Before, `{}` reached the upstream and spent a quota call to produce nothing.
+- `POST /v1/responses`: a second text item after a tool call no longer repeats the text of the first one. `output_text.done` used to arrive as `primeirasegunda`.
+- `accounts.json` with a non-string `dir` no longer throws `TypeError` inside `normalize` and takes the bridge down until the file is fixed; the field is sanitized on load.
+- 402 detection used a literal `D` instead of a word boundary, so a bare `upstream 402:` fell through to 502. Clients now get `insufficient_quota`.
+- Audit: six territories, adversarial tests under `test/audit/`, 208 → 215 tests. The one open item is written down in `AUDIT.md` (an unterminated `<tool_calls>` block swallows the rest of the answer).
+
 ## 1.21.1
 
 - A model missing from the bridge's cached list is no longer swapped for `Auto` in silence. It is matched case-insensitively against the list first, and otherwise forwarded exactly as the client asked — so picking a model in Claude Code or OpenCode now actually picks it. `QODER_MODEL` is still the explicit override, and an empty model still falls back to Auto.

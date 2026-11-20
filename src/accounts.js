@@ -22,6 +22,7 @@ function normalize(data) {
   if (!out.cooldowns || typeof out.cooldowns !== 'object') out.cooldowns = {};
   for (const item of Object.values(out.accounts)) {
     if (typeof item.enabled !== 'boolean') item.enabled = true;
+    if (item.dir !== undefined && item.dir !== null && typeof item.dir !== 'string') item.dir = null;
     if (!item.label) item.label = item.dir ? path.basename(item.dir) : 'default';
   }
   if (!out.accounts[out.active]) out.active = Object.keys(out.accounts)[0] || 'default';

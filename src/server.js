@@ -115,7 +115,7 @@ function sseWriter(res) {
 }
 
 function errorStatus(message) {
-  if (/(?:^|D)402(?:D|$)|payment required/i.test(message)) return 402;
+  if (/\b402\b|payment required/i.test(message)) return 402;
   if (/billing|daily count|quota|403|not logged in|unauthori[sz]ed/i.test(message)) return 400;
   if (/rate.?limit|429/i.test(message)) return 429;
   if (/timeout|stall|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENOTFOUND|fetch failed|terminated|premature close|hang up/i.test(message)) return 503;
@@ -540,6 +540,9 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: { message: e.message, type: 'invalid_request_error' } });
     }
     const chat = toChatRequest(body);
+    if (!chat.messages.length) {
+      return send(res, 400, { error: { message: 'input is required', type: 'invalid_request_error' } });
+    }
     chat.model = resolveModel(chat.model || body.model);
     const stream = chat.stream === true;
     const adapter = createResponsesAdapter({ res, model: chat.model || 'Auto', stream });
@@ -576,6 +579,9 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: { message: e.message, type: 'invalid_request_error' } });
     }
     const stream = body.stream === true;
+    if (!Array.isArray(body.messages) || !body.messages.length) {
+      return send(res, 400, { error: { message: 'messages is required', type: 'invalid_request_error' } });
+    }
     const model = resolveModel(body.model);
     const includeUsage = Boolean(body.stream_options?.include_usage);
     const act = String(req.headers['x-qoder-act'] || '') === '1' || body.qoder_act === true;
@@ -610,6 +616,9 @@ const server = http.createServer(async (req, res) => {
       body = JSON.parse((await readBody(req)) || '{}');
     } catch (e) {
       return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: e.message } });
+    }
+    if (!Array.isArray(body.messages) || !body.messages.length) {
+      return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: 'messages: at least one message is required' } });
     }
     try {
       if (process.env.BRIDGE_LOG !== '0') {
