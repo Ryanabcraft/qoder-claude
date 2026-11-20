@@ -39,7 +39,7 @@ export function modelMeta(model, { context = MODEL_LIMITS.context, output = MODE
     attachment: true,
     temperature: true,
     modalities: { input: ['text', 'image'], output: ['text'] },
-    body: { qoder_act: true },
+    body: { qoder_act: true, search: true },
   };
 }
 

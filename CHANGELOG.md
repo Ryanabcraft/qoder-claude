@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.1
+
+- **OpenCode gets web search too.** The provider now sends `search: true`; when the question clearly depends on current facts (price, today, latest, versions, news, a URL), the bridge searches before calling the model and injects the results with URLs. The model answers from real data instead of memory. The `web_search` function tool is also declared, and a model that does call it gets the results and a second turn — the loop runs inside the bridge, so the client never sees a tool it cannot execute.
+- Proven on `/v1/chat/completions`: "preco do bitcoin hoje" answered with `$58.968,21` and the exa.ai URL, `in=526` (results included), no leaked tool calls.
+- `needsWeb()` keeps the pre-search to live-fact questions; a code refactor request does not pay for a search.
+
 ## 1.22.0
 
 - **Web search runs in the bridge.** When a client declares Anthropic's server tool (`web_search_20250305`), the bridge executes the search itself and streams `server_tool_use` + `web_search_tool_result` with real URLs, then answers with the results in context. No key, no MCP. Backend order: **Exa MCP HTTP** (works without a key, proved live) then **DuckDuckGo HTML** as fallback; results cached for 5 minutes; domain allow/block lists honoured. `QODER_SEARCH=exa|ddg` pins a backend.

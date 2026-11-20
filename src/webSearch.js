@@ -173,3 +173,17 @@ export function serverSearchTools(tools = []) {
 export function hasSearchTool(tools = []) {
   return serverSearchTools(tools).length > 0;
 }
+
+// Models here often narrate a tool call instead of emitting one. When the
+// question clearly depends on current facts, the bridge searches first and
+// hands the model the results, so the answer never comes from memory.
+const LIVE = /\b(hoje|agora|atualmente|atual|pre[cç]o|cota[cç][aã]o|not[ií]cia|noticias|notícias|lan[cç]amento|vers[aã]o|recente|recentes|[uú]ltim[oa]s?|cotacao|weather|clima|temperatura|latest|current|today|now|price|news|release|version|weather)\b/i;
+const YEAR = /\b20(2[4-9]|3\d)\b/;
+
+export function needsWeb(text) {
+  const value = String(text || '');
+  if (!value.trim()) return false;
+  if (/https?:\/\/\S+/i.test(value)) return true;
+  if (LIVE.test(value)) return true;
+  return YEAR.test(value) && /\?/.test(value);
+}

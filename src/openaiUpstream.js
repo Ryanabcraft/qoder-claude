@@ -4,6 +4,8 @@ import { combineSignals } from './abort.js';
 import { resolveToolName, toolAliases, toolNames } from './toolNames.js';
 import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
 import { compactMessages } from './compress.js';
+import { needsWeb, runSearch } from './webSearch.js';
+import { repairJson } from './toolValidate.js';
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
@@ -151,7 +153,41 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
   const compacted = await compactMessages(body.messages, { model: body.model, signal });
+  const searchMode = body.search === true;
   const payload = upstreamPayload({ ...body, messages: compacted.messages }, { act });
+  if (searchMode && Array.isArray(payload.tools)) {
+    payload.tools.push({
+      type: 'function',
+      function: {
+        name: 'web_search',
+        description: 'Search the live web. Use it whenever the answer depends on current facts, prices, news or anything after your training date.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query' },
+            queries: { type: 'array', items: { type: 'string' }, description: 'One or two search queries' },
+          },
+        },
+      },
+    });
+  }
+  if (searchMode) {
+    const lastUser = [...payload.messages].reverse().find((message) => message.role === 'user');
+    const question = typeof lastUser?.content === 'string' ? lastUser.content : '';
+    if (needsWeb(question)) {
+      const found = await runSearch(question);
+      payload.messages.unshift({
+        role: 'system',
+        content: found.error
+          ? `Web search for the user's question failed (${found.error}). Say the search failed instead of guessing a number.`
+          : `Live web results for the user's question, fetched now:\n${found.results.map((item, i) => `${i + 1}. ${item.title} — ${item.url}`).join('\n')}\nAnswer from these results and cite the URLs.`,
+      });
+    }
+    payload.messages.unshift({
+      role: 'system',
+      content: 'The web_search tool is available. Call it before answering anything that depends on current facts, prices, news, versions or dates. Never state a number you cannot source from the search results.',
+    });
+  }
   const aliases = toolAliases(body.tools);
   if (aliases.size && Array.isArray(payload.tools)) {
     for (const tool of payload.tools) {
@@ -282,25 +318,30 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
         const i = call.index ?? 0;
         let entry = calls.get(i);
         if (!entry) {
-          entry = { id: '', name: '', arguments: '', index: nextIndex++ };
+          entry = { id: '', name: '', arguments: '', index: nextIndex++, raw: i, emitted: false };
           calls.set(i, entry);
         }
         if (call.id) entry.id = call.id;
         if (call.function?.name && !entry.name) {
           entry.name = resolveToolName(aliases.decode(call.function.name), availableTools);
-          onEvent?.({
-            type: 'content_block_start',
-            index: entry.index,
-            content_block: { type: 'tool_use', id: entry.id || `toolu_${i}`, name: entry.name, input: {} },
-          });
+          if (!searchMode) {
+            entry.emitted = true;
+            onEvent?.({
+              type: 'content_block_start',
+              index: entry.index,
+              content_block: { type: 'tool_use', id: entry.id || `toolu_${i}`, name: entry.name, input: {} },
+            });
+          }
         }
         if (call.function?.arguments) {
           entry.arguments += call.function.arguments;
-          onEvent?.({
-            type: 'content_block_delta',
-            index: entry.index,
-            delta: { type: 'input_json_delta', partial_json: call.function.arguments },
-          });
+          if (!searchMode) {
+            onEvent?.({
+              type: 'content_block_delta',
+              index: entry.index,
+              delta: { type: 'input_json_delta', partial_json: call.function.arguments },
+            });
+          }
         }
       }
     }
@@ -336,8 +377,53 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     thinkingIndex = -1;
   }
   closeText();
+
+  if (searchMode && calls.size) {
+    const entries = [...calls.values()].filter((entry) => entry.name);
+    const wanted = entries.filter((entry) => entry.name === 'web_search');
+    const rest = entries.filter((entry) => entry.name !== 'web_search');
+    if (wanted.length && !rest.length && !text) {
+      const queries = wanted
+        .map((entry) => {
+          const args = repairJson(entry.arguments || '{}') || {};
+          if (typeof args.query === 'string' && args.query.trim()) return args.query.trim();
+          if (Array.isArray(args.queries)) return args.queries.filter((q) => typeof q === 'string').join(' ').trim();
+          return '';
+        })
+        .filter(Boolean)
+        .slice(0, 2);
+      const blocks = [];
+      for (const query of queries.length ? queries : ['']) {
+        const found = query ? await runSearch(query) : { results: [], error: 'query is required' };
+        blocks.push(found.error
+          ? `Web search "${query}" failed: ${found.error}. Say the search failed instead of guessing.`
+          : `Web search "${query}" returned:\n${found.results.map((item, i) => `${i + 1}. ${item.title} — ${item.url}`).join('\n')}\nUse these URLs and cite them.`);
+      }
+      const extended = [
+        ...payload.messages,
+        {
+          role: 'assistant',
+          content: '',
+          tool_calls: wanted.map((entry, i) => ({
+            id: entry.id || `call_search_${i}`,
+            type: 'function',
+            function: { name: 'web_search', arguments: entry.arguments || '{}' },
+          })),
+        },
+        ...wanted.map((entry, i) => ({ role: 'tool', tool_call_id: entry.id || `call_search_${i}`, content: blocks.join('\n\n') })),
+      ];
+      return await streamChat({ body: { ...body, messages: extended, search: false }, signal, onEvent, dir, act });
+    }
+    for (const entry of rest) {
+      entry.emitted = true;
+      onEvent?.({ type: 'content_block_start', index: entry.index, content_block: { type: 'tool_use', id: entry.id || `toolu_${entry.raw}`, name: entry.name, input: {} } });
+      if (entry.arguments) onEvent?.({ type: 'content_block_delta', index: entry.index, delta: { type: 'input_json_delta', partial_json: entry.arguments } });
+    }
+  }
+
   for (const entry of calls.values()) {
     if (!entry.name) continue;
+    if (searchMode && !entry.emitted) continue;
     onEvent?.({ type: 'content_block_stop', index: entry.index });
   }
   const stop = calls.size ? 'tool_use' : (stopReason === 'length' ? 'max_tokens' : 'end_turn');

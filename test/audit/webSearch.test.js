@@ -58,3 +58,14 @@ test('only web_search_* tool types are treated as server search', () => {
   assert.equal(found[0].maxUses, 3);
   assert.deepEqual(found[0].allowed, ['a.com']);
 });
+
+test('the pre-search heuristic only fires on live-fact questions', () => {
+  return import('../../src/webSearch.js').then(({ needsWeb }) => {
+    assert.equal(needsWeb('Qual o preco do bitcoin hoje?'), true);
+    assert.equal(needsWeb('What is the latest Node version?'), true);
+    assert.equal(needsWeb('resuma https://example.com/a'), true);
+    assert.equal(needsWeb('qual a versao de 2026?'), true);
+    assert.equal(needsWeb('refatore esta funcao para usar map'), false);
+    assert.equal(needsWeb(''), false);
+  });
+});
