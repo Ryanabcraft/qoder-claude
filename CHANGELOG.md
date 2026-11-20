@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.23.3
+
+- The action notice now says it plainly: do not offer to generate images and do not describe an image you are going to make — when the work is an icon, a header or any visual, implement it in HTML/CSS/SVG in the file itself. Proven on a copy of `roteiro.html`: the model replaced the header icon with the existing `i-snow` SVG, changed the CSS, and applied the edit directly — no offer, no question, 47 s.
+- In OpenCode's **Plan** mode the client itself blocks edits and asks for approval; that confirmation is the client's, not the model's. Switching to Build makes the same request run straight through.
+
 ## 1.23.2
 
 - **A turn with an image no longer loses its tools.** In 1.23.1 the OpenAI path answered the whole request with the vision engine, which runs with `--tools ''` — so a message with a picture could not call `Read`, and the model answered "I cannot access the file". Now the engine only produces a description; the bridge injects it into the user turn as `[image: …]` and runs the normal request **with the client's tools**. Proven in the reported case: image + "read roteiro.html" returned `<title>Serra em Inverno — Gramado & Canela 2027</title>` after a real `Read`, where before it said it could not access the file.

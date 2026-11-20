@@ -101,7 +101,9 @@ export function upstreamPayload(body = {}, { act = false } = {}) {
   }
   if (act && process.env.QODER_ACT_PROMPT !== '0') {
     const notice = 'Act, do not narrate: when a tool can do the job, call it in this same turn. '
-      + 'Do not list the plan or print the code before applying it.';
+      + 'Do not list the plan or print the code before applying it. '
+      + 'Do not offer to generate images and do not describe an image you are going to make: '
+      + 'when the work is an icon, a header or any visual, implement it in HTML/CSS/SVG in the file itself.';
     const at = messages.findIndex((m) => m.role === 'system');
     if (at >= 0) messages[at] = { role: 'system', content: `${messages[at].content}
 
