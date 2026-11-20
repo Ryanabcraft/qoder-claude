@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.24.2
+
+- **`/v1/responses` dropped reasoning; now it forwards it.** The adapter ignored `thinking_delta`. It now streams `response.reasoning_summary_text.delta` / `.done` and includes a `reasoning` item (with `summary_text`) in the `output`, so Responses clients see the model's thinking the same way the other two APIs do.
+- **Vision engine switched to the lowercase model name** (`auto`). Tested live: the 1.1.80 engine accepts it and described the image normally, keeping the vision call on the same backend as the fixed text path.
+- The CLI transport keeps its current model argument: that path validates names against the CLI's own list, and the direct transport is the default.
+
 ## 1.24.1
 
 - **Root cause found: the model header was sent as `Auto`, not `auto`.** Qoder routes by that value, and `Auto` lands on a backend that never emits reasoning and generates at about half the speed. Measured on `/v1/messages`, same prompt, same model:

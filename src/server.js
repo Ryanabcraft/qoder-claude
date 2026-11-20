@@ -174,7 +174,7 @@ async function visionNoteFor(images, log) {
     return cached.text;
   }
   if (!visionCliPath()) return 'the image could not be read (vision engine not installed)';
-  const visionModel = process.env.QODER_VISION_MODEL || 'Auto';
+  const visionModel = process.env.QODER_VISION_MODEL || 'auto';
   const prompt = 'Describe this image in one short paragraph: the text it shows, the layout, and the visual elements that matter for changing code.';
   for (const account of candidateAccounts()) {
     const cfgV = { ...workerConfig({ model: visionModel }, ''), configDir: account.dir, account: account.name };

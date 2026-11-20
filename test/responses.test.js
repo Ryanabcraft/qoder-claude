@@ -92,3 +92,17 @@ test('a non-streaming call returns one response object', () => {
   assert.equal(body.object, 'response');
   assert.equal(body.output[0].content[0].text, 'ok');
 });
+
+test('thinking arrives as a reasoning summary item', async () => {
+  const { createResponsesAdapter } = await import('../src/responses.js');
+  const writes = [];
+  const res = { writeHead() {}, write: (c) => writes.push(String(c)), end() {} };
+  const adapter = createResponsesAdapter({ res, model: 'auto', stream: true });
+  adapter.event('content_block_delta', { delta: { type: 'thinking_delta', thinking: 'penso' } });
+  adapter.event('content_block_delta', { delta: { type: 'text_delta', text: 'ok' } });
+  adapter.end();
+  const all = writes.join('');
+  assert.match(all, /response\.reasoning_summary_text\.delta/);
+  const done = JSON.parse(all.split('\n\n').find((b) => b.includes('response.completed')).replace(/^.*data: /s, ''));
+  assert.ok(done.response.output.some((item) => item.type === 'reasoning' && item.summary[0].text === 'penso'));
+});

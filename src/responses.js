@@ -78,6 +78,8 @@ export function createResponsesAdapter({ res, model, stream = true }) {
     usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
     itemIndex: 0,
     textItem: null,
+    reasoningItem: null,
+    reasoning: '',
     toolIndex: -1,
     tools: new Map(),
     buffer: '',
@@ -126,6 +128,16 @@ export function createResponsesAdapter({ res, model, stream = true }) {
     });
   };
 
+  const closeReasoning = () => {
+    if (!state.reasoningItem) return;
+    const { id, index } = state.reasoningItem;
+    send('response.reasoning_summary_text.done', { item_id: id, output_index: index, summary_index: 0, text: state.reasoning });
+    const item = { id, type: 'reasoning', summary: [{ type: 'summary_text', text: state.reasoning }] };
+    send('response.output_item.done', { output_index: index, item });
+    state.output.push(item);
+    state.reasoningItem = null;
+  };
+
   const closeTextItem = () => {
     if (!state.textItem) return;
     const { id, index } = state.textItem;
@@ -155,6 +167,15 @@ export function createResponsesAdapter({ res, model, stream = true }) {
     }
     if (event === 'content_block_delta') {
       const delta = data?.delta;
+      if (delta?.type === 'thinking_delta' && delta.thinking) {
+        if (!state.reasoningItem) {
+          state.reasoningItem = { id: `rs_${state.id.slice(-12)}`, index: state.itemIndex++ };
+          send('response.output_item.added', { output_index: state.reasoningItem.index, item: { id: state.reasoningItem.id, type: 'reasoning', summary: [] } });
+        }
+        state.reasoning += delta.thinking;
+        send('response.reasoning_summary_text.delta', { item_id: state.reasoningItem.id, output_index: state.reasoningItem.index, summary_index: 0, delta: delta.thinking });
+        return;
+      }
       if (delta?.type === 'text_delta' && delta.text) {
         startTextItem();
         state.text += delta.text;
@@ -227,6 +248,7 @@ export function createResponsesAdapter({ res, model, stream = true }) {
     state.finished = true;
     if (state.status !== 200) return;
     begin();
+    closeReasoning();
     closeTextItem();
     if (stream) {
       send('response.completed', {
