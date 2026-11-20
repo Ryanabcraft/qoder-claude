@@ -9,6 +9,8 @@ import { repairJson } from './toolValidate.js';
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
+const MAX_TOOL_ARG = Number(process.env.QODER_TOOL_ARG_MAX || 1024 * 1024);
+const MAX_TOOL_TOTAL = Number(process.env.QODER_TOOL_TOTAL_MAX || 16 * 1024 * 1024);
 
 function textOf(content) {
   if (typeof content === 'string') return content;
@@ -146,6 +148,8 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
   let maxGap = 0;
   let reasoningChars = 0;
   let textChars = 0;
+  let toolBytes = 0;
+  let toolOverflow = 0;
   let ctx;
   try {
     ({ ctx } = context(dir));
@@ -334,13 +338,20 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
           }
         }
         if (call.function?.arguments) {
-          entry.arguments += call.function.arguments;
-          if (!searchMode) {
-            onEvent?.({
-              type: 'content_block_delta',
-              index: entry.index,
-              delta: { type: 'input_json_delta', partial_json: call.function.arguments },
-            });
+          const add = call.function.arguments.length;
+          if (entry.overflow || entry.arguments.length + add > MAX_TOOL_ARG || toolBytes + add > MAX_TOOL_TOTAL) {
+            if (!entry.overflow) toolOverflow += 1;
+            entry.overflow = true;
+          } else {
+            toolBytes += add;
+            entry.arguments += call.function.arguments;
+            if (!searchMode) {
+              onEvent?.({
+                type: 'content_block_delta',
+                index: entry.index,
+                delta: { type: 'input_json_delta', partial_json: call.function.arguments },
+              });
+            }
           }
         }
       }
@@ -446,6 +457,7 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     maxGapMs: maxGap,
     reasoningChars,
     textChars,
+    toolOverflow,
     ms: Date.now() - startedAt,
   };
 }

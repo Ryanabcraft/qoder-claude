@@ -116,7 +116,7 @@ Prose spread across small messages compresses to nothing and used to cost 100–
 When the client asks for Anthropic's server-side search tool (`web_search_20250305`), the
 bridge runs the search itself and streams the standard `server_tool_use` and
 `web_search_tool_result` blocks, then answers with the results in context. No API key and no
-MCP: the backends are the **Exa MCP endpoint** (`https://mcp.exa.ai/mcp`, works without a
+MCP: the The same applies to Anthropic's `web_fetch_20250910`: the bridge fetches the page, strips scripts and styles, and keeps the title plus the visible text (24k chars, 5 redirects). Private and local addresses are refused before any connection. The search backends are the **Exa MCP endpoint** (`https://mcp.exa.ai/mcp`, works without a
 key) and **DuckDuckGo HTML** as fallback. Results are cached for five minutes, and the
 tool's `allowed_domains` / `blocked_domains` are applied before anything is returned.
 

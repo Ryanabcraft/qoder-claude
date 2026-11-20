@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.23.0
+
+- **web_fetch runs in the bridge.** Anthropic server tool (`web_fetch_20250910`): the bridge fetches the page, strips scripts/styles, keeps the title and the visible text (24k chars, 2 MB of bytes, 5 redirects, 20 s) and streams `server_tool_use` + `web_fetch_tool_result`. Failures become `web_fetch_tool_error`, never a broken stream.
+- **SSRF guard**: `file://`, `localhost` and every private range are refused before connecting — including a public hostname that resolves to a private IP. Proven live: `http://127.0.0.1:8787/ui` -> `blocked: private address`.
+- **Tool buffer ceiling**: 1 MB per call and 16 MB per response (`QODER_TOOL_ARG_MAX`, `QODER_TOOL_TOTAL_MAX`). Past the ceiling the call stops accumulating and the log prints `tool-limit=N`.
+- Proven live: `https://example.com/` -> title "Example Domain", 171 chars of text, answer from the page.
+
 ## 1.22.2
 
 - Compression now needs a **single block of at least 8 KB** (`QODER_COMPRESS_MIN_BLOCK`) before the proxy is called. In a normal OpenCode turn the context is prose spread across small messages: the proxy returned 0-1% after 100-600 ms, every turn. Those turns now log `compact=off` and skip the call.

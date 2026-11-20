@@ -11,6 +11,8 @@ export { forgetContext };
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
+const MAX_TOOL_ARG = Number(process.env.QODER_TOOL_ARG_MAX || 1024 * 1024);
+const MAX_TOOL_TOTAL = Number(process.env.QODER_TOOL_TOTAL_MAX || 16 * 1024 * 1024);
 
 export function buildPayload(body, model, contextWindow, opts = {}) {
   const messages = [];
@@ -144,6 +146,8 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   let lastAt = 0;
   let maxGap = 0;
   let chunks = 0;
+  let toolBytes = 0;
+  let toolOverflow = 0;
   const calls = new Map();
   const decoder = new TextDecoder();
   let buf = '';
@@ -183,7 +187,15 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
         const cur = calls.get(i) || { id: '', name: '', arguments: '' };
         if (tc.id) cur.id = tc.id;
         if (tc.function?.name) cur.name = tc.function.name;
-        if (tc.function?.arguments) cur.arguments += tc.function.arguments;
+        if (tc.function?.arguments) {
+          const add = tc.function.arguments.length;
+          if (cur.arguments.length + add > MAX_TOOL_ARG || toolBytes + add > MAX_TOOL_TOTAL) {
+            if (!cur.overflow) { cur.overflow = true; toolOverflow += 1; }
+          } else {
+            toolBytes += add;
+            cur.arguments += tc.function.arguments;
+          }
+        }
         calls.set(i, cur);
       }
     }
@@ -243,6 +255,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     maxGapMs: maxGap,
     reasoningChars: 0,
     textChars: text.length,
+    toolOverflow,
     ms: Date.now() - startedAt,
   };
 }

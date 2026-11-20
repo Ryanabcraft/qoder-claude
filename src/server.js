@@ -11,6 +11,7 @@ import { streamChat } from './openaiUpstream.js';
 import { mergeUsage } from './usage.js';
 import { runCompletion, resolveModel, shutdownPool, workerConfig } from './cli.js';
 import { runSearch, serverSearchTools } from './webSearch.js';
+import { fetchPage, firstUrl, serverFetchTools } from './webFetch.js';
 import { checkToolCall } from './toolValidate.js';
 let directCompletion = null;
 try { ({ directCompletion } = await import('./direct.js')); } catch {}
@@ -61,7 +62,7 @@ export function speedOf(out, totalMs) {
   const thinkShare = out.reasoningChars ? Math.round((out.reasoningChars / Math.max(1, out.textChars + out.reasoningChars)) * 100) : 0;
   const compact = out.compact ? `${Math.round(out.compact * 100)}%` : out.compactMs ? '0%' : 'off';
   const compactDetail = out.compactMs ? `${compact}(${out.compactMs}ms${out.compactReason && out.compactReason !== 'ok' ? ` ${out.compactReason}` : ''})` : compact;
-  return `tok/s=${tps.toFixed(1)} textTok=${textTokens} think=${thinkShare}% gap=${out.maxGapMs || 0}ms compact=${compactDetail}`;
+  return `tok/s=${tps.toFixed(1)} textTok=${textTokens} think=${thinkShare}% gap=${out.maxGapMs || 0}ms compact=${compactDetail}${out.toolOverflow ? ` tool-limit=${out.toolOverflow}` : ''}`;
 }
 
 function send(res, status, obj) {
@@ -125,6 +126,17 @@ function searchBlocks(query, result) {
   return [
     { type: 'server_tool_use', id, name: 'web_search', input: { query } },
     { type: 'web_search_tool_result', tool_use_id: id, content: payload },
+  ];
+}
+
+function fetchBlocks(page) {
+  const id = `srvtoolu_${randomUUID().replace(/-/g, '').slice(0, 20)}`;
+  const payload = page.error
+    ? { type: 'web_fetch_tool_error', error_code: 'unavailable' }
+    : { type: 'web_fetch_result', url: page.page.url, title: page.page.title, text: page.page.text };
+  return [
+    { type: 'server_tool_use', id, name: 'web_fetch', input: { url: page.url || '' } },
+    { type: 'web_fetch_tool_result', tool_use_id: id, content: payload },
   ];
 }
 
@@ -292,8 +304,20 @@ async function handleMessages(req, res, body) {
     body.tools = body.tools.filter((item) => !/^web_search_/.test(String(item?.type || '')));
     log(`  web_search "${query.slice(0, 80)}" -> ${found.error || `${found.results.length} results`}`);
   }
-  const built = buildPrompt(body, 0, log, { nativeTools: true });
-  const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
+  const fetchTools = serverFetchTools(body.tools);
+  let page = null;
+  if (fetchTools.length) {
+    const url = firstUrl(lastUserText(body.messages));
+    const found = url ? await fetchPage(url) : { error: 'no url in the request' };
+    page = { url, ...found };
+    const note = found.error
+      ? `Web fetch for "${url}" failed (${found.error}). Say the fetch failed instead of inventing the page.`
+      : `Fetched ${found.page.url}${found.page.title ? ` — ${found.page.title}` : ''}:\n${found.page.text}`;
+    body.system = appendSystem(body.system, note);
+    body.tools = body.tools.filter((item) => !/^web_fetch_/.test(String(item?.type || '')));
+    log(`  web_fetch ${url || '(none)'} -> ${found.error || `${found.page.text.length} chars`}`);
+  }
+  const built = buildPrompt(body, 0, log, { nativeTools: true });  const preferExa = /mcp__exa__web_search_exa/.test(built.prompt) || /mcp__exa__web_search_exa/.test(built.system);
   const cfg = workerConfig(body, built.system);
   const model = cfg.model;
   let inTokens = estimate(built.prompt + built.system) + estimateImageTokens(built.images);
@@ -377,6 +401,7 @@ async function handleMessages(req, res, body) {
     }
     const content = [];
     if (search) content.push(...searchBlocks(search.query, search));
+    if (page) content.push(...fetchBlocks(page));
     if (tc) {
       if (tc.before) content.push({ type: 'text', text: tc.before });
       for (const c of tc.calls) {
@@ -425,15 +450,19 @@ async function handleMessages(req, res, body) {
       try { res.write(': ping\n\n'); } catch {}
     }, 12000);
     keepalive.unref?.();
-    if (search) {
-      const [use, result] = searchBlocks(search.query, search);
-      const useIndex = nextIndex++;
-      write('content_block_start', { type: 'content_block_start', index: useIndex, content_block: { ...use, input: {} } });
-      write('content_block_delta', { type: 'content_block_delta', index: useIndex, delta: { type: 'input_json_delta', partial_json: JSON.stringify(use.input) } });
-      write('content_block_stop', { type: 'content_block_stop', index: useIndex });
-      const resultIndex = nextIndex++;
-      write('content_block_start', { type: 'content_block_start', index: resultIndex, content_block: result });
-      write('content_block_stop', { type: 'content_block_stop', index: resultIndex });
+    const serverBlocks = [
+      ...(search ? searchBlocks(search.query, search) : []),
+      ...(page ? fetchBlocks(page) : []),
+    ];
+    for (const block of serverBlocks) {
+      const index = nextIndex++;
+      if (block.type === 'server_tool_use') {
+        write('content_block_start', { type: 'content_block_start', index, content_block: { ...block, input: {} } });
+        write('content_block_delta', { type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input) } });
+      } else {
+        write('content_block_start', { type: 'content_block_start', index, content_block: block });
+      }
+      write('content_block_stop', { type: 'content_block_stop', index });
     }
   };
 
