@@ -67,6 +67,7 @@ test.before(async () => {
       QODER_AUTH_FAKE: '1',
       QODER_INFER_ENDPOINT: `http://127.0.0.1:${fake.port}`,
       QODER_COMPRESS_PROXY: `http://127.0.0.1:${compressProxy.address().port}`,
+      QODER_COMPRESS_MIN_CHARS: '1',
     },
     stdio: 'ignore',
   });
@@ -156,6 +157,14 @@ test('a stream that dies mid-flight rotates instead of ending empty', async () =
   await res.text();
   const after = Object.keys(accounts().cooldowns || {}).length;
   assert.ok(after >= before, 'the failure was accounted for');
+});
+
+test('/v1/responses answers in the Responses shape', async () => {
+  const res = await post('/v1/responses', { model: 'Auto', input: 'scenario:think oi' });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.object, 'response');
+  assert.ok(Array.isArray(body.output));
 });
 
 test('POST /stop ends the process', async () => {

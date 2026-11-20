@@ -15,6 +15,7 @@ try { ({ directCompletion } = await import('./direct.js')); } catch {}
 import { cachedModels, onModelsChanged, refreshRemote, startModelRefresh } from './models.js';
 import { applyModelPicker } from './claudePicker.js';
 import { applyOpenCode, detect } from './integrations.js';
+import { createResponsesAdapter, toChatRequest } from './responses.js';
 import { startQuotaPolling } from './quota.js';
 import { startRewardPolling } from './rewards.js';
 import { handleUi } from './uiApi.js';
@@ -518,6 +519,41 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return send(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: e.message } });
     }
+  }
+
+  if (req.method === 'POST' && (path === '/v1/responses' || path === '/responses')) {
+    let body;
+    try {
+      body = JSON.parse((await readBody(req)) || '{}');
+    } catch (e) {
+      return send(res, 400, { error: { message: e.message, type: 'invalid_request_error' } });
+    }
+    const chat = toChatRequest(body);
+    const stream = chat.stream === true;
+    const adapter = createResponsesAdapter({ res, model: body.model || 'Auto', stream });
+    const ac = new AbortController();
+    res.on('close', () => { if (!res.writableEnded) ac.abort(); });
+    const t0 = Date.now();
+    const act = String(req.headers['x-qoder-act'] || '') === '1' || body.qoder_act === true;
+    let out;
+    try {
+      out = await runOpenAiWithRotation({
+        body: chat,
+        act,
+        signal: ac.signal,
+        onEvent: (ev) => adapter.event(ev.type, ev),
+        canRotate: () => !adapter.started,
+        log,
+      });
+    } catch (e) {
+      out = { error: e.message || String(e) };
+    }
+    if (out.error && !adapter.started) {
+      return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
+    }
+    log(`  responses model=${body.model || 'Auto'} total=${Date.now() - t0}ms compact=${out.compact ? Math.round(out.compact * 100) + '%' : 'off'}`);
+    adapter.end();
+    return true;
   }
 
   if (req.method === 'POST' && (path === '/v1/chat/completions' || path === '/chat/completions')) {

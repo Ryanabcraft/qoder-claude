@@ -26,6 +26,7 @@ export const DEFAULTS = {
   quota: true,
   quotaPollMs: 300000,
   rewardAutoClaim: false,
+  compressProxy: '',
 };
 
 const ENV = {
@@ -132,6 +133,7 @@ export function effectiveConfig() {
   const cfg = readConfig();
   return {
     ...cfg,
+    compressProxy: process.env.QODER_COMPRESS_PROXY || cfg.compressProxy || '',
     port: envNumber('BRIDGE_PORT', cfg.port),
     host: process.env.BRIDGE_HOST || cfg.host,
     apiKey: process.env.BRIDGE_API_KEY !== undefined ? process.env.BRIDGE_API_KEY : cfg.apiKey,

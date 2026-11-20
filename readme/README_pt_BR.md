@@ -94,11 +94,12 @@ Um proxy local de compressão encurta a saída das ferramentas antes de ela cheg
 Instale o [Headroom](https://github.com/headroomlabs-ai/headroom), suba o proxy e aponte a ponte para ele:
 
 ```bash
-uv tool install --python 3.13 "headroom-ai[all]"
-headroom proxy --port 8790
+uv tool install --python 3.13 "headroom-ai[proxy]"
+scripts/headroom-proxy.cmd      # ou scripts/headroom-proxy.sh
 ```
 
 ```bash
+# gravado em bridge.config.json como "compressProxy", ou no ambiente:
 QODER_COMPRESS_PROXY=http://127.0.0.1:8790 qclaude
 ```
 

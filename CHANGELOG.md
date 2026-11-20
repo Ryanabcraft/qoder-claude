@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.20.1
+
+- A `[DONE]` sentinel arriving inside the upstream envelope is now treated as the end of the stream, not a parse error. Before, a successful answer could end with a phantom error and lose its usage.
+- The compression call has a size floor (20 KB, `QODER_COMPRESS_MIN_CHARS`): short conversations never pay for the proxy.
+- `scripts/headroom-proxy.cmd` and `.sh` start the proxy in a console with `NO_PROXY` cleared, which is the crash the proxy hits on some Windows setups; the README points there and to `compressProxy` in `bridge.config.json`.
+- Measured with the real proxy: 600-line tool output, **27,702 → 98 prompt tokens** (99% smaller).
+
+## 1.20.0
+
+- New `POST /v1/responses` endpoint for clients that speak the OpenAI Responses API (Codex, VS Code Chat). Input strings, item arrays, `instructions` and Responses-style tools are translated, and the reply streams the expected sequence (`response.created`, `response.output_text.delta`, `response.completed`), with `function_call` items for tools. Rotation and compression apply here too.
+- The compression proxy can now come from `bridge.config.json` (`compressProxy`), not only from the environment variable.
+
 ## 1.19.9
 
 - Optional context compression through a local Headroom proxy. Set `QODER_COMPRESS_PROXY=http://127.0.0.1:8790` and the bridge sends the history to `/v1/compress` before the model; the system prompt and the current user message are always kept byte for byte, a slow or failed proxy changes nothing, and `QODER_COMPRESS=0` disables it. Measured by Headroom: 21-57% fewer input tokens, 90%+ on repeated logs and JSON.

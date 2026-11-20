@@ -128,7 +128,9 @@ function parseEnvelope(line) {
   if (env.statusCodeValue && env.statusCodeValue !== 200) {
     throw new Error(`upstream ${env.statusCodeValue}: ${String(env.body).slice(0, 300)}`);
   }
-  return JSON.parse(env.body);
+  const body = String(env.body ?? '').trim();
+  if (!body || body === '[DONE]') return null;
+  return JSON.parse(body);
 }
 
 // Streams the upstream answer as Anthropic-shaped events, which is what the
@@ -221,6 +223,7 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     let chunk;
     try {
       chunk = parseEnvelope(data);
+      if (!chunk) return;
     } catch (e) {
       if (!upstreamError) upstreamError = e.message || String(e);
       return;

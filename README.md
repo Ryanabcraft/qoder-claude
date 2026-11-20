@@ -94,11 +94,12 @@ A local compression proxy shrinks tool output before it reaches the model. Insta
 [Headroom](https://github.com/headroomlabs-ai/headroom), run its proxy, and point the bridge at it:
 
 ```bash
-uv tool install --python 3.13 "headroom-ai[all]"
-headroom proxy --port 8790
+uv tool install --python 3.13 "headroom-ai[proxy]"
+scripts/headroom-proxy.cmd      # or scripts/headroom-proxy.sh on macOS/Linux
 ```
 
 ```bash
+# stored in bridge.config.json as "compressProxy", or in the environment:
 QODER_COMPRESS_PROXY=http://127.0.0.1:8790 qclaude
 ```
 

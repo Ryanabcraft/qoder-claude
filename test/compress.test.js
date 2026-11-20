@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 
 process.env.QODER_COMPRESS_TIMEOUT_MS = '300';
+process.env.QODER_COMPRESS_MIN_CHARS = '1';
 const { compactMessages } = await import('../src/compress.js');
 
 const long = 'x'.repeat(4000);
@@ -96,4 +97,14 @@ test('QODER_COMPRESS=0 disables it even with a proxy set', async () => {
   delete process.env.QODER_COMPRESS;
   assert.equal(out.skipped, true);
   assert.equal(out.messages, input);
+});
+
+test('a small conversation never calls the proxy', async () => {
+  process.env.QODER_COMPRESS_MIN_CHARS = '20000';
+  process.env.QODER_COMPRESS_PROXY = 'http://127.0.0.1:1';
+  const small = [{ role: 'user', content: 'hi' }, { role: 'assistant', content: 'yo' }, { role: 'user', content: 'hey' }];
+  const out = await compactMessages(small, { model: 'Auto' });
+  process.env.QODER_COMPRESS_MIN_CHARS = '1';
+  assert.equal(out.skipped, true);
+  assert.equal(out.messages, small);
 });

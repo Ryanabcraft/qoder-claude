@@ -1,9 +1,14 @@
 import { combineSignals } from './abort.js';
+import { effectiveConfig } from './config.js';
 
 const TIMEOUT_MS = Number(process.env.QODER_COMPRESS_TIMEOUT_MS || 3000);
 
 export function compressProxy() {
-  return String(process.env.QODER_COMPRESS_PROXY || '').replace(/\/+$/, '');
+  let value = process.env.QODER_COMPRESS_PROXY || '';
+  if (!value) {
+    try { value = effectiveConfig().compressProxy || ''; } catch {}
+  }
+  return String(value).replace(/\/+$/, '');
 }
 
 function protectedIndexes(messages) {
@@ -29,6 +34,8 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
   if (off || list.length < 3) return { messages: list, ratio: 0, skipped: true };
 
   const before = JSON.stringify(list).length;
+  const min = Number(process.env.QODER_COMPRESS_MIN_CHARS || 20000);
+  if (before < min) return { messages: list, ratio: 0, skipped: true };
   const ctrl = new AbortController();
   const timer = setTimeout(() => {
     try { ctrl.abort(); } catch {}
