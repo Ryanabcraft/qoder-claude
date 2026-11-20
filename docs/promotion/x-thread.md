@@ -1,6 +1,6 @@
 # X / Twitter thread
 
-Five posts. Attach the dashboard screenshot to post 4. Link only in post 5, so the thread is not throttled.
+Six posts. Attach the dashboard screenshot to post 4. Link only in post 5, so the thread is not throttled.
 
 ## 1
 
@@ -28,6 +28,15 @@ The part I use most: failover across accounts.
 
 Quota error, 403, 429 or a dead session — that account pauses, and the same
 request retries on the next one. No restart, no lost stream, no manual switch.
+```
+
+## 3b
+
+```
+Search and page reading, without an API key: the bridge runs WebSearch and
+WebFetch itself. It searches, fetches the page, strips the HTML and hands the
+model clean text. Private addresses are refused, so it cannot read my own
+dashboard by prompt injection.
 ```
 
 ## 4

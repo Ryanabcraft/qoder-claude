@@ -25,8 +25,12 @@ What it does beyond forwarding:
   - multi-account failover: a quota error, 403, 429 or a lost session pauses
     that account and the same request retries on the next one
   - 1M context on the models that offer it
-  - Exa web search, because WebSearch is a server-side Anthropic tool and does
-    not survive the switch
+  - WebSearch and WebFetch executed by the bridge: it performs the search and
+    fetches the page itself, so the model gets real results and clean page text
+    without an API key or an MCP server (private addresses are refused)
+  - an OpenAI-compatible surface as well (/v1/chat/completions and /v1/responses)
+  - optional context compression: a 600-line tool log measured 27,702 -> 98
+    prompt tokens through a local Headroom proxy
   - a local dashboard with real per-account credits, burn rate and a forecast
 
 Limitations, up front: you need a Qoder plan of your own. It is not affiliated

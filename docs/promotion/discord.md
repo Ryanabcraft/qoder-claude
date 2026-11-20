@@ -9,7 +9,8 @@ Built a small bridge that runs Claude Code against Qoder models.
 
 It is a local server on 127.0.0.1:8787 that speaks the Anthropic Messages API, so
 Claude Code keeps its tools, MCP servers and slash commands — only the model call
-changes. It also fails over between Qoder accounts when one hits a quota, and has
+changes. Web search and page reading run inside the bridge too, no key and no MCP
+server. It also fails over between Qoder accounts when one hits a quota, and has
 a local dashboard with real credits and a burn forecast.
 
 Needs a Qoder plan of your own; not affiliated with Anthropic or Qoder. MIT.
@@ -25,7 +26,8 @@ Happy to answer questions about the transport or the failover logic.
 Fiz uma ponte pequena que roda o Claude Code nos modelos do Qoder.
 
 É um servidor local em 127.0.0.1:8787 que fala a API da Anthropic, então o Claude
-Code mantém ferramentas, MCP e comandos — só a chamada do modelo muda. Também faz
+Code mantém ferramentas, MCP e comandos — só a chamada do modelo muda. Busca e
+leitura de página rodam na própria bridge, sem chave e sem MCP. Também faz
 failover entre contas do Qoder quando uma estoura a cota, e tem painel local com
 créditos reais e previsão de consumo.
 

@@ -13,8 +13,9 @@ the traffic to Qoder. Claude Code stays exactly as it is — same interface, sam
 tools, same shortcuts — and the metering moves to the other plan.
 
 What it adds beyond forwarding: failover between accounts when one hits a quota,
-real credit tracking per account with a forecast of when it runs out, and a local
-dashboard.
+real credit tracking per account with a forecast of when it runs out, web search
+and page reading executed by the bridge itself (no key, no MCP server), and a
+local dashboard.
 
 Two things I want to be upfront about: it needs a Qoder plan of your own, and it
 is not affiliated with Anthropic or Qoder.
@@ -37,7 +38,8 @@ tráfego para o Qoder. O Claude Code continua exatamente igual — mesma interfa
 mesmas ferramentas, mesmos atalhos — e a cobrança vai para o outro plano.
 
 Além de repassar, ele faz failover entre contas quando uma estoura a cota, mostra
-os créditos reais por conta com previsão de quando acabam, e tem um painel local.
+os créditos reais por conta com previsão de quando acabam, executa busca e leitura
+de página na própria bridge (sem chave e sem servidor MCP), e tem um painel local.
 
 Duas coisas que eu prefiro dizer antes: precisa de um plano Qoder seu, e não é
 afiliado à Anthropic nem ao Qoder.

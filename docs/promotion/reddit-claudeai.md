@@ -24,8 +24,10 @@ What actually works (tested, not aspirational):
 - Read / Write / Edit / Glob / Grep / Bash / Agent, executed by Claude Code itself
 - MCP servers, unchanged
 - /model, the effort slider, thinking budget, 1M context on the models that have it
-- WebSearch and WebFetch — the installer adds Exa, because the search tool is
-  server-side on Anthropic and does not survive the switch
+- WebSearch and WebFetch — executed by the bridge itself now: it runs the search, fetches the
+  page, strips the HTML and hands the model clean text. No API key, no MCP server.
+- an OpenAI-compatible face too (`/v1/chat/completions` and `/v1/responses`), so OpenCode and
+  other clients use the same accounts
 - multi-account failover: when an account hits a quota, a 403, a 429 or a lost
   session, it pauses that account and retries the same request on the next one
 - a local dashboard with real credits per account, burn rate and a forecast of

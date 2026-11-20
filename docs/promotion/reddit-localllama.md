@@ -37,7 +37,9 @@ Three details that cost me the most time:
    one, without restarting the server or losing the stream.
 
 Also in there: deferred tool schema injection (tools Claude Code sends lazily
-have to be present before the model sees them), a stall watchdog, TTFB
+have to be present before the model sees them), server-side WebSearch/WebFetch
+executed by the bridge itself (search plus HTML-to-text, private ranges refused),
+a stall watchdog, TTFB
 instrumentation, and session pooling for repeated prompts.
 
 The dashboard is plain HTML/CSS/JS served by the same process: real credits per

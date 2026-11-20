@@ -65,6 +65,42 @@ Smaller things that turned out to matter: injecting deferred tool schemas before
 the model sees the request, a watchdog for streams that stall silently, TTFB
 instrumentation, and pooling sessions for repeated prompts.
 
+## The tools that do not survive a naive switch
+
+Tools live on the client side, with one exception that matters: on Anthropic's
+API, `WebSearch` and `WebFetch` are *server* tools. The client sends a block and
+expects the server to run the search and return results. Behind a local bridge
+that is simply your model provider, those calls land nowhere and come back empty.
+
+The fix is not another MCP server. The bridge runs them itself:
+
+- search: Exa's MCP endpoint answers without a key, with DuckDuckGo HTML as a
+  fallback; results are cached for five minutes and domain filters are applied;
+- fetch: the page is downloaded, scripts and styles stripped, title and visible
+  text kept (24k chars, 2 MB of bytes, five redirects);
+- both stream back as the same `server_tool_use` blocks the client already
+  understands, and a failure becomes an error result instead of a broken stream.
+
+One detail worth copying: every fetched target is checked before connecting.
+`localhost`, the private ranges, `file://`, and hostnames that resolve to a
+private address are refused. Without that, a page can ask the model to read your
+own dashboard and the content goes upstream.
+
+## Numbers, measured
+
+Not benchmarks from a vendor — the same prompt on the same machine, through the
+bridge:
+
+| model | first text | text tok/s | notes |
+| --- | --- | --- | --- |
+| DeepSeek-Flash | 1.1–1.7 s | ~46 | no reasoning step |
+| Auto | 62–115 s | ~130 | 92–94% of the stream is reasoning |
+
+The lesson: the "slow" is usually the model thinking before the first word, not
+the bridge. And compression is worth it only on one big block — a 600-line tool
+log went from 27,702 to 98 prompt tokens through a local Headroom proxy, while
+prose spread across small messages gained 0–1%.
+
 ## What the dashboard is for
 
 Not decoration. I wanted to answer three questions without opening a terminal:
