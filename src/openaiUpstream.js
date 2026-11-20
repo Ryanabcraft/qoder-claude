@@ -242,6 +242,7 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     }
   }
   const availableTools = toolNames(body.tools);
+  if (process.env.QODER_DUMP_PAYLOAD) { try { (await import('node:fs')).writeFileSync(process.env.QODER_DUMP_PAYLOAD.replace(/.json$/, '-chat.json'), JSON.stringify(payload, null, 2)); } catch {} }
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), payload.model, '');
   const headers = Object.fromEntries(req.headers);
 

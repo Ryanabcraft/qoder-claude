@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.24.0
+
+- **Thinking is parsed and emitted on both paths.** `direct.js` used to drop `reasoning_content`; `/v1/messages` had no `thinking` block at all. Now the direct transport collects the reasoning and `handleMessages` streams `content_block_start(thinking)` + `thinking_delta`, and the non-stream response includes the block. When the client sends `thinking.display: "omitted"`, the bridge asks for `summarized` instead (`QODER_SHOW_THINKING=0` disables).
+- **Measured limit, not hidden:** the Qoder backend only emits reasoning sometimes. The same prompt on `/v1/chat/completions` produced ~90 reasoning chunks in 2 of 3 runs and 0 in the third; on `/v1/messages` six consecutive attempts produced none. The bridge forwards it whenever it exists — when the backend sends nothing, there is nothing to show.
+- **Prefix kept stable for the upstream cache.** Search, fetch and image notes are appended to the last user message instead of the system prompt, so the beginning of the conversation stays byte-identical between turns. Measured before: the same payload repeated went from 2.9 s to 0.9 s when the prefix did not change.
+- **Compression timeout scales with payload** (`800 ms + 20 ms/KB`, cap 3 s) instead of always giving up at 800 ms.
+- `QODER_DUMP_PAYLOAD=/path/file.json` writes the exact upstream payload for both transports, for future diagnostics.
+
 ## 1.23.5
 
 - **Parity: the fixes from 1.23.4 reach the Claude Code path too.** An image on `/v1/messages` used to run the vision engine as the whole answer (the engine has no tools), so a message with a picture could not call `Read`. Both paths now share `visionNoteFor()`: the engine produces one description (cached by image hash for 30 minutes), the description goes into the user turn as `[image: …]`, and the normal request runs with the client's tools. Proven: image + tools on `/v1/messages` returned `stop_reason: tool_use` with `Read`.

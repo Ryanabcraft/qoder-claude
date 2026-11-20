@@ -67,10 +67,11 @@ export async function compactMessages(messages, { model = '', signal } = {}) {
   const keep = protectedIndexes(list);
   const block = Number(process.env.QODER_COMPRESS_MIN_BLOCK || 8000);
   if (largestBlock(list, keep) < block) return { messages: list, ratio: 0, skipped: true, ms: 0, reason: 'no-block' };
+  const budget = Math.min(3000, TIMEOUT_MS + Math.round((before / 1024) * 20));
   const ctrl = new AbortController();
   const timer = setTimeout(() => {
     try { ctrl.abort(); } catch {}
-  }, TIMEOUT_MS);
+  }, budget);
   timer.unref?.();
 
   try {

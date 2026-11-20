@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { deferredTools, renderMessageContent, systemToText } from './prompt.js';
 import { openAIContent } from './images.js';
 import { createStallTimer, stallMs } from './stall.js';
@@ -96,6 +97,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   }
   const compacted = await compactMessages(body.messages, { model: cfg.model, signal });
   const payload = buildPayload({ ...body, messages: compacted.messages }, cfg.model, cfg.contextWindow, cfg);
+  if (process.env.QODER_DUMP_PAYLOAD) { try { fs.writeFileSync(process.env.QODER_DUMP_PAYLOAD.replace(/.json$/, '-direct.json'), JSON.stringify(payload, null, 2)); } catch {} }
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
   const headers = Object.fromEntries(req.headers);
 
@@ -153,6 +155,7 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   let lastAt = 0;
   let maxGap = 0;
   let chunks = 0;
+  let reasoning = "";
   let toolBytes = 0;
   let toolOverflow = 0;
   const calls = new Map();
@@ -179,6 +182,11 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     if (choice.finish_reason) stopReason = choice.finish_reason;
     const delta = choice.delta || {};
 
+    const think = typeof delta.reasoning_content === 'string' ? delta.reasoning_content : (typeof delta.reasoning === 'string' ? delta.reasoning : '');
+    if (think) {
+      reasoning += think;
+      if (onEvent) onEvent({ type: 'thinking_delta', text: think });
+    }
     if (typeof delta.content === 'string' && delta.content) {
       const at = Date.now();
       if (!firstTextAt) firstTextAt = at;
@@ -260,7 +268,8 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     ttftText: firstTextAt ? firstTextAt - startedAt : 0,
     chunks,
     maxGapMs: maxGap,
-    reasoningChars: 0,
+    reasoning,
+    reasoningChars: reasoning.length,
     textChars: text.length,
     toolOverflow,
     ms: Date.now() - startedAt,

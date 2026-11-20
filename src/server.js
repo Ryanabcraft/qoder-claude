@@ -211,6 +211,19 @@ function lastUserText(messages) {  for (let i = (messages || []).length - 1; i >
   return '';
 }
 
+function appendToLastUser(messages, note) {
+  if (!note || !Array.isArray(messages)) return;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message?.role !== 'user') continue;
+    const text = Array.isArray(message.content)
+      ? message.content.map((part) => (typeof part === 'string' ? part : part?.text || '')).join('\n')
+      : typeof message.content === 'string' ? message.content : '';
+    messages[i] = { ...message, content: `${text}\n${note}`.trim() };
+    return;
+  }
+}
+
 function appendSystem(system, note) {
   if (!note) return system;
   if (typeof system === 'string') return system ? `${system}\n\n${note}` : note;
@@ -362,7 +375,7 @@ async function handleMessages(req, res, body) {
     const note = found.error
       ? `Web search for "${query}" failed (${found.error}). Say the search failed instead of guessing.`
       : `Live web results for "${query}":\n${found.results.map((item, i) => `${i + 1}. ${item.title} — ${item.url}`).join('\n')}\nUse these URLs and cite them.`;
-    body.system = appendSystem(body.system, note);
+    appendToLastUser(body.messages, note);
     body.tools = body.tools.filter((item) => !/^web_search_/.test(String(item?.type || '')));
     log(`  web_search "${query.slice(0, 80)}" -> ${found.error || `${found.results.length} results`}`);
   }
@@ -375,9 +388,12 @@ async function handleMessages(req, res, body) {
     const note = found.error
       ? `Web fetch for "${url}" failed (${found.error}). Say the fetch failed instead of inventing the page.`
       : `Fetched ${found.page.url}${found.page.title ? ` — ${found.page.title}` : ''}:\n${found.page.text}`;
-    body.system = appendSystem(body.system, note);
+    appendToLastUser(body.messages, note);
     body.tools = body.tools.filter((item) => !/^web_fetch_/.test(String(item?.type || '')));
     log(`  web_fetch ${url || '(none)'} -> ${found.error || `${found.page.text.length} chars`}`);
+  }
+  if (body.thinking && typeof body.thinking === 'object' && body.thinking.display === 'omitted' && process.env.QODER_SHOW_THINKING !== '0') {
+    body.thinking = { ...body.thinking, display: 'summarized' };
   }
   const anthropicImages = collectAnthropicImages(body.messages);
   if (anthropicImages.length) {
@@ -475,6 +491,7 @@ async function handleMessages(req, res, body) {
       };
     }
     const content = [];
+    if (out.reasoning) content.push({ type: 'thinking', thinking: out.reasoning });
     if (search) content.push(...searchBlocks(search.query, search));
     if (page) content.push(...fetchBlocks(page));
     if (tc) {
@@ -543,6 +560,7 @@ async function handleMessages(req, res, body) {
 
   let nextIndex = 0;
   let textIndex = -1;
+  let thinkingIndex = -1;
   let emitted = '';
   let gateState = 'text';
   let pending = '';
@@ -552,6 +570,20 @@ async function handleMessages(req, res, body) {
     if (textIndex !== -1) return;
     textIndex = nextIndex++;
     write('content_block_start', { type: 'content_block_start', index: textIndex, content_block: { type: 'text', text: '' } });
+  };
+  const stopThinking = () => {
+    if (thinkingIndex === -1) return;
+    write('content_block_stop', { type: 'content_block_stop', index: thinkingIndex });
+    thinkingIndex = -1;
+  };
+  const emitThinking = (t) => {
+    if (!t) return;
+    if (thinkingIndex === -1) {
+      stopText();
+      thinkingIndex = nextIndex++;
+      write('content_block_start', { type: 'content_block_start', index: thinkingIndex, content_block: { type: 'thinking', thinking: '' } });
+    }
+    write('content_block_delta', { type: 'content_block_delta', index: thinkingIndex, delta: { type: 'thinking_delta', thinking: t } });
   };
   const emitText = (t) => {
     if (!t) return;
@@ -598,9 +630,16 @@ async function handleMessages(req, res, body) {
       body, cfg, signal: ac.signal,
       canRotate: () => emitted.length === 0 && !headersSent,
       onEvent: (ev) => {
+        if (ev?.type === 'thinking_delta' && ev.text) {
+          if (!firstByteAt) firstByteAt = Date.now();
+          startStream();
+          emitThinking(ev.text);
+          return;
+        }
         if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
           if (!firstByteAt) firstByteAt = Date.now();
           startStream();
+          stopThinking();
           feed(ev.delta.text || '');
         }
       },
@@ -636,6 +675,7 @@ async function handleMessages(req, res, body) {
   if (parsed) log('  model tool calls: ' + parsed.calls.map((c) => c.name).join(', '));
   const tc = alignToolCalls(parsed, { preferExa, available: toolNames(body.tools) });
 
+  stopThinking();
   if (tc) {
     if (tc.before && !emitted) emitText(tc.before);
     stopText();
