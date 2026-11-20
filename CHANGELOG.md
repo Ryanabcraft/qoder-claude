@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.9
+
+- Optional context compression through a local Headroom proxy. Set `QODER_COMPRESS_PROXY=http://127.0.0.1:8790` and the bridge sends the history to `/v1/compress` before the model; the system prompt and the current user message are always kept byte for byte, a slow or failed proxy changes nothing, and `QODER_COMPRESS=0` disables it. Measured by Headroom: 21-57% fewer input tokens, 90%+ on repeated logs and JSON.
+- `compact=NN%` in the request log shows the real ratio, and `compact=off` when no proxy is configured.
+- README documents the three commands: `uv tool install --python 3.13 "headroom-ai[all]"`, `headroom proxy --port 8790`, and the environment variable.
+
 ## 1.19.8
 
 - The OpenCode provider now asks the bridge for an action-oriented turn: it sends `x-qoder-act: 1` (and `qoder_act: true` in the body as a fallback), and the bridge appends one line to the client system prompt — act in the same turn, do not list the plan or print the code before applying. It only affects requests that carry the marker, so OpenBot and any other client keep their own prompt; `QODER_ACT_PROMPT=0` disables it.

@@ -88,6 +88,23 @@ escrevem `bridge.config.json` e o settings do Claude com backup; o analytics gua
 cards de conta mostram os créditos reais de cada perfil, e o Analytics ganhou créditos, taxa de
 consumo e previsão de cota.
 
+## Conversas mais curtas (opcional)
+
+Um proxy local de compressão encurta a saída das ferramentas antes de ela chegar ao modelo.
+Instale o [Headroom](https://github.com/headroomlabs-ai/headroom), suba o proxy e aponte a ponte para ele:
+
+```bash
+uv tool install --python 3.13 "headroom-ai[all]"
+headroom proxy --port 8790
+```
+
+```bash
+QODER_COMPRESS_PROXY=http://127.0.0.1:8790 qclaude
+```
+
+O system prompt e a mensagem que você acabou de mandar nunca são reescritos; proxy lento ou
+fora do ar é ignorado. `QODER_COMPRESS=0` desliga. O log mostra `compact=NN%` ou `compact=off`.
+
 ## API compatível com OpenAI
 
 Qualquer ferramenta que fale OpenAI usa a mesma ponte — OpenBot, Cursor, um SDK, um script:

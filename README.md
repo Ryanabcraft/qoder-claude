@@ -88,6 +88,24 @@ write `bridge.config.json` and the Claude user settings with backups; analytics 
 Accounts cards show real Qoder credits per profile, and Analytics adds credits, burn rate and a
 quota forecast.
 
+## Shorter conversations (optional)
+
+A local compression proxy shrinks tool output before it reaches the model. Install
+[Headroom](https://github.com/headroomlabs-ai/headroom), run its proxy, and point the bridge at it:
+
+```bash
+uv tool install --python 3.13 "headroom-ai[all]"
+headroom proxy --port 8790
+```
+
+```bash
+QODER_COMPRESS_PROXY=http://127.0.0.1:8790 qclaude
+```
+
+The system prompt and the message you just sent are never rewritten; a slow or failing
+proxy is ignored. `QODER_COMPRESS=0` turns it off. The request log prints `compact=NN%`
+or `compact=off`.
+
 ## OpenAI-compatible API
 
 Any tool that speaks OpenAI can use the same bridge — OpenBot, Cursor, an SDK, a script:

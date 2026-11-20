@@ -426,7 +426,7 @@ async function handleMessages(req, res, body) {
   clearInterval(keepalive);
   if (!out.error) trackUsage(out.usage, out.text || '');
 
-  log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms`);
+  log(`  done transport=${TRANSPORT} ttft=${firstByteAt ? firstByteAt - t0 : '-'}ms total=${Date.now() - t0}ms compact=${out.compact ? `${Math.round(out.compact * 100)}%` : 'off'}`);
 
   if (out.error && !out.text && !emitted) {
     if (!headersSent) {
@@ -550,7 +550,7 @@ const server = http.createServer(async (req, res) => {
     if (out.error && !adapter.started) {
       return send(res, errorStatus(out.error), { error: { message: out.error, type: 'server_error' } });
     }
-    log(`  chat/completions model=${body.model || 'Auto'} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'}`);
+    log(`  chat/completions model=${body.model || 'Auto'} ttft=${out.ttft || '-'}ms total=${Date.now() - t0}ms in=${out.usage?.prompt_tokens ?? '?'} out=${out.usage?.completion_tokens ?? '?'} compact=${out.compact ? `${Math.round(out.compact * 100)}%` : 'off'}`);
     adapter.end();
     return true;
   }

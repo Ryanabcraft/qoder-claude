@@ -3,6 +3,7 @@ import { context } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
 import { resolveToolName, toolNames } from './toolNames.js';
 import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
+import { compactMessages } from './compress.js';
 
 const ENDPOINT = process.env.QODER_INFER_ENDPOINT || 'https://api1.qoder.sh';
 const AGENT_ID = process.env.QODER_AGENT_ID || 'agent_common';
@@ -141,7 +142,8 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
   } catch (e) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
-  const payload = upstreamPayload(body, { act });
+  const compacted = await compactMessages(body.messages, { model: body.model, signal });
+  const payload = upstreamPayload({ ...body, messages: compacted.messages }, { act });
   const availableTools = toolNames(body.tools);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), payload.model, '');
   const headers = Object.fromEntries(req.headers);
@@ -319,5 +321,5 @@ export async function streamChat({ body, signal, onEvent, dir = '', act = false 
     delta: { stop_reason: stop, stop_sequence: null },
     usage: { input_tokens: Number(usage.prompt_tokens) || 0, output_tokens: Number(usage.completion_tokens) || 0 },
   });
-  return { text, usage, error: upstreamError, stopReason: stop, ttft: firstTokenAt ? firstTokenAt - startedAt : 0, ms: Date.now() - startedAt };
+  return { text, usage, error: upstreamError, stopReason: stop, compact: compacted.ratio, ttft: firstTokenAt ? firstTokenAt - startedAt : 0, ms: Date.now() - startedAt };
 }

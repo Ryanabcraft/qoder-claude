@@ -4,6 +4,7 @@ import { createStallTimer, stallMs } from './stall.js';
 import { context, forgetContext } from './qoderAuth.js';
 import { combineSignals } from './abort.js';
 import { loopGuardEnabled, loopWarning, repeatedCall } from './loopGuard.js';
+import { compactMessages } from './compress.js';
 
 export { forgetContext };
 
@@ -81,7 +82,8 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
   } catch (e) {
     return { text: '', usage: {}, error: `not logged in: ${e.message}` };
   }
-  const payload = buildPayload(body, cfg.model, cfg.contextWindow, cfg);
+  const compacted = await compactMessages(body.messages, { model: cfg.model, signal });
+  const payload = buildPayload({ ...body, messages: compacted.messages }, cfg.model, cfg.contextWindow, cfg);
   const req = ctx.prepareInferRequest(ENDPOINT, JSON.stringify(payload), cfg.model, '');
   const headers = Object.fromEntries(req.headers);
 
@@ -212,5 +214,5 @@ export async function directCompletion({ body, cfg, signal, onEvent }) {
     }
   }
 
-  return { text, usage, error: upstreamError, stopReason };
+  return { text, usage, error: upstreamError, stopReason, compact: compacted.ratio };
 }
