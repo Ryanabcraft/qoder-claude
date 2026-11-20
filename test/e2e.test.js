@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startFakeUpstream } from './fixtures/fakeUpstream.js';
@@ -14,6 +15,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let fake;
 let proc;
+let compressProxy;
+let compressCalls = 0;
 
 async function up() {
   for (let i = 0; i < 50; i += 1) {
@@ -32,6 +35,17 @@ function accounts() {
 
 test.before(async () => {
   fake = await startFakeUpstream();
+  compressProxy = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      compressCalls += 1;
+      const messages = JSON.parse(body).messages.map((m) => (m.role === 'tool' ? { ...m, content: 'compressed' } : m));
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ messages }));
+    });
+  });
+  await new Promise((resolve) => compressProxy.listen(0, '127.0.0.1', resolve));
   fs.writeFileSync(path.join(home, 'accounts.json'), JSON.stringify({
     active: 'alpha',
     rotation: true,
@@ -52,6 +66,7 @@ test.before(async () => {
       BRIDGE_QUOTA: '0',
       QODER_AUTH_FAKE: '1',
       QODER_INFER_ENDPOINT: `http://127.0.0.1:${fake.port}`,
+      QODER_COMPRESS_PROXY: `http://127.0.0.1:${compressProxy.address().port}`,
     },
     stdio: 'ignore',
   });
@@ -62,12 +77,30 @@ test.before(async () => {
 test.after(() => {
   try { proc.kill(); } catch {}
   try { fake.server.close(); } catch {}
+  try { compressProxy.close(); } catch {}
 });
 
 const post = (route, body) => fetch(`http://127.0.0.1:${PORT}${route}`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify(body),
+});
+
+test('the history is offered to the compression proxy', async () => {
+  const res = await post('/v1/messages', {
+    model: 'Auto',
+    max_tokens: 16,
+    stream: false,
+    messages: [
+      { role: 'user', content: 'one' },
+      { role: 'assistant', content: 'two' },
+      { role: 'user', content: 'three' },
+      { role: 'user', content: 'four' },
+      { role: 'user', content: 'five' },
+    ],
+  });
+  await res.text();
+  assert.ok(compressCalls > 0, 'the proxy was called');
 });
 
 test('a 402 pauses the account and the next one is tried', async () => {
